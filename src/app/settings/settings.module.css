@@ -1,0 +1,86 @@
+:root {
+  --primary-color: #3269f8; /* your brand color */
+  --text-dark: #1a1a1a;
+  --text-muted: #555;
+  --bg-light: #f7f8fa;
+  --bg-white: #ffffff;
+  --border-radius: 8px;
+  --font-sans: 'Segoe UI', Roboto, Arial, sans-serif;
+  --card-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background-color: var(--bg-white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  font-family: var(--font-sans);
+  position: relative;
+}
+
+.backBtn {
+  position: absolute;
+  top: 1rem;
+  left: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.backBtn:hover {
+  text-decoration: underline;
+}
+
+.container h1 {
+  margin-bottom: 1rem;
+  color: var(--text-dark);
+}
+
+.formField {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.formField label {
+  margin-bottom: 0.5rem;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.formField input {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+}
+
+.submitBtn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.submitBtn:hover {
+  background-color: #285ed0;
+}
+
+.readOnlyField {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.errorMsg {
+  color: #e13f29;
+  margin-bottom: 1rem;
+}

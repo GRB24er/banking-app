@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#local env
+.env.local
+mongodb+srv://jp87er:OyDiyQgYTV2yOcQV@justimagine.scciqgh.mongodb.net/?retryWrites=true&w=majority&appName=justimagine

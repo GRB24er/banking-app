@@ -1,0 +1,1 @@
+export const OWNER_EMAIL = "andyjonhson50@gmail.com";

@@ -1,0 +1,84 @@
+/* File: src/app/profile/profile.module.css */
+
+/* Root variables */
+:root {
+  --primary-color: #3269f8;
+  --primary-hover: #285ed0;
+  --text-dark: #1a1a1a;
+  --bg-white: #ffffff;
+  --border-radius: 8px;
+  --card-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Container for the profile page */
+.container {
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background-color: var(--bg-white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  position: relative;
+}
+
+/* The <BackButton /> renders a <button> with this class name */
+.backBtn {
+  position: absolute;
+  top: 1rem;
+  left: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.backBtn:hover {
+  text-decoration: underline;
+}
+
+/* Page title */
+.title {
+  margin-bottom: 1rem;
+  color: var(--text-dark);
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+/* Box containing the user's information */
+.infoBox {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Individual <p> tags inside infoBox */
+.infoBox p {
+  margin: 0.5rem 0;
+}
+ /* File: src/app/profile/profile.module.css */
+
+/* …existing rules… */
+
+/* Container for Sign Out link */
+.signOutContainer {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+/* Style the Sign Out link */
+.signOutLink {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.signOutLink:hover {
+  text-decoration: underline;
+}
