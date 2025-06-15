@@ -5,19 +5,18 @@ import AdminSidebar from './AdminSidebar';
 import LoadingSpinner from './LoadingSpinner';
 import { Session } from 'next-auth';
 
-// Extend session type to include isAdmin
+// ✅ Safe extension of built-in session
 interface CustomSession extends Session {
-  user?: {
+  user: Session["user"] & {
     id?: string;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
     isAdmin?: boolean;
+    role?: string;
+    balance?: number;
   };
 }
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
-  const { data: session, status } = useSession() as { data: CustomSession | null, status: string };
+  const { data: session, status } = useSession() as { data: CustomSession | null; status: string };
   const router = useRouter();
 
   if (status === 'loading') {

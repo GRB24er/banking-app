@@ -1,8 +1,7 @@
-// src/components/RecentActivity/index.tsx
-import { Transaction } from '@/types/transaction';
+import { ITransaction } from '@/types/transaction';
 
 interface RecentActivityProps {
-  transactions: Transaction[];
+  transactions: ITransaction[];
 }
 
 export default function RecentActivity({ transactions }: RecentActivityProps) {
@@ -11,9 +10,13 @@ export default function RecentActivity({ transactions }: RecentActivityProps) {
       <h3 className="font-medium text-gray-700">Recent Transactions</h3>
       <ul className="space-y-2">
         {transactions.map((transaction) => (
-          <li key={transaction.id} className="flex justify-between">
+          <li key={transaction.id} className="flex justify-between text-sm">
             <span>{transaction.type}</span>
-            <span>${transaction.amount.toFixed(2)}</span>
+            <span>
+              {transaction.currency === 'USD' ? '$' : ''}
+              {transaction.amount.toFixed(2)}
+              {transaction.currency && transaction.currency !== 'USD' ? ` ${transaction.currency}` : ''}
+            </span>
           </li>
         ))}
       </ul>

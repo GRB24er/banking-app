@@ -1,3 +1,4 @@
+// src/types/user.ts
 import { Types } from 'mongoose';
 
 export interface BaseUserType {
@@ -23,12 +24,11 @@ export interface BaseUserType {
   updatedAt?: Date;
 }
 
-// For frontend usage (with string `id`)
 export interface UserType extends BaseUserType {
   id: string;
+  _id?: string; // Optional for frontend usage
 }
 
-// For MongoDB documents (with ObjectId `_id`)
 export interface UserDocument extends BaseUserType, Document {
   _id: Types.ObjectId;
   password: string;

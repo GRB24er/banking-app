@@ -5,15 +5,7 @@ import { useRouter } from 'next/navigation';
 import './AdminPage.css';
 import FinancialOperations from './FinancialOperations';
 import UserManagement from './UserManagement';
-
-interface UserType {
-  _id: string;
-  name: string;
-  email: string;
-  balance: number;
-  role: string;
-  verified: boolean;
-}
+import { UserType } from '@/types/user'; // ✅ USE REAL TYPE
 
 export default function AdminPage() {
   const router = useRouter();
@@ -21,9 +13,9 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState({ 
-    email: 'andyjonhson50@gmail.com', 
-    password: '' 
+  const [formData, setFormData] = useState({
+    email: 'andyjonhson50@gmail.com',
+    password: '',
   });
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -44,10 +36,25 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/users');
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      setUsers(data.users);
+
+      // ✅ Normalize and ensure all required fields exist
+      const formattedUsers = data.users.map((user: any) => ({
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        balance: user.balance ?? 0,
+        btcBalance: user.btcBalance ?? 0,
+        accountNumber: user.accountNumber ?? '',
+        bitcoinAddress: user.bitcoinAddress ?? '',
+        role: user.role,
+        verified: user.verified ?? false,
+      }));
+
+      setUsers(formattedUsers);
       setError('');
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to fetch users');
     } finally {
       setLoading(false);
     }
@@ -56,16 +63,16 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    
+
     try {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      
+
       const data = await res.json();
-      
+
       if (res.ok) {
         setIsAuthenticated(true);
         localStorage.setItem('adminAuthenticated', 'true');
@@ -96,11 +103,11 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/users/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ userId }),
       });
 
       const data = await res.json();
-      
+
       if (res.ok) {
         await fetchUsers();
       } else {
@@ -115,17 +122,17 @@ export default function AdminPage() {
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    
+
     try {
       setLoading(true);
       const res = await fetch('/api/admin/users', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ userId }),
       });
 
       const data = await res.json();
-      
+
       if (res.ok) {
         await fetchUsers();
       } else {
@@ -146,7 +153,7 @@ export default function AdminPage() {
         <form className="login-box" onSubmit={handleLogin}>
           <h2>Admin Portal</h2>
           {loginError && <p className="error">{loginError}</p>}
-          
+
           <div className="input-group">
             <label>Email</label>
             <input
@@ -156,7 +163,7 @@ export default function AdminPage() {
               required
             />
           </div>
-          
+
           <div className="input-group">
             <label>Password</label>
             <input
@@ -166,9 +173,9 @@ export default function AdminPage() {
               required
             />
           </div>
-          
+
           <button type="submit">Login</button>
-          
+
           <div className="signup-link">
             <p>Need to create an admin account?</p>
             <button type="button" onClick={() => router.push('/admin/signup')}>
@@ -190,19 +197,19 @@ export default function AdminPage() {
       </header>
 
       <nav className="admin-nav">
-        <button 
+        <button
           className={activeTab === 'dashboard' ? 'active' : ''}
           onClick={() => setActiveTab('dashboard')}
         >
           Dashboard
         </button>
-        <button 
+        <button
           className={activeTab === 'users' ? 'active' : ''}
           onClick={() => setActiveTab('users')}
         >
           User Management
         </button>
-        <button 
+        <button
           className={activeTab === 'transactions' ? 'active' : ''}
           onClick={() => setActiveTab('transactions')}
         >
@@ -225,7 +232,7 @@ export default function AdminPage() {
             <div className="card-icon">✅</div>
             <div>
               <h3>Verified Users</h3>
-              <p>{users.filter(u => u.verified).length} verified</p>
+              <p>{users.filter((u) => u.verified).length} verified</p>
             </div>
           </div>
           <div className="card">
@@ -239,8 +246,8 @@ export default function AdminPage() {
       )}
 
       {activeTab === 'users' && (
-        <UserManagement 
-          users={users} 
+        <UserManagement
+          users={users}
           refreshUsers={fetchUsers}
           onVerifyUser={handleVerifyUser}
           onDeleteUser={handleDeleteUser}
