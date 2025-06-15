@@ -1,4 +1,3 @@
-// src/app/admin/FinancialOperations.tsx
 'use client';
 
 import { useState } from 'react';
@@ -9,9 +8,16 @@ interface FinancialOperationProps {
   refreshUsers: () => void;
 }
 
+interface FormData {
+  userId: string;
+  relatedUserId: string;
+  amount: number;
+  description: string;
+}
+
 export default function FinancialOperations({ users, refreshUsers }: FinancialOperationProps) {
-  const [operation, setOperation] = useState('transfer');
-  const [formData, setFormData] = useState({
+  const [operation, setOperation] = useState<'transfer' | 'deposit' | 'withdrawal' | 'debit' | 'credit'>('transfer');
+  const [formData, setFormData] = useState<FormData>({
     userId: '',
     relatedUserId: '',
     amount: 0,
@@ -74,7 +80,7 @@ export default function FinancialOperations({ users, refreshUsers }: FinancialOp
           <button
             key={op}
             className={`tab ${operation === op ? 'active' : ''}`}
-            onClick={() => setOperation(op)}
+            onClick={() => setOperation(op as typeof operation)}
           >
             {op.charAt(0).toUpperCase() + op.slice(1)}
           </button>
@@ -124,8 +130,11 @@ export default function FinancialOperations({ users, refreshUsers }: FinancialOp
             type="number"
             min="0.01"
             step="0.01"
-            value={formData.amount}
-            onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
+            value={formData.amount || ''}
+            onChange={(e) => setFormData({
+              ...formData, 
+              amount: parseFloat(e.target.value) || 0
+            })}
             required
           />
         </div>
