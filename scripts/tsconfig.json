@@ -10,7 +10,11 @@
     "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"],
-      "@/lib/*": ["./lib/*"]
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/models/*": ["./src/models/*"],
+      "@/app/*": ["./src/app/*"]
     }
   },
   "ts-node": {
