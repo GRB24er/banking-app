@@ -1,111 +1,118 @@
 // File: src/app/dashboard/page.tsx
+'use client';
 
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/authOptions';
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
-import dbConnect from '../../lib/mongodb';
-import User from '../../models/User';
-import Transaction, { ITransaction } from '../../models/Transaction';
 
-type TransactionType = {
+interface Transaction {
   _id: string;
   type: 'deposit' | 'send' | 'transfer_usd' | 'transfer_btc';
   currency: 'USD' | 'BTC';
   amount: number;
   date: string;
   description?: string;
-};
+}
 
-export default async function DashboardPage() {
-  // 1) Get the current session (server-side)
-  const session = await getServerSession(authOptions);
-  if (!session || !session.user?.email) {
+interface UserData {
+  name: string;
+  email: string;
+  role: 'user' | 'admin';
+  balance: number;
+  btcBalance: number;
+  accountNumber: string;
+  routingNumber: string;
+  bitcoinAddress: string;
+}
+
+export default function DashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (status === 'authenticated' && session?.user?.email) {
+      fetchUserData();
+    }
+  }, [status, session]);
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/user/dashboard', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+
+      const data = await res.json();
+      setUserData(data.user);
+      setRecentTransactions(data.transactions);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      router.push('/auth/signin');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || !userData) {
     return (
-      <html>
-        <body>
-          <script>{`window.location.href = '/auth/signin';`}</script>
-        </body>
-      </html>
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingSpinner}></div>
+        <p>Loading your dashboard...</p>
+      </div>
     );
   }
 
-  // 2) Extract user fields from session, with defaults
   const {
     name,
-    email,
-    role,
     balance = 0,
     btcBalance = 0,
     accountNumber = '',
     routingNumber = '',
     bitcoinAddress = '',
-  } = session.user as {
-    name: string;
-    email: string;
-    role: 'user' | 'admin';
-    balance?: number;
-    btcBalance?: number;
-    accountNumber?: string;
-    routingNumber?: string;
-    bitcoinAddress?: string;
-  };
-
-  // 3) Connect to DB and fetch recent transactions
-  await dbConnect();
-  const userDoc = await User.findOne({ email }).lean();
-  if (!userDoc) {
-    return (
-      <html>
-        <body>
-          <script>{`window.location.href = '/auth/signin';`}</script>
-        </body>
-      </html>
-    );
-  }
-
-  // Cast the result of .lean() to ITransaction[] so txnDocs.map(...) works
-  const txnDocs = (await Transaction.find({ userId: userDoc._id })
-    .sort({ date: -1 })
-    .limit(10)
-    .lean()) as ITransaction[];
-
-  const recentTransactions: TransactionType[] = txnDocs.map((txn: ITransaction) => ({
-    _id: txn._id.toString(),
-    type: txn.type,
-    currency: txn.currency,
-    amount: txn.amount,
-    date: txn.date.toISOString().split('T')[0],
-    description: txn.description,
-  }));
+  } = userData;
 
   return (
     <div className={styles.dashboardContainer}>
-      {/* ──────────────────────────────────────────────────────────── */}
-      {/* 1) Header */}
+      {/* Header */}
       <div className={styles.header}>
-        {/* Logo */}
-        <div className="logo">
+        <div className={styles.logo}>
           <Image src="/icons/logo.svg" alt="Logo" width={32} height={32} />
-          <span className="brandName">Horizon Global Capital</span>
+          <span className={styles.brandName}>Horizon Global Capital</span>
         </div>
 
-        {/* Navigation Links */}
         <div className={styles.navLinks}>
-          <Link href="/dashboard" style={{ marginRight: '24px' }}>
+          <Link href="/dashboard" className={styles.navLink}>
             Dashboard
           </Link>
-          <Link href="/send-money" style={{ marginRight: '24px' }}>
+          <Link href="/send-money" className={styles.navLink}>
             Send Money
           </Link>
-          <Link href="/deposit" style={{ marginRight: '24px' }}>
+          <Link href="/deposit" className={styles.navLink}>
             Deposit
           </Link>
-          <Link href="/transfer" style={{ marginRight: '24px' }}>
+          <Link href="/transfer" className={styles.navLink}>
             Transfer
           </Link>
-          <Link href="/settings" style={{ marginRight: '24px' }}>
+          <Link href="/settings" className={styles.navLink}>
             Settings
           </Link>
           <Link href="/profile">
@@ -116,65 +123,71 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ──────────────────────────────────────────────────────────── */}
-      {/* 2) Main Content */}
+      {/* Main Content */}
       <div className={styles.mainContent}>
-        {/* 2a) Balance & Actions Row */}
+        {/* Balance & Actions Row */}
         <div className={styles.balanceRow}>
-          {/* USD Balance Card */}
           <div className={styles.balanceCard}>
-            <div className="label">Total Balance (USD)</div>
-            <p className="amount">${balance.toFixed(2)}</p>
+            <div className={styles.label}>Total Balance (USD)</div>
+            <p className={styles.amount}>${balance.toFixed(2)}</p>
           </div>
 
-          {/* BTC Balance Card */}
-          <div className={styles.balanceCard} style={{ marginLeft: '16px' }}>
-            <div className="label">Bitcoin Balance</div>
-            <p className="amount">{btcBalance.toFixed(6)} BTC</p>
+          <div className={styles.balanceCard}>
+            <div className={styles.label}>Bitcoin Balance</div>
+            <p className={styles.amount}>{btcBalance.toFixed(6)} BTC</p>
           </div>
 
-          {/* Action Buttons */}
           <div className={styles.actions}>
-            <button className={styles.actionButton}>Send Money</button>
-            <button className={styles.actionButton}>Deposit</button>
-            <button className={styles.actionButton}>Transfer</button>
+            <button 
+              className={styles.actionButton}
+              onClick={() => router.push('/send-money')}
+            >
+              Send Money
+            </button>
+            <button 
+              className={styles.actionButton}
+              onClick={() => router.push('/deposit')}
+            >
+              Deposit
+            </button>
+            <button 
+              className={styles.actionButton}
+              onClick={() => router.push('/transfer')}
+            >
+              Transfer
+            </button>
           </div>
         </div>
 
-        {/* 2b) Bank Account & Crypto Wallet Cards */}
+        {/* Account Cards */}
         <div className={styles.secondaryRow}>
-          {/* Bank Account Card */}
           <div className={styles.accountCard}>
-            <div className="cardHeader">
+            <div className={styles.cardHeader}>
               <h3>Checking Account</h3>
-              <div className="accountNumber">
-                {/* Mask all but last 4 digits */}
+              <div className={styles.accountNumber}>
                 {accountNumber.replace(/.(?=.{4})/g, '•')}
               </div>
             </div>
-            <div className="accountBalance">${balance.toFixed(2)}</div>
-            <div className="accountNote">Routing: {routingNumber}</div>
+            <div className={styles.accountBalance}>${balance.toFixed(2)}</div>
+            <div className={styles.accountNote}>Routing: {routingNumber}</div>
           </div>
 
-          {/* Crypto Wallet Card */}
           <div className={styles.cryptoCard}>
-            <div className="cardHeader">
+            <div className={styles.cardHeader}>
               <h3>Bitcoin Wallet</h3>
             </div>
-            <div className="cryptoBalance">{btcBalance.toFixed(6)} BTC</div>
-            <div className="accountNote">
+            <div className={styles.cryptoBalance}>{btcBalance.toFixed(6)} BTC</div>
+            <div className={styles.accountNote}>
               {bitcoinAddress.slice(0, 4)}…{bitcoinAddress.slice(-4)}
             </div>
           </div>
         </div>
 
-        {/* 2c) Recent Transactions Section */}
+        {/* Recent Transactions */}
         <div className={styles.transactionsSection}>
           <h2>Recent Transactions</h2>
           {recentTransactions.length === 0 ? (
-            <p style={{ padding: '0 24px', color: '#777' }}>
-              You have no transactions yet.
-            </p>
+            <p className={styles.noTransactions}>You have no transactions yet.</p>
           ) : (
             <table className={styles.transactionsTable}>
               <thead>
@@ -187,25 +200,16 @@ export default async function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentTransactions.map((txn: TransactionType) => (
+                {recentTransactions.map((txn) => (
                   <tr key={txn._id}>
-                    <td style={{ color: '#555' }}>{txn.date}</td>
-                    <td>{txn.description}</td>
+                    <td className={styles.dateCell}>{txn.date}</td>
+                    <td>{txn.description || 'No description'}</td>
                     <td>{txn.type.replace('_', ' ')}</td>
-                    <td>
-                      {txn.amount >= 0 ? (
-                        <span className="txnPositive">
-                          {txn.currency === 'USD' ? '$' : ''}
-                          {txn.amount.toFixed(2)}
-                          {txn.currency === 'BTC' ? ' BTC' : ''}
-                        </span>
-                      ) : (
-                        <span className="txnNegative">
-                          –{txn.currency === 'USD' ? '$' : ''}
-                          {Math.abs(txn.amount).toFixed(2)}
-                          {txn.currency === 'BTC' ? ' BTC' : ''}
-                        </span>
-                      )}
+                    <td className={txn.amount >= 0 ? styles.positiveAmount : styles.negativeAmount}>
+                      {txn.amount >= 0 ? '+' : '-'}
+                      {txn.currency === 'USD' ? '$' : ''}
+                      {Math.abs(txn.amount).toFixed(txn.currency === 'USD' ? 2 : 6)}
+                      {txn.currency === 'BTC' ? ' BTC' : ''}
                     </td>
                     <td>{txn.currency}</td>
                   </tr>

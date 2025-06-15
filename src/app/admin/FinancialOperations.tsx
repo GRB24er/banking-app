@@ -1,161 +1,139 @@
 'use client';
 
 import { useState } from 'react';
+import styles from './FinancialOperations.module.css';
 import { UserType } from '@/types/user';
 
-interface FinancialOperationProps {
+interface FinancialOperationsProps {
   users: UserType[];
   refreshUsers: () => void;
 }
 
-interface FormData {
-  userId: string;
-  relatedUserId: string;
-  amount: number;
-  description: string;
-}
-
-export default function FinancialOperations({ users, refreshUsers }: FinancialOperationProps) {
-  const [operation, setOperation] = useState<'transfer' | 'deposit' | 'withdrawal' | 'debit' | 'credit'>('transfer');
-  const [formData, setFormData] = useState<FormData>({
-    userId: '',
-    relatedUserId: '',
-    amount: 0,
-    description: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ success: '', error: '' });
+export default function FinancialOperations({ users, refreshUsers }: FinancialOperationsProps) {
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [amount, setAmount] = useState<string>('');
+  const [currency, setCurrency] = useState<'USD' | 'BTC'>('USD');
+  const [operation, setOperation] = useState<'credit' | 'debit'>('credit');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setStatus({ success: '', error: '' });
+    setMessage(null);
 
     try {
-      const response = await fetch('/api/admin/transactions', {
+      const numericAmount = parseFloat(amount);
+      if (isNaN(numericAmount)) {
+        throw new Error('Please enter a valid amount');
+      }
+
+      const response = await fetch('/api/admin/adjust-balance', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          ...formData,
-          type: operation
-        })
+          userId: selectedUserId,
+          amount: operation === 'credit' ? numericAmount : -numericAmount,
+          currency,
+        }),
       });
 
       const data = await response.json();
-      
-      if (response.ok) {
-        setStatus({ 
-          success: `Successfully processed ${operation} of $${formData.amount.toFixed(2)}`, 
-          error: '' 
-        });
-        setFormData({
-          userId: '',
-          relatedUserId: '',
-          amount: 0,
-          description: ''
-        });
-        refreshUsers();
-      } else {
-        setStatus({ 
-          success: '', 
-          error: data.message || `Failed to process ${operation}` 
-        });
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to process operation');
       }
-    } catch (error) {
-      setStatus({ 
-        success: '', 
-        error: 'Network error. Please try again.' 
-      });
+
+      setMessage({ text: 'Operation completed successfully', type: 'success' });
+      refreshUsers();
+      setAmount('');
+    } catch (error: any) {
+      setMessage({ text: error.message, type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="financial-operations">
-      <h2>Financial Operations</h2>
-      
-      <div className="operation-tabs">
-        {['transfer', 'deposit', 'withdrawal', 'debit', 'credit'].map(op => (
-          <button
-            key={op}
-            className={`tab ${operation === op ? 'active' : ''}`}
-            onClick={() => setOperation(op as typeof operation)}
-          >
-            {op.charAt(0).toUpperCase() + op.slice(1)}
-          </button>
-        ))}
-      </div>
-      
-      <form onSubmit={handleSubmit} className="operation-form">
-        <div className="form-group">
-          <label>User Account</label>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Financial Operations</h2>
+
+      {message && (
+        <div className={message.type === 'success' ? styles.successMessage : styles.errorMessage}>
+          {message.text}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.formGroup}>
+          <label htmlFor="user">Select User</label>
           <select
-            value={formData.userId}
-            onChange={(e) => setFormData({...formData, userId: e.target.value})}
+            id="user"
+            value={selectedUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
             required
+            className={styles.select}
           >
-            <option value="">Select user</option>
-            {users.map(user => (
-              <option key={user._id} value={user._id}>
-                {user.name} - ${user.balance.toFixed(2)}
+            <option value="">Select a user</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name} ({user.email}) - {user.balance.toFixed(2)} USD / {user.btcBalance.toFixed(6)} BTC
               </option>
             ))}
           </select>
         </div>
-        
-        {(operation === 'transfer') && (
-          <div className="form-group">
-            <label>Recipient Account</label>
-            <select
-              value={formData.relatedUserId}
-              onChange={(e) => setFormData({...formData, relatedUserId: e.target.value})}
-              required
-            >
-              <option value="">Select recipient</option>
-              {users
-                .filter(user => user._id !== formData.userId)
-                .map(user => (
-                  <option key={user._id} value={user._id}>
-                    {user.name} - ${user.balance.toFixed(2)}
-                  </option>
-                ))}
-            </select>
-          </div>
-        )}
-        
-        <div className="form-group">
-          <label>Amount (USD)</label>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="operation">Operation</label>
+          <select
+            id="operation"
+            value={operation}
+            onChange={(e) => setOperation(e.target.value as 'credit' | 'debit')}
+            required
+            className={styles.select}
+          >
+            <option value="credit">Credit (Add)</option>
+            <option value="debit">Debit (Subtract)</option>
+          </select>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="currency">Currency</label>
+          <select
+            id="currency"
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value as 'USD' | 'BTC')}
+            required
+            className={styles.select}
+          >
+            <option value="USD">USD</option>
+            <option value="BTC">BTC</option>
+          </select>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="amount">Amount</label>
           <input
+            id="amount"
             type="number"
-            min="0.01"
-            step="0.01"
-            value={formData.amount || ''}
-            onChange={(e) => setFormData({
-              ...formData, 
-              amount: parseFloat(e.target.value) || 0
-            })}
+            step={currency === 'USD' ? '0.01' : '0.000001'}
+            min="0"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
             required
+            className={styles.input}
           />
         </div>
-        
-        <div className="form-group">
-          <label>Description</label>
-          <input
-            type="text"
-            value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
-            required
-            placeholder={`Reason for ${operation}`}
-          />
-        </div>
-        
-        <button type="submit" disabled={loading} className="submit-btn">
-          {loading ? 'Processing...' : `Execute ${operation.charAt(0).toUpperCase() + operation.slice(1)}`}
+
+        <button
+          type="submit"
+          disabled={loading || !selectedUserId}
+          className={styles.submitButton}
+        >
+          {loading ? 'Processing...' : 'Execute Operation'}
         </button>
-        
-        {status.success && <p className="success-message">{status.success}</p>}
-        {status.error && <p className="error-message">{status.error}</p>}
       </form>
     </div>
   );
