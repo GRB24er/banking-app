@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UserType } from './page';
+import { UserType } from '@/types/user';
 
 interface FinancialOperationProps {
   users: UserType[];

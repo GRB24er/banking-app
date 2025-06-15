@@ -80,3 +80,12 @@ declare module '@/lib/mongodb' {
   export const db: Database;
   export default function connectDB(): Promise<Connection>;
 }
+
+// src/types/db.d.ts
+export type UserType = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  balance: number;
+};

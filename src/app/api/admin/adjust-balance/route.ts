@@ -1,3 +1,5 @@
+// File: src/app/api/admin/adjust-balance/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
@@ -12,15 +14,12 @@ type Currency = 'USD' | 'BTC';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1) Authorization check
     const session = await getServerSession(authOptions);
-    
-    // Check session exists and has valid email
+
     if (!session?.user?.email) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Case-insensitive comparison
     const normalizedOwnerEmail = OWNER_EMAIL.trim().toLowerCase();
     const normalizedUserEmail = session.user.email.trim().toLowerCase();
 
@@ -28,21 +27,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2) Parse request body
     const { userEmail, amount, currency, action } = await request.json();
 
     if (!userEmail || !amount || amount <= 0 || !currency || !action) {
       return NextResponse.json({ message: 'Missing or invalid fields' }, { status: 400 });
     }
 
-    // 3) Connect to MongoDB and find the target user
     await dbConnect();
     const user = await User.findOne({ email: userEmail });
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    // 4) Adjust the appropriate balance
     let newBalance: number;
     let txnType: string;
     let description: string;
@@ -62,7 +58,6 @@ export async function POST(request: NextRequest) {
       }
       newBalance = user.balance;
     } else {
-      // BTC
       if (action === 'credit') {
         user.btcBalance += amount;
         txnType = 'transfer_btc';
@@ -78,10 +73,8 @@ export async function POST(request: NextRequest) {
       newBalance = user.btcBalance;
     }
 
-    // 5) Save user
     await user.save();
 
-    // 6) Log a transaction record
     await Transaction.create({
       userId: user._id,
       type: txnType,
@@ -90,7 +83,6 @@ export async function POST(request: NextRequest) {
       description,
     });
 
-    // 7) Send notification email to the user
     const mailOptions = {
       from: 'Horizon Global Capital <admin@horizonglobalcapital.com>',
       to: userEmail,
@@ -115,12 +107,8 @@ export async function POST(request: NextRequest) {
             <li><strong>Amount:</strong> ${
               currency === 'USD' ? `$${amount.toFixed(2)}` : `${amount.toFixed(6)} BTC`
             }</li>
-            <li><strong>New ${
-              currency === 'USD' ? 'USD' : 'BTC'
-            } Balance:</strong> ${
-        currency === 'USD'
-          ? `$${newBalance.toFixed(2)}`
-          : `${newBalance.toFixed(6)} BTC`
+            <li><strong>New ${currency} Balance:</strong> ${
+        currency === 'USD' ? `$${newBalance.toFixed(2)}` : `${newBalance.toFixed(6)} BTC`
       }</li>
           </ul>
           <p>If you have any questions, please reply to this email or contact support.</p>
@@ -129,13 +117,11 @@ export async function POST(request: NextRequest) {
         </div>
       `,
     };
-    
-    // Don't wait for email to send response
+
     transporter.sendMail(mailOptions, (err: Error | null) => {
       if (err) console.error('Error sending email:', err);
     });
 
-    // 8) Return success + new balance
     return NextResponse.json({ success: true, newBalance }, { status: 200 });
   } catch (error: any) {
     console.error('Error in /api/admin/adjust-balance:', error);
