@@ -1,31 +1,14 @@
-/* File: src/app/dashboard/dashboard.module.css */
-
-/* 1) Root variables for theming: update --primary-color to match your brand */
-:root {
-  --primary-color: #3269f8; /* ← Replace with your actual brand color (e.g. #FF5722) */
-  --text-dark: #1a1a1a;
-  --text-muted: #555;
-  --bg-light: #f7f8fa;
-  --bg-white: #ffffff;
-  --border-radius: 8px;
-  --font-sans: 'Segoe UI', Roboto, Arial, sans-serif;
-  --card-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* 2) Dashboard container */
+/* src/app/dashboard/dashboard.module.css */
 .dashboardContainer {
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-light);
-  color: var(--text-dark);
-  font-family: var(--font-sans);
   min-height: 100vh;
+  background-color: var(--light-gray);
 }
 
-/* 3) Header */
 .header {
-  background-color: var(--bg-white);
-  padding: 16px 32px;
+  background-color: var(--white);
+  padding: var(--space-md) var(--space-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -35,46 +18,38 @@
   z-index: 10;
 }
 
-.header .logo {
+.logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
-.header .logo svg,
-.header .logo img {
-  height: 32px;
-  width: 32px;
-}
-
-.header .logo .brandName {
+.logo .brandName {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary-color);
 }
 
-.header .navLinks {
+.navLinks {
   display: flex;
-  gap: 24px;
+  gap: var(--space-lg);
   align-items: center;
 }
 
-.header .navLinks a {
+.navLinks a {
   color: var(--text-dark);
-  text-decoration: none;
   font-weight: 500;
-  transition: color 0.15s ease;
 }
 
-.header .navLinks a:hover {
+.navLinks a:hover {
   color: var(--primary-color);
 }
 
-.header .profileIcon {
+.profileIcon {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: var(--bg-light);
+  background-color: var(--light-gray);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -82,40 +57,37 @@
   transition: background 0.15s ease;
 }
 
-.header .profileIcon:hover {
+.profileIcon:hover {
   background-color: #e0e5ea;
 }
 
-/* 4) Main content area */
 .mainContent {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 32px;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
 }
 
-/* 5) Balance & Actions row */
 .balanceRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: var(--space-lg);
   align-items: center;
   justify-content: space-between;
 }
 
-/* 5a) Total balance card */
 .balanceCard {
-  background-color: var(--bg-white);
+  background-color: var(--white);
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
-  padding: 24px 32px;
+  padding: var(--space-lg) var(--space-xl);
   flex: 1 1 300px;
 }
 
 .balanceCard .label {
   font-size: 0.9rem;
   color: var(--text-muted);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .balanceCard .amount {
@@ -125,116 +97,77 @@
   margin: 0;
 }
 
-/* 5b) Action buttons */
 .actions {
   display: flex;
-  gap: 16px;
+  gap: var(--space-md);
   flex: 1 1 300px;
   justify-content: flex-end;
 }
 
 .actionButton {
   background-color: var(--primary-color);
-  color: #fff;
+  color: var(--white);
   border: none;
   border-radius: var(--border-radius);
-  padding: 12px 24px;
+  padding: var(--space-sm) var(--space-lg);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 .actionButton:hover {
-  background-color: darken(var(--primary-color), 10%);
+  background-color: var(--primary-hover);
 }
 
-/* 6) Secondary row: Bank account & Crypto wallet */
 .secondaryRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  gap: var(--space-lg);
 }
 
-/* 6a) Bank Account Card */
-.accountCard {
-  background-color: var(--bg-white);
+.accountCard, .cryptoCard {
+  background-color: var(--white);
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
-  padding: 24px 32px;
+  padding: var(--space-lg) var(--space-xl);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
-.accountCard .cardHeader {
+.cardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.accountCard .cardHeader h3 {
+.cardHeader h3 {
   margin: 0;
   font-size: 1.2rem;
   color: var(--text-dark);
 }
 
-.accountCard .accountNumber {
+.accountNumber, .cryptoPrice {
   font-size: 0.9rem;
   color: var(--text-muted);
 }
 
-.accountCard .accountBalance {
+.accountBalance, .cryptoBalance {
   font-size: 2rem;
   font-weight: 600;
   color: var(--text-dark);
 }
 
-/* 6b) Crypto Wallet Card */
-.cryptoCard {
-  background-color: var(--bg-white);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  padding: 24px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.cryptoCard .cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.cryptoCard .cardHeader h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: var(--text-dark);
-}
-
-.cryptoCard .cryptoPrice {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.cryptoCard .cryptoBalance {
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--text-dark);
-}
-
-/* 7) Transactions Section */
 .transactionsSection {
-  background-color: var(--bg-white);
+  background-color: var(--white);
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
   overflow: auto;
-  padding: 24px 32px;
+  padding: var(--space-lg) var(--space-xl);
 }
 
 .transactionsSection h2 {
-  margin: 0 0 16px 0;
+  margin: 0 0 var(--space-md) 0;
   font-size: 1.2rem;
   color: var(--text-dark);
 }
@@ -246,43 +179,28 @@
 
 .transactionsTable th,
 .transactionsTable td {
-  padding: 12px 16px;
+  padding: var(--space-sm) var(--space-md);
   text-align: left;
   font-size: 0.95rem;
   color: var(--text-dark);
 }
 
 .transactionsTable th {
-  background-color: var(--bg-light);
+  background-color: var(--light-gray);
   font-weight: 600;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--medium-gray);
 }
 
 .transactionsTable tr:nth-child(even) {
-  background-color: var(--bg-light);
+  background-color: var(--light-gray);
 }
 
-.transactionsTable td .txnPositive {
-  color: var(--primary-color);
+.txnPositive {
+  color: var(--success-color);
   font-weight: 500;
 }
 
-.transactionsTable td .txnNegative {
-  color: #e13f29;
+.txnNegative {
+  color: var(--error-color);
   font-weight: 500;
-}
-
-/* 8) Responsive behavior */
-@media (max-width: 768px) {
-  .balanceRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .actions {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-  .secondaryRow {
-    grid-template-columns: 1fr;
-  }
 }
