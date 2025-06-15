@@ -1,26 +1,13 @@
-// src/lib/db.ts
 import mongoose, { ConnectOptions } from 'mongoose';
 import User from '@/models/User';
 
-// Configuration with hardcoded fallback (as requested)
-const MONGODB_URI = process.env.MONGODB_URI || 
-  'mongodb+srv://jp87er:OyDiyQgYTV2yOcQV@justimagine.scciqgh.mongodb.net/bankdb?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://jp87er:OyDiyQgYTV2yOcQV@justimagine.scciqgh.mongodb.net/bankdb?retryWrites=true&w=majority';
 
-// Type for global mongoose cache
 declare global {
   var mongoose: {
     conn: typeof mongoose | null;
     promise: Promise<typeof mongoose> | null;
   };
-}
-
-// Security warning for production
-if (!process.env.MONGODB_URI && process.env.NODE_ENV === 'production') {
-  console.error('\x1b[31m', '⚠️ SECURITY WARNING: Hard-coded MongoDB credentials in production!', '\x1b[0m');
-}
-
-if (!MONGODB_URI) {
-  throw new Error('MongoDB URI is required');
 }
 
 // Initialize cache
@@ -37,7 +24,7 @@ async function connectDB(): Promise<typeof mongoose> {
 
     cached.promise = mongoose.connect(MONGODB_URI, opts)
       .then(mongoose => {
-        console.log('✅ MongoDB connected');
+        console.log('✅ MongoDB connected successfully');
         return mongoose;
       })
       .catch(err => {
@@ -57,9 +44,20 @@ async function connectDB(): Promise<typeof mongoose> {
   return cached.conn;
 }
 
-// VERIFY USER FUNCTION
-export async function verifyUser(userId: string) {
-  try {
+// Database operations
+export const db = {
+  // User operations
+  async getUserById(id: string) {
+    await connectDB();
+    return await User.findById(id).select('-password -__v');
+  },
+
+  async getUserByEmail(email: string) {
+    await connectDB();
+    return await User.findOne({ email }).select('-password -__v');
+  },
+
+  async verifyUser(userId: string) {
     await connectDB();
     const user = await User.findByIdAndUpdate(
       userId,
@@ -69,39 +67,108 @@ export async function verifyUser(userId: string) {
 
     if (!user) throw new Error('User not found');
     return user;
-  } catch (error) {
-    console.error('Verify user error:', error);
-    throw error;
-  }
-}
+  },
 
-// DELETE USER FUNCTION
-export async function deleteUser(userId: string) {
-  try {
+  async deleteUser(userId: string) {
     await connectDB();
     const user = await User.findByIdAndDelete(userId)
       .select('-password -__v');
 
     if (!user) throw new Error('User not found');
     return user;
-  } catch (error) {
-    console.error('Delete user error:', error);
-    throw error;
-  }
-}
+  },
 
-// GET ALL USERS (for admin dashboard)
-export async function getUsers() {
-  try {
+  async getUsers() {
     await connectDB();
     return await User.find({})
       .select('-password -__v')
       .sort({ createdAt: -1 });
-  } catch (error) {
-    console.error('Get users error:', error);
-    throw error;
+  },
+
+  // Account operations
+  async updateBalance(userId: string, amount: number, transactionData: Partial<ITransaction>) {
+    await connectDB();
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const user = await User.findById(userId).session(session);
+      if (!user) throw new Error('User not found');
+
+      const newBalance = user.balance + amount;
+      if (newBalance < 0) throw new Error('Insufficient funds');
+
+      const transaction: ITransaction = {
+        type: transactionData.type!,
+        amount: Math.abs(amount),
+        description: transactionData.description!,
+        date: new Date(),
+        balanceAfter: newBalance,
+        ...(transactionData.relatedUser && { relatedUser: transactionData.relatedUser })
+      };
+
+      user.balance = newBalance;
+      user.transactions.push(transaction);
+      await user.save({ session });
+
+      await session.commitTransaction();
+      return user;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  },
+
+  // Bitcoin operations
+  async updateBitcoinBalance(userId: string, amount: number, transactionData: Partial<ITransaction>) {
+    await connectDB();
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const user = await User.findById(userId).session(session);
+      if (!user) throw new Error('User not found');
+
+      const newBalance = user.btcBalance + amount;
+      if (newBalance < 0) throw new Error('Insufficient Bitcoin balance');
+
+      const transaction: ITransaction = {
+        type: transactionData.type!,
+        amount: Math.abs(amount),
+        description: transactionData.description!,
+        date: new Date(),
+        balanceAfter: newBalance,
+        ...(transactionData.relatedUser && { relatedUser: transactionData.relatedUser })
+      };
+
+      user.btcBalance = newBalance;
+      user.transactions.push(transaction);
+      await user.save({ session });
+
+      await session.commitTransaction();
+      return user;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  },
+
+  // Transaction history
+  async getTransactions(userId: string, limit = 10, page = 1) {
+    await connectDB();
+    const user = await User.findById(userId)
+      .select('transactions')
+      .slice('transactions', [(page - 1) * limit, limit])
+      .sort({ 'transactions.date': -1 });
+
+    if (!user) throw new Error('User not found');
+    return user.transactions;
   }
-}
+};
 
 // Connection event handlers
 mongoose.connection.on('connected', () => 
@@ -113,6 +180,4 @@ mongoose.connection.on('error', (err) =>
 mongoose.connection.on('disconnected', () => 
   console.log('Mongoose disconnected'));
 
-// Export everything
-export { mongoose, connectDB };
 export default connectDB;
