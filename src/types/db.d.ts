@@ -1,4 +1,4 @@
-import { Document, Model } from 'mongoose';
+import { Document, Model, Connection } from 'mongoose';
 
 declare global {
   namespace NodeJS {
@@ -9,8 +9,8 @@ declare global {
   }
 
   var mongoose: {
-    conn: typeof import('mongoose') | null;
-    promise: Promise<typeof import('mongoose')> | null;
+    conn: Connection | null;
+    promise: Promise<Connection> | null;
   };
 }
 
@@ -44,3 +44,39 @@ export interface IUser extends Document {
 }
 
 export type UserModel = Model<IUser>;
+
+// Database operations interface
+export interface Database {
+  // User operations
+  getUserById(id: string): Promise<IUser | null>;
+  getUserByEmail(email: string): Promise<IUser | null>;
+  verifyUser(userId: string): Promise<IUser>;
+  deleteUser(userId: string): Promise<IUser>;
+  getUsers(): Promise<IUser[]>;
+  
+  // Account operations
+  updateBalance(
+    userId: string, 
+    amount: number, 
+    transactionData: Partial<ITransaction>
+  ): Promise<IUser>;
+  
+  // Bitcoin operations
+  updateBitcoinBalance(
+    userId: string, 
+    amount: number, 
+    transactionData: Partial<ITransaction>
+  ): Promise<IUser>;
+  
+  // Transaction history
+  getTransactions(userId: string, limit?: number, page?: number): Promise<ITransaction[]>;
+  
+  // Connection
+  connectToDB(): Promise<Connection>;
+}
+
+// Augment the module declarations
+declare module '@/lib/mongodb' {
+  export const db: Database;
+  export default function connectDB(): Promise<Connection>;
+}

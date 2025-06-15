@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyUser } from '@/lib/db';
+import { db } from '@/lib/mongodb';
 
 export async function POST(req: Request) {
   try {
