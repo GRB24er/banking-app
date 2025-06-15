@@ -1,7 +1,7 @@
 // File: src/app/dashboard/page.tsx
 
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/authOptions';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
