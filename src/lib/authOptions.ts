@@ -43,7 +43,7 @@ declare module 'next-auth' {
   }
 }
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   providers: [
     CredentialsProvider({
@@ -91,7 +91,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/signin',
   },
-  secret: '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae', // Your hardcoded secret
+  secret: '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae', // Hardcoded secret
   callbacks: {
     async redirect({ url, baseUrl }) {
       if (url.startsWith(baseUrl)) return url;
@@ -118,4 +118,4 @@ export const authOptions: NextAuthOptions = {
 
 // App Router-compatible export
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST, authOptions }; // ✅ FIXED EXPORT
+export { handler as GET, handler as POST, authOptions };

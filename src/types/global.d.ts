@@ -21,3 +21,12 @@ declare module '@/lib/mail' {
   const transporter: any;
   export default transporter;
 }
+
+// src/types/global.d.ts
+declare type UserType = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  balance: number;
+};
