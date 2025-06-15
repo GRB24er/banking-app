@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import styles from './FinancialOperations.module.css';
 import { UserType } from '@/types/user';
 
 interface FinancialOperationsProps {
@@ -30,9 +29,7 @@ export default function FinancialOperations({ users, refreshUsers }: FinancialOp
 
       const response = await fetch('/api/admin/adjust-balance', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: selectedUserId,
           amount: operation === 'credit' ? numericAmount : -numericAmount,
@@ -41,10 +38,7 @@ export default function FinancialOperations({ users, refreshUsers }: FinancialOp
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to process operation');
-      }
+      if (!response.ok) throw new Error(data.message || 'Failed to process operation');
 
       setMessage({ text: 'Operation completed successfully', type: 'success' });
       refreshUsers();
@@ -57,25 +51,26 @@ export default function FinancialOperations({ users, refreshUsers }: FinancialOp
   };
 
   return (
-    <div className={styles.container}>
-      <h2 className={styles.title}>Financial Operations</h2>
+    <div style={{ maxWidth: 600, margin: '2rem auto', padding: 20, border: '1px solid #ccc', borderRadius: 8 }}>
+      <h2 style={{ textAlign: 'center' }}>Financial Operations</h2>
 
       {message && (
-        <div className={message.type === 'success' ? styles.successMessage : styles.errorMessage}>
+        <div style={{
+          backgroundColor: message.type === 'success' ? '#e6ffed' : '#ffe6e6',
+          color: message.type === 'success' ? '#036b26' : '#b30000',
+          padding: 10,
+          borderRadius: 6,
+          marginBottom: 16,
+          textAlign: 'center'
+        }}>
           {message.text}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.formGroup}>
-          <label htmlFor="user">Select User</label>
-          <select
-            id="user"
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            required
-            className={styles.select}
-          >
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <label>Select User</label>
+          <select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)} required style={{ width: '100%', padding: 8 }}>
             <option value="">Select a user</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
@@ -85,53 +80,44 @@ export default function FinancialOperations({ users, refreshUsers }: FinancialOp
           </select>
         </div>
 
-        <div className={styles.formGroup}>
-          <label htmlFor="operation">Operation</label>
-          <select
-            id="operation"
-            value={operation}
-            onChange={(e) => setOperation(e.target.value as 'credit' | 'debit')}
-            required
-            className={styles.select}
-          >
+        <div>
+          <label>Operation</label>
+          <select value={operation} onChange={(e) => setOperation(e.target.value as 'credit' | 'debit')} required style={{ width: '100%', padding: 8 }}>
             <option value="credit">Credit (Add)</option>
             <option value="debit">Debit (Subtract)</option>
           </select>
         </div>
 
-        <div className={styles.formGroup}>
-          <label htmlFor="currency">Currency</label>
-          <select
-            id="currency"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value as 'USD' | 'BTC')}
-            required
-            className={styles.select}
-          >
+        <div>
+          <label>Currency</label>
+          <select value={currency} onChange={(e) => setCurrency(e.target.value as 'USD' | 'BTC')} required style={{ width: '100%', padding: 8 }}>
             <option value="USD">USD</option>
             <option value="BTC">BTC</option>
           </select>
         </div>
 
-        <div className={styles.formGroup}>
-          <label htmlFor="amount">Amount</label>
+        <div>
+          <label>Amount</label>
           <input
-            id="amount"
             type="number"
             step={currency === 'USD' ? '0.01' : '0.000001'}
             min="0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
-            className={styles.input}
+            style={{ width: '100%', padding: 8 }}
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading || !selectedUserId}
-          className={styles.submitButton}
-        >
+        <button type="submit" disabled={loading || !selectedUserId} style={{
+          backgroundColor: '#0070f3',
+          color: 'white',
+          padding: 12,
+          border: 'none',
+          borderRadius: 6,
+          fontWeight: 'bold',
+          cursor: loading ? 'not-allowed' : 'pointer'
+        }}>
           {loading ? 'Processing...' : 'Execute Operation'}
         </button>
       </form>
