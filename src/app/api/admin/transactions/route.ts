@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import { transporter } from '@/lib/mail';
+import { transporter, sendTransactionEmail } from '@/lib/mail';
 
 export async function POST(request: NextRequest) {
   await dbConnect();

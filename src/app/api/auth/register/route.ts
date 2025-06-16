@@ -5,9 +5,8 @@ import dbConnect from '../../../../lib/mongodb';
 import User from '../../../../models/User';
 import bcrypt from 'bcryptjs';
 import { generateAccountNumber, generateRoutingNumber, generateBitcoinAddress } from '../../../../lib/generators';
-import transporter from '@/lib/mail';
+import { transporter } from '@/lib/mail'; // Changed to named import
 import { SentMessageInfo } from 'nodemailer';
-
 
 export async function POST(request: NextRequest) {
   try {

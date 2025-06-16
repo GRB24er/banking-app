@@ -4,8 +4,9 @@ import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
-import transporter from '@/lib/mail';
+import { transporter } from '@/lib/mail'; // Changed to named import
 import { OWNER_EMAIL } from '@/lib/constants';
+
 
 type Action = 'credit' | 'debit';
 type Currency = 'USD' | 'BTC';
