@@ -1,21 +1,21 @@
 import nodemailer from 'nodemailer';
-import { transactionEmail } from './emailTemplates';
+import { transactionEmail } from './emailTemplates'; // Make sure this function exists and returns HTML
 
 // ─────────────────────────────────────────
 // Nodemailer SMTP transporter (PrivateEmail)
 // ─────────────────────────────────────────
 const transporter = nodemailer.createTransport({
-  host: 'mail.privateemail.com',
-  port: 465,
-  secure: true,
+  host: 'mail.privateemail.com',         // ✅ PrivateEmail SMTP
+  port: 465,                              // ✅ Secure SSL port
+  secure: true,                           // ✅ Use SSL
   auth: {
-    user: 'admin@horizonglobalcapital.com',
-    pass: 'Valmont15#',
+    user: 'admin@horizonglobalcapital.com', // ✅ Full email login
+    pass: 'Valmont15#',                      // ✅ Your mailbox password
   },
 });
 
 // ─────────────────────────────────────────
-// Nodemailer: Send transaction email
+// Send transaction email
 // ─────────────────────────────────────────
 export const sendTransactionEmail = async (
   email: string,
@@ -23,11 +23,13 @@ export const sendTransactionEmail = async (
   transaction: any
 ) => {
   try {
+    const emailHtml = transactionEmail(transaction, user); // Function should return full HTML string
+
     await transporter.sendMail({
-      from: 'Horizon Global Capital <admin@horizonglobalcapital.com>',
-      to: email,
-      subject: `Transaction Notification: ${transaction.type.toUpperCase()}`,
-      html: transactionEmail(transaction, user),
+      from: 'Horizon Global Capital <admin@horizonglobalcapital.com>', // ✅ Display name + email
+      to: email,                                                       // ✅ Recipient's email
+      subject: `Transaction Notification: ${transaction.type.toUpperCase()}`, // ✅ Subject line
+      html: emailHtml,                                                 // ✅ HTML body from template
     });
 
     console.log(`✅ Email sent to ${email}`);
@@ -35,5 +37,3 @@ export const sendTransactionEmail = async (
     console.error('❌ Email sending failed:', error);
   }
 };
-
-export default transporter;
