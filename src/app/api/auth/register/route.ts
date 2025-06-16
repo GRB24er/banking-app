@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '../../../../lib/mongodb';
 import User from '../../../../models/User';
 import { generateAccountNumber, generateRoutingNumber, generateBitcoinAddress } from '../../../../lib/generators';
-import { transporter } from '@/lib/mail';
-import { SentMessageInfo } from 'nodemailer';
+// import { transporter } from '@/lib/mail'; // 🔒 Temporarily disabled to bypass Vercel build issue
+// import { SentMessageInfo } from 'nodemailer'; // 🔒 Temporarily disabled
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
       bitcoinAddress,
     });
 
+    // 🔒 COMMENTED OUT EMAIL SENDING FOR DEPLOYMENT ON VERCEL
+    /*
     const mailOptions = {
       from: 'Horizon Global Capital <admin@horizonglobalcapital.com>',
       to: email,
@@ -75,6 +77,7 @@ export async function POST(request: NextRequest) {
         console.log('Signup email sent:', info.response);
       }
     });
+    */
 
     return NextResponse.json(
       { message: 'User created successfully', userId: newUser._id },
