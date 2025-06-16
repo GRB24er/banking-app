@@ -1,21 +1,21 @@
 import nodemailer from 'nodemailer';
-import { transactionEmail } from './emailTemplates'; // Make sure this function exists and returns HTML
+import { transactionEmail } from './emailTemplates';
 
 // ─────────────────────────────────────────
-// Nodemailer SMTP transporter (PrivateEmail)
+// Create Nodemailer transporter
 // ─────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: 'mail.privateemail.com',         // ✅ PrivateEmail SMTP
-  port: 465,                              // ✅ Secure SSL port
-  secure: true,                           // ✅ Use SSL
+export const transporter = nodemailer.createTransport({
+  host: 'mail.privateemail.com',
+  port: 465,
+  secure: true,
   auth: {
-    user: 'admin@horizonglobalcapital.com', // ✅ Full email login
-    pass: 'Valmont15#',                      // ✅ Your mailbox password
+    user: 'admin@horizonglobalcapital.com',
+    pass: 'Valmont15#',
   },
 });
 
 // ─────────────────────────────────────────
-// Send transaction email
+// Send Transaction Email (Named Export)
 // ─────────────────────────────────────────
 export const sendTransactionEmail = async (
   email: string,
@@ -23,13 +23,13 @@ export const sendTransactionEmail = async (
   transaction: any
 ) => {
   try {
-    const emailHtml = transactionEmail(transaction, user); // Function should return full HTML string
+    const html = transactionEmail(transaction, user);
 
     await transporter.sendMail({
-      from: 'Horizon Global Capital <admin@horizonglobalcapital.com>', // ✅ Display name + email
-      to: email,                                                       // ✅ Recipient's email
-      subject: `Transaction Notification: ${transaction.type.toUpperCase()}`, // ✅ Subject line
-      html: emailHtml,                                                 // ✅ HTML body from template
+      from: 'Horizon Global Capital <admin@horizonglobalcapital.com>',
+      to: email,
+      subject: `Transaction Notification: ${transaction.type.toUpperCase()}`,
+      html,
     });
 
     console.log(`✅ Email sent to ${email}`);
