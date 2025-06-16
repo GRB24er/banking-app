@@ -4,56 +4,31 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
-// Type declarations
-interface MongooseUser {
-  _id: any;
-  name: string;
-  email: string;
-  role: string;
-  balance: number;
-  password: string;
-}
+// Hardcoded auth secret
+const AUTH_SECRET = '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
 
-interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  balance: number;
-}
-
-// Extended JWT type
 declare module 'next-auth/jwt' {
   interface JWT {
     id?: string;
     role?: string;
     balance?: number;
+    btcBalance?: number;
   }
 }
 
-// Extended Session type
 declare module 'next-auth' {
   interface Session {
     user: {
+      id?: string;
       name?: string | null;
       email?: string | null;
       image?: string | null;
-      id?: string;
       role?: string;
       balance?: number;
+      btcBalance?: number;
     };
   }
 }
-
-// Password comparison with timing-safe equality
-const comparePasswords = async (inputPassword: string, hashedPassword: string) => {
-  try {
-    return await bcrypt.compare(inputPassword, hashedPassword);
-  } catch (error) {
-    console.error('Password comparison error:', error);
-    return false;
-  }
-};
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -64,85 +39,70 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'text', placeholder: 'you@example.com' },
+        email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials.password) {
-            throw new Error('Both email and password are required');
+            throw new Error('Email and password required');
           }
 
           await dbConnect();
+          const user = await User.findOne({ email: credentials.email.toLowerCase() })
+            .select('+password')
+            .lean();
 
-          const mongooseUser = await User.findOne({
-            email: credentials.email.toLowerCase()
-          }).select('+password').lean() as MongooseUser | null;
+          if (!user) throw new Error('Invalid credentials');
 
-          if (!mongooseUser) {
-            throw new Error('Invalid credentials');
-          }
-
-          const isValid = await comparePasswords(
-            credentials.password,
-            mongooseUser.password
-          );
-
-          if (!isValid) {
-            throw new Error('Invalid credentials');
-          }
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) throw new Error('Invalid credentials');
 
           return {
-            id: mongooseUser._id.toString(),
-            name: mongooseUser.name,
-            email: mongooseUser.email,
-            role: mongooseUser.role,
-            balance: mongooseUser.balance
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: user.role || 'user',
+            balance: user.balance || 0,
+            btcBalance: user.btcBalance || 0
           };
         } catch (error) {
-          console.error('Authentication error:', error);
+          console.error('Auth error:', error);
           return null;
         }
       }
     })
   ],
+  secret: AUTH_SECRET,
   pages: {
     signIn: '/auth/signin',
-    error: '/auth/signin' // Redirect to signin on auth errors
+    error: '/auth/signin'
   },
-  secret: '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae',
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as AuthUser).id;
-        token.role = (user as AuthUser).role;
-        token.balance = (user as AuthUser).balance;
+        token.id = user.id;
+        token.role = (user as any).role;
+        token.balance = (user as any).balance;
+        token.btcBalance = (user as any).btcBalance;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id || '';
-        session.user.role = token.role || 'user';
-        session.user.balance = token.balance || 0;
-      }
+      session.user.id = token.id as string;
+      session.user.role = token.role as string;
+      session.user.balance = token.balance as number;
+      session.user.btcBalance = token.btcBalance as number;
       return session;
-    },
-    async redirect({ url, baseUrl }) {
-      // Allows relative callback URLs
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
-      // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
     }
   },
-  debug: process.env.NODE_ENV === 'development',
+  debug: false, // Disable in production
   events: {
     async signIn({ user }) {
-      console.log(`User ${user.email} signed in`);
+      console.log(`User signed in: ${user.email}`);
     },
     async signOut({ token }) {
-      console.log(`User ${token.email} signed out`);
+      console.log(`User signed out: ${token.email}`);
     }
   }
 };

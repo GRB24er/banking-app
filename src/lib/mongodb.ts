@@ -2,9 +2,8 @@ import mongoose, { ConnectOptions } from 'mongoose';
 import User from '@/models/User';
 import { ITransaction } from '@/types/transaction';
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  'mongodb+srv://jp87er:OyDiyQgYTV2yOcQV@justimagine.scciqgh.mongodb.net/bankdb?retryWrites=true&w=majority';
+// Hardcoded MongoDB connection string
+const MONGODB_URI = 'mongodb+srv://jp87er:OyDiyQgYTV2yOcQV@justimagine.scciqgh.mongodb.net/bankdb?retryWrites=true&w=majority';
 
 // Properly typed global mongoose cache
 declare global {
@@ -56,8 +55,7 @@ async function connectDB(): Promise<typeof mongoose> {
   return cached.conn;
 }
 
-
-// ──────── Main DB Logic ─────────
+// Main DB Operations
 export const db = {
   async getUserById(id: string) {
     await connectDB();
@@ -108,11 +106,10 @@ export const db = {
       if (newBalance < 0) throw new Error('Insufficient funds');
 
       const transaction: ITransaction = {
-        id: new mongoose.Types.ObjectId().toHexString(),
         type: transactionData.type!,
         amount: Math.abs(amount),
         description: transactionData.description!,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(), // Using Date type
         balanceAfter: newBalance,
         relatedUser: transactionData.relatedUser,
         currency: transactionData.currency || 'USD',
@@ -145,11 +142,10 @@ export const db = {
       if (newBalance < 0) throw new Error('Insufficient Bitcoin balance');
 
       const transaction: ITransaction = {
-        id: new mongoose.Types.ObjectId().toHexString(),
         type: transactionData.type!,
         amount: Math.abs(amount),
         description: transactionData.description!,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(), // Using Date type
         balanceAfter: newBalance,
         relatedUser: transactionData.relatedUser,
         currency: transactionData.currency || 'BTC',
@@ -181,7 +177,7 @@ export const db = {
   },
 };
 
-// ──────── Connection Events (Optional but useful) ─────────
+// Connection Events
 mongoose.connection.on('connected', () => console.log('🟢 Mongoose connected to DB'));
 mongoose.connection.on('error', (err) => console.error('🔴 Mongoose connection error:', err));
 mongoose.connection.on('disconnected', () => console.log('🟡 Mongoose disconnected'));

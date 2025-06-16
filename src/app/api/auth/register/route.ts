@@ -1,16 +1,13 @@
-// File: src/app/api/auth/register/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '../../../../lib/mongodb';
 import User from '../../../../models/User';
 import bcrypt from 'bcryptjs';
 import { generateAccountNumber, generateRoutingNumber, generateBitcoinAddress } from '../../../../lib/generators';
-import { transporter } from '@/lib/mail'; // Changed to named import
+import transporter from '@/lib/mail'; // ✅ Corrected import
 import { SentMessageInfo } from 'nodemailer';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1) Parse name, email, password from the request body
     const { name, email, password } = await request.json();
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -19,10 +16,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2) Connect to MongoDB
     await dbConnect();
 
-    // 3) Check if a user with this email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
@@ -31,15 +26,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4) Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 5) Generate the new accountNumber, routingNumber, bitcoinAddress
-    const accountNumber = generateAccountNumber();     // e.g. "8392014721"
-    const routingNumber = generateRoutingNumber();     // e.g. "021000021"
-    const bitcoinAddress = generateBitcoinAddress();   // e.g. "1A..." (34 chars)
+    const accountNumber = generateAccountNumber();
+    const routingNumber = generateRoutingNumber();
+    const bitcoinAddress = generateBitcoinAddress();
 
-    // 6) Create the new user document
     const newUser = await User.create({
       name,
       email,
@@ -51,7 +43,6 @@ export async function POST(request: NextRequest) {
       bitcoinAddress,
     });
 
-    // 7) Send the welcome email (using hard‐coded SMTP credentials from lib/mail.ts)
     const mailOptions = {
       from: 'Horizon Global Capital <admin@horizonglobalcapital.com>',
       to: email,
@@ -81,14 +72,13 @@ export async function POST(request: NextRequest) {
     };
 
     transporter.sendMail(mailOptions, (err: Error | null, info: SentMessageInfo) => {
-  if (err) {
-    console.error('Error sending signup email:', err);
-  } else {
-    console.log('Signup email sent:', info.response);
-  }
-});
+      if (err) {
+        console.error('Error sending signup email:', err);
+      } else {
+        console.log('Signup email sent:', info.response);
+      }
+    });
 
-    // 8) Return a success response
     return NextResponse.json(
       { message: 'User created successfully', userId: newUser._id },
       { status: 201 }
