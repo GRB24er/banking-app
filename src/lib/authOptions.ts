@@ -2,9 +2,8 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import bcrypt from 'bcryptjs';
 
-// Hardcoded auth secret
+// Hardcoded JWT secret (store securely in env for production)
 const AUTH_SECRET = '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
 
 declare module 'next-auth/jwt' {
@@ -44,27 +43,27 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-          if (!credentials?.email || !credentials.password) {
+          if (!credentials?.email || !credentials?.password) {
             throw new Error('Email and password required');
           }
 
           await dbConnect();
+
           const user = await User.findOne({ email: credentials.email.toLowerCase() })
-            .select('+password')
-            .lean();
+            .select('+password');
 
           if (!user) throw new Error('Invalid credentials');
 
-          const isValid = await bcrypt.compare(credentials.password, user.password);
-          if (!isValid) throw new Error('Invalid credentials');
+          const isMatch = await user.comparePassword(credentials.password);
+          if (!isMatch) throw new Error('Invalid credentials');
 
           return {
             id: user._id.toString(),
             name: user.name,
             email: user.email,
-            role: user.role || 'user',
+            role: (user as any).role || 'user',
             balance: user.balance || 0,
-            btcBalance: user.btcBalance || 0
+            btcBalance: user.btcBalance || 0,
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -76,7 +75,7 @@ export const authOptions: NextAuthOptions = {
   secret: AUTH_SECRET,
   pages: {
     signIn: '/auth/signin',
-    error: '/auth/signin'
+    error: '/auth/signin',
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -89,20 +88,20 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id as string;
-      session.user.role = token.role as string;
-      session.user.balance = token.balance as number;
-      session.user.btcBalance = token.btcBalance as number;
+      session.user.id = token.id;
+      session.user.role = token.role;
+      session.user.balance = token.balance;
+      session.user.btcBalance = token.btcBalance;
       return session;
     }
   },
-  debug: false, // Disable in production
   events: {
     async signIn({ user }) {
-      console.log(`User signed in: ${user.email}`);
+      console.log(`✅ User signed in: ${user?.email}`);
     },
     async signOut({ token }) {
-      console.log(`User signed out: ${token.email}`);
+      console.log(`❌ User signed out: ${token?.email}`);
     }
-  }
+  },
+  debug: false,
 };

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 
+
 // Using named exports
 export const transporter = nodemailer.createTransport({
   host: 'mail.privateemail.com',
