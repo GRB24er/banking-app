@@ -3,7 +3,7 @@ import dbConnect from '../../../../lib/mongodb';
 import User from '../../../../models/User';
 import bcrypt from 'bcryptjs';
 import { generateAccountNumber, generateRoutingNumber, generateBitcoinAddress } from '../../../../lib/generators';
-import transporter from '@/lib/mail'; // ✅ Corrected import
+import { transporter, sendTransactionEmail } from '@/lib/mail';
 import { SentMessageInfo } from 'nodemailer';
 
 export async function POST(request: NextRequest) {
