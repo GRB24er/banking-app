@@ -3,7 +3,7 @@ import User from '@/models/User';
 import { ITransaction } from '@/types/transaction';
 
 // Hardcoded MongoDB connection string
-const MONGODB_URI = 'mongodb+srv://jp87er:OyDiyQgYTV2yOcQV@justimagine.scciqgh.mongodb.net/bankdb?retryWrites=true&w=majority';
+const MONGODB_URI = 'mongodb+srv://sarahmorganme2844:WWznuJXRceASUfa4@justimagine.pvtpi05.mongodb.net/?retryWrites=true&w=majority&appName=Justimagine';
 
 // Properly typed global mongoose cache
 declare global {
