@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './sendMoney.module.css';
+import type { ITransaction } from '@/types/transaction';
 
 interface ApiResponse {
   success: boolean;
-  transactionId: string;
+  debit: ITransaction;
+  credit: ITransaction;
   message?: string;
 }
 
@@ -28,16 +30,14 @@ export default function SendMoneyPage() {
     setErrorMsg(null);
     setSuccessData(null);
 
-    // Basic validation
-    if (sendBy === 'email' && !recipientEmail) {
+    // Validation
+    if (sendBy === 'email' && !recipientEmail.trim()) {
       setErrorMsg('Please enter recipient’s email.');
       return;
     }
-    if (sendBy === 'account') {
-      if (!recipientAccount || !recipientRouting) {
-        setErrorMsg('Please enter recipient’s account number and routing number.');
-        return;
-      }
+    if (sendBy === 'account' && (!recipientAccount.trim() || !recipientRouting.trim())) {
+      setErrorMsg('Please enter recipient’s account and routing numbers.');
+      return;
     }
     if (!amount || Number(amount) <= 0) {
       setErrorMsg('Please enter a valid positive amount.');
@@ -45,15 +45,17 @@ export default function SendMoneyPage() {
     }
 
     setLoading(true);
-    try {
-      const payload: any = {
-        amount: Number(amount),
-        method: sendBy,
-        ...(sendBy === 'email'
-          ? { recipientEmail }
-          : { recipientAccount, recipientRouting }),
-      };
 
+    // Build payload matching API
+    const payload: any = { amount: Number(amount) };
+    if (sendBy === 'email') {
+      payload.email = recipientEmail.trim();
+    } else {
+      payload.accountNumber = recipientAccount.trim();
+      payload.routingNumber = recipientRouting.trim();
+    }
+
+    try {
       const res = await fetch('/api/transactions/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,13 +70,13 @@ export default function SendMoneyPage() {
       }
 
       setSuccessData(data);
-      // Clear form
+      // reset form
       setRecipientEmail('');
       setRecipientAccount('');
       setRecipientRouting('');
       setAmount('');
     } catch (err) {
-      console.error(err);
+      console.error('send-money error', err);
       setLoading(false);
       setErrorMsg('Network or server error. Please try again.');
     }
@@ -82,11 +84,9 @@ export default function SendMoneyPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.navBack}>
-        <button onClick={() => router.back()} className={styles.backButton}>
-          ← Back
-        </button>
-      </div>
+      <button onClick={() => router.back()} className={styles.backButton}>
+        ← Back
+      </button>
 
       <h1 className={styles.title}>Send Money</h1>
 
@@ -95,7 +95,8 @@ export default function SendMoneyPage() {
         <div className={styles.successBox}>
           <p>✅ Transfer Successful!</p>
           <p>
-            Transaction ID: <strong>{successData.transactionId}</strong>
+            Transaction Reference:{' '}
+            <strong>{successData.credit.reference}</strong>
           </p>
           <p>A confirmation email has been sent.</p>
         </div>
@@ -119,7 +120,7 @@ export default function SendMoneyPage() {
               />
               Email
             </label>
-            <label>
+            <label className="ml-4">
               <input
                 type="radio"
                 name="sendBy"
@@ -135,7 +136,7 @@ export default function SendMoneyPage() {
           </div>
         </div>
 
-        {sendBy === 'email' && (
+        {sendBy === 'email' ? (
           <div className={styles.formField}>
             <label htmlFor="recipientEmail">Recipient Email</label>
             <input
@@ -147,9 +148,7 @@ export default function SendMoneyPage() {
               required
             />
           </div>
-        )}
-
-        {sendBy === 'account' && (
+        ) : (
           <>
             <div className={styles.formField}>
               <label htmlFor="recipientAccount">Account Number</label>

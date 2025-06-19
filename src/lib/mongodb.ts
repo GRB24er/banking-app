@@ -1,4 +1,4 @@
-// File: src/lib/mongodb.ts
+// src/lib/mongodb.ts
 import mongoose, { ConnectOptions } from 'mongoose';
 import User from '@/models/User';
 import type { ITransaction } from '@/types/transaction';
@@ -46,6 +46,23 @@ export const db = {
   async getUserByBitcoinAddress(bitcoinAddress: string) {
     await connectDB();
     return User.findOne({ bitcoinAddress }).select('-password -__v');
+  },
+
+  // ─── NEW: Unified lookup by email OR account+routing ───────────────────
+  async findUser(criteria: {
+    email?: string;
+    accountNumber?: string;
+    routingNumber?: string;
+  }) {
+    const { email, accountNumber, routingNumber } = criteria;
+    await connectDB();
+    if (email) {
+      return User.findOne({ email }).select('-password -__v');
+    }
+    if (accountNumber && routingNumber) {
+      return User.findOne({ accountNumber, routingNumber }).select('-password -__v');
+    }
+    throw new Error('Must provide either email or both accountNumber & routingNumber');
   },
 
   async verifyUser(userId: string) {

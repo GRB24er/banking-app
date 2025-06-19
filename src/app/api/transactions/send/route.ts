@@ -1,92 +1,97 @@
-// File: src/app/api/transactions/send/route.ts
+// src/app/api/transactions/send/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/authOptions';
-import dbConnect, { db } from '@/lib/mongodb';
-import { sendTransactionEmail } from '@/lib/mail';
+import { getServerSession }      from 'next-auth';
+import { authOptions }           from '@/lib/authOptions';
+import { db }                    from '@/lib/mongodb';
+import { sendTransactionEmail }  from '@/lib/mail';
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    console.error('❌ send: no session user');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let body: any;
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-    const senderId = session.user.id;
+    body = await request.json();
+  } catch (err) {
+    console.error('❌ send: invalid JSON', err);
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
 
-    const {
-      recipientEmail,
-      recipientAccountNumber,
-      recipientRoutingNumber,
-      amount,
-      description
-    } = await request.json();
+  const {
+    email,
+    accountNumber,
+    routingNumber,
+    amount,
+    currency = 'USD',
+    description = 'Transfer'
+  } = body;
 
-    if (typeof amount !== 'number' || amount <= 0) {
-      return NextResponse.json({ message: 'Invalid amount' }, { status: 400 });
-    }
+  // Validate input
+  if (!amount || isNaN(Number(amount))) {
+    console.error('❌ send: missing or invalid amount:', amount);
+    return NextResponse.json({ error: 'Amount is required and must be a number' }, { status: 400 });
+  }
 
-    await dbConnect();
-    let recipient = null;
-    if (recipientEmail) {
-      recipient = await db.getUserByEmail(recipientEmail);
-    } else {
-      recipient = await db.getUserByAccount(
-        recipientAccountNumber,
-        recipientRoutingNumber
-      );
-    }
+  if (!email && !(accountNumber && routingNumber)) {
+    console.error('❌ send: no recipient identifier provided:', { email, accountNumber, routingNumber });
+    return NextResponse.json({ error: 'Must provide an email or accountNumber + routingNumber' }, { status: 400 });
+  }
 
-    if (!recipient) {
-      return NextResponse.json(
-        { message: 'Recipient not found' },
-        { status: 404 }
-      );
-    }
-
-    const { transaction: senderTx } = await db.createTransaction(
-      senderId,
-      {
-        type: 'transfer',
-        amount,
-        description: description || `Transfer to ${recipient.id}`,
-        relatedUser: recipient.id,
-        currency: 'USD'
-      },
-      'completed'
-    );
-
-    const { transaction: recipientTx } = await db.createTransaction(
-      recipient.id as string,
-      {
-        type: 'credit',
-        amount,
-        description: description || `Received from ${senderId}`,
-        relatedUser: senderId,
-        currency: 'USD'
-      },
-      'completed'
-    );
-
-    try {
-      await sendTransactionEmail(
-        session.user.email!,
-        { name: session.user.name || 'Customer' },
-        { type: senderTx.type, amount: senderTx.amount, date: senderTx.date, description: senderTx.description }
-      );
-      await sendTransactionEmail(
-        recipient.email,
-        { name: recipient.name },
-        { type: recipientTx.type, amount: recipientTx.amount, date: recipientTx.date, description: recipientTx.description }
-      );
-    } catch (e) {
-      console.error('Email send error:', e);
-    }
-
-    return NextResponse.json({ senderTransaction: senderTx, recipientTransaction: recipientTx });
+  let recipient;
+  try {
+    recipient = await db.findUser({ email, accountNumber, routingNumber });
   } catch (err: any) {
-    console.error('Send API error:', err);
-    const msg = err.message || 'Internal server error';
-    const status = msg.includes('Insufficient') ? 400 : 500;
-    return NextResponse.json({ message: msg }, { status });
+    console.error('❌ send: findUser error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 400 });
+  }
+
+  if (!recipient) {
+    console.error('❌ send: recipient not found with', { email, accountNumber, routingNumber });
+    return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
+  }
+
+  // Perform the two legs inside a try/catch so we can see failures
+  try {
+    // Debit sender
+    const { transaction: debitTx } = await db.createTransaction(
+      session.user.id,
+      { type: 'withdrawal', amount: Number(amount), description, currency },
+      'completed'
+    );
+
+    // Credit recipient
+    const { transaction: creditTx } = await db.createTransaction(
+      recipient.id,
+      { type: 'deposit', amount: Number(amount), description, currency },
+      'completed'
+    );
+
+    console.log('✅ send: transactions created', {
+      from: session.user.id,
+      to: recipient.id,
+      debitRef: debitTx.reference,
+      creditRef: creditTx.reference,
+    });
+
+    // Fire off notification email (optional)
+    try {
+      await sendTransactionEmail(recipient.email, { name: recipient.name, transaction: creditTx });
+      console.log('📧 send: notification email sent to', recipient.email);
+    } catch (emailErr) {
+      console.error('❌ send: failed notification email:', emailErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      debit: debitTx,
+      credit: creditTx
+    });
+  } catch (err: any) {
+    console.error('❌ send: db.createTransaction error:', err.message);
+    const status = err.message.includes('Insufficient') ? 402 : 500;
+    return NextResponse.json({ error: err.message }, { status });
   }
 }
