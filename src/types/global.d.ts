@@ -15,18 +15,14 @@ declare module '@/models/Transaction' {
 declare module '@/lib/mongodb' {
   const dbConnect: () => Promise<void>;
   export default dbConnect;
+  export const db: any;
 }
 
 declare module '@/lib/mail' {
-  const transporter: any;
-  export default transporter;
+  export const transporter: any;
+  export const sendTransactionEmail: any;
+  export const sendWelcomeEmail: any;
 }
 
 // src/types/global.d.ts
-declare type UserType = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  balance: number;
-};
+// Additional type declarations can be added here

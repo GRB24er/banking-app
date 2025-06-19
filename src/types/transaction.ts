@@ -8,6 +8,9 @@ export interface ITransaction {
   description: string;
   date: Date;
   balanceAfter: number;
-  relatedUser?: mongoose.Types.ObjectId;
+  relatedUser?: mongoose.Types.ObjectId | string;
   currency?: string;
+  status: 'pending' | 'completed' | 'failed' | 'reversed';
+  reference: string;
+  metadata?: Record<string, any>;
 }

@@ -1,34 +1,24 @@
-// File: src/app/api/transactions/recent/route.ts
+// src/app/api/transactions/recent/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '../../../../lib/mongodb';
-import Transaction from '../../../../models/Transaction';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/authOptions';
+import { getServerSession }     from 'next-auth/next';
+import { authOptions }          from '@/lib/authOptions';
+import { db }                   from '@/lib/mongodb';
 
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const url   = new URL(request.url);
+  const limit = parseInt(url.searchParams.get('limit')  || '10', 10);
+  const page  = parseInt(url.searchParams.get('page')   || '1',  10);
+
   try {
-    // 1) Identify the logged-in user via NextAuth session
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    await dbConnect();
-    const userEmail = session.user.email;
-    const user = await (await import('../../../../models/User')).default.findOne({ email: userEmail });
-    if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
-    }
-
-    // 2) Fetch the 20 most recent transactions for this user
-    const recentTxns = await Transaction.find({ userId: user._id })
-      .sort({ date: -1 })
-      .limit(20)
-      .lean();
-
-    return NextResponse.json({ transactions: recentTxns }, { status: 200 });
-  } catch (error: any) {
-    console.error('Error fetching recent transactions:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    const transactions = await db.getTransactions(session.user.id, { limit, page });
+    return NextResponse.json({ transactions }, { status: 200 });
+  } catch (err: any) {
+    console.error('Recent fetch error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

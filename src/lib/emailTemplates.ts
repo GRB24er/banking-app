@@ -1,9 +1,29 @@
 // src/lib/emailTemplates.ts
-export const transactionEmail = (transaction: any, user: any) => {
-  const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-  
-  const transactionTypes: Record<string, string> = {
+export interface TransactionDetail {
+  type: 'deposit' | 'withdrawal' | 'transfer' | 'debit' | 'credit';
+  date: string;
+  description: string;
+  amount: number;
+  balanceAfter: number;
+  status: 'Completed' | 'Pending';
+  reference: string;
+}
+
+export interface WelcomeEmailData {
+  name: string;
+  balance: number;
+  bitcoinBalance: number;
+  accountStatus: string;
+  transactions: TransactionDetail[];
+  nextSteps: string[];
+}
+
+export function welcomeEmailTemplate(data: WelcomeEmailData): string {
+  const { name, balance, bitcoinBalance, accountStatus, transactions, nextSteps } = data;
+  const fmt = (amt: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt);
+
+  const labels: Record<TransactionDetail['type'], string> = {
     deposit: 'Deposit Received',
     withdrawal: 'Withdrawal Processed',
     transfer: 'Transfer Completed',
@@ -11,70 +31,61 @@ export const transactionEmail = (transaction: any, user: any) => {
     credit: 'Account Credit'
   };
 
+  const rows = transactions.map(tx => {
+    const icon = tx.status === 'Pending' ? '✓' : '✔';
+    const label = labels[tx.type];
+    const sign = tx.amount >= 0 ? '+' : '-';
+    return `
+      <tr>
+        <td colspan="2" style="padding:8px 0;font-weight:bold;">${icon} ${label}</td>
+      </tr>
+      <tr><td colspan="2" style="padding:4px 8px;">${tx.date}</td></tr>
+      <tr><td colspan="2" style="padding:4px 8px;font-style:italic;">${tx.description}</td></tr>
+      <tr>
+        <td style="padding:4px 8px;">${sign}${fmt(Math.abs(tx.amount))}</td>
+        <td style="padding:4px 8px;">Balance: ${fmt(tx.balanceAfter)}</td>
+      </tr>
+      <tr><td colspan="2" style="padding:4px 8px;">[${tx.status}] Ref: ${tx.reference}</td></tr>
+      <tr><td colspan="2" style="padding:8px 0;"></td></tr>
+    `;
+  }).join('');
+
+  const steps = nextSteps.map(s => `<li style="margin-bottom:6px;">✓ ${s}</li>`).join('');
+
   return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Transaction Notification</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; }
-    .header { background-color: #1a365d; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { padding: 30px; }
-    .transaction-details { background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
-    .detail-row { display: flex; margin-bottom: 10px; }
-    .detail-label { font-weight: 600; width: 150px; }
-    .footer { text-align: center; padding: 20px; color: #777; font-size: 0.9em; }
-    .logo { font-size: 24px; font-weight: bold; color: white; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">Horizon Global Capital</div>
-    </div>
-    
-    <div class="content">
-      <h2>Transaction Notification</h2>
-      <p>Dear ${user.name},</p>
-      <p>This email confirms the following transaction on your account:</p>
-      
-      <div class="transaction-details">
-        <div class="detail-row">
-          <div class="detail-label">Transaction Type:</div>
-          <div>${transactionTypes[transaction.type] || transaction.type}</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Amount:</div>
-          <div>${formatCurrency(transaction.amount)}</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Date & Time:</div>
-          <div>${new Date(transaction.date).toLocaleString()}</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Description:</div>
-          <div>${transaction.description}</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">New Balance:</div>
-          <div>${formatCurrency(transaction.balanceAfter)}</div>
-        </div>
-      </div>
-      
-      <p>If you did not initiate this transaction, please contact our security team immediately at 
-        <a href="mailto:security@horizonglobal.com">security@horizonglobal.com</a>.
-      </p>
-      <p>Thank you for banking with Horizon Global Capital.</p>
-    </div>
-    
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} Horizon Global Capital. All rights reserved.</p>
-      <p>This is an automated message - please do not reply directly to this email.</p>
-    </div>
-  </div>
-</body>
-</html>
+  <!DOCTYPE html>
+  <html><head><meta charset="UTF-8"/><title>Welcome to Horizon Global Capital</title></head>
+  <body style="margin:0;padding:0;background:#f4f4f4;font-family:Segoe UI,Tahoma,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding:20px;background:#f4f4f4;">
+      <tr><td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;">
+          <tr style="background:#1a365d;color:#fff;">
+            <td style="padding:20px;text-align:center;font-size:24px;font-weight:bold;">
+              Horizon Global Capital
+            </td>
+          </tr>
+          <tr><td style="padding:30px;">
+            <h2 style="margin:0 0 16px;">Welcome, ${name}!</h2>
+            <p style="margin-bottom:20px;">Here’s your account snapshot:</p>
+            <p style="font-size:18px;font-weight:bold;">Available Balance: ${fmt(balance)}</p>
+            <p style="font-size:14px;margin-top:4px;">Bitcoin Balance: ${bitcoinBalance.toFixed(8)} BTC</p>
+            <p style="font-size:14px;margin-top:4px;">Account Status: ${accountStatus}</p>
+            <h3 style="margin:16px 0 8px;">Recent Transactions:</h3>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px;">
+              ${rows}
+            </table>
+            <h3 style="margin:16px 0 8px;">Next Steps:</h3>
+            <ul style="padding-left:20px;margin-top:0;">${steps}</ul>
+            <p style="font-size:14px;color:#555;margin-top:20px;">Questions? Reply to this email or call support.</p>
+          </td></tr>
+          <tr style="background:#eee;color:#777;">
+            <td style="padding:15px;text-align:center;font-size:12px;">
+              © ${new Date().getFullYear()} Horizon Global Capital. Do not reply to this automated message.
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body></html>
   `;
-};
+}

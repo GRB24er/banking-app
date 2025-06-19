@@ -1,3 +1,4 @@
+// src/app/profile/page.tsx
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import BackButton from '../../components/BackButton';
@@ -15,17 +16,13 @@ export default async function ProfilePage() {
     );
   }
 
-  const user = session.user as {
+  const { name, email, role, balance = 0, btcBalance = 0 } = session.user as {
     name: string;
     email: string;
     role: string;
     balance?: number;
     btcBalance?: number;
   };
-
-  // Default missing balances to 0
-  const usdBalance = user.balance ?? 0;
-  const btcBalance = user.btcBalance ?? 0;
 
   return (
     <div className={styles.container}>
@@ -36,17 +33,17 @@ export default async function ProfilePage() {
 
       <div className={styles.infoBox}>
         <p>
-          <strong>Name:</strong> {user.name}
+          <strong>Name:</strong> {name}
         </p>
         <p>
-          <strong>Email:</strong> {user.email}
+          <strong>Email:</strong> {email}
         </p>
         <p>
           <strong>Role:</strong>{' '}
-          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+          {role.charAt(0).toUpperCase() + role.slice(1)}
         </p>
         <p>
-          <strong>USD Balance:</strong> ${usdBalance.toFixed(2)}
+          <strong>USD Balance:</strong> ${balance.toFixed(2)}
         </p>
         <p>
           <strong>BTC Balance:</strong> {btcBalance.toFixed(6)} BTC

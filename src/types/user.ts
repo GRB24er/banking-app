@@ -18,6 +18,13 @@ export interface BaseUserType {
     balanceAfter: number;
     relatedUser?: Types.ObjectId | string;
   }>;
+  recurring?: Array<{
+    type: 'debit' | 'credit';
+    amount: number;
+    description?: string;
+    interval: 'daily' | 'weekly' | 'monthly';
+    lastRun?: Date | null;
+  }>;
   formattedBalance?: string;
   formattedBtcBalance?: string;
   createdAt?: Date;
