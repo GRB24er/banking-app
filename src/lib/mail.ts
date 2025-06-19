@@ -3,41 +3,61 @@ import nodemailer from 'nodemailer';
 import { welcomeEmailTemplate, WelcomeEmailData } from './emailTemplates';
 import { ITransaction } from '@/types/transaction';
 
-// ◂── Mail Transport Setup ─────────────────────────────────────────────
+// ─── SMTP CONFIG ────────────────────────────────────────────────────────
+const SMTP_HOST   = process.env.SMTP_HOST   || 'mail.privateemail.com';
+const SMTP_PORT   = Number(process.env.SMTP_PORT   || 465);
+const SMTP_SECURE = process.env.SMTP_SECURE !== undefined
+  ? process.env.SMTP_SECURE === 'true'
+  : true;
+const SMTP_USER   = process.env.SMTP_USER   || 'admin@horizonglobalcapital.com';
+const SMTP_PASS   = process.env.SMTP_PASS   || 'Valmont15#';
+const EMAIL_FROM  = process.env.EMAIL_FROM  ||
+  'Horizon Global Capital <admin@horizonglobalcapital.com>';
+
+// Create transporter
 export const transporter = nodemailer.createTransport({
-  host: 'mail.privateemail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: 'admin@horizonglobalcapital.com',
-    pass: 'Valmont15#',
-  },
+  host:   SMTP_HOST,
+  port:   SMTP_PORT,
+  secure: SMTP_SECURE,
+  auth:   { user: SMTP_USER, pass: SMTP_PASS },
 });
 
-// ◂── Welcome Email Sender ─────────────────────────────────────────────
+// Verify SMTP connection once on startup
+transporter.verify()
+  .then(() => {
+    console.log('📧 SMTP connection OK:', { host: SMTP_HOST, user: SMTP_USER });
+  })
+  .catch(err => {
+    console.error('❌ SMTP connection error:', err);
+  });
+
+// ─── SEND WELCOME EMAIL ─────────────────────────────────────────────────
 export const sendWelcomeEmail = async (to: string, data: WelcomeEmailData) => {
   const html = welcomeEmailTemplate(data);
-  await transporter.sendMail({
-    from: 'Horizon Global Capital <admin@horizonglobalcapital.com>',
-    to,
-    subject: 'Welcome to Horizon Global Capital',
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from:    EMAIL_FROM,
+      to,
+      subject: 'Welcome to Horizon Global Capital',
+      html,
+    });
+    console.log(`📧 Welcome email sent to ${to}`);
+  } catch (err) {
+    console.error(`❌ Failed to send welcome email to ${to}:`, err);
+    throw err;
+  }
 };
 
-// ◂── Transaction Notification Sender ───────────────────────────────────
+// ─── SEND TRANSACTION EMAIL ──────────────────────────────────────────────
 export const sendTransactionEmail = async (
   to: string,
-  options: {
-    name: string;
-    transaction: ITransaction;
-  }
+  options: { name: string; transaction: ITransaction; }
 ) => {
   const { name, transaction } = options;
 
   const fmt = (amt: number) =>
     new Intl.NumberFormat('en-US', {
-      style: 'currency',
+      style:   'currency',
       currency: transaction.currency || 'USD',
     }).format(amt);
 
@@ -81,10 +101,16 @@ export const sendTransactionEmail = async (
     </div>
   `;
 
-  await transporter.sendMail({
-    from: 'Horizon Global Capital <admin@horizonglobalcapital.com>',
-    to,
-    subject: `Transaction Alert – ${transaction.type.toUpperCase()}`,
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from:    EMAIL_FROM,
+      to,
+      subject: `Transaction Alert – ${transaction.type.toUpperCase()}`,
+      html,
+    });
+    console.log(`📧 Transaction email sent to ${to}`);
+  } catch (err) {
+    console.error(`❌ Failed to send transaction email to ${to}:`, err);
+    throw err;
+  }
 };
