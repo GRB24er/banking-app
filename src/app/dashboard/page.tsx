@@ -31,6 +31,7 @@ interface UserData {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
   const [userData, setUserData] = useState<UserData | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,32 +41,42 @@ export default function DashboardPage() {
       router.push('/auth/signin');
       return;
     }
-
-    if (status === 'authenticated' && session?.user?.email) {
+    if (status === 'authenticated') {
       fetchUserData();
     }
-  }, [status, session]);
+  }, [status]);
 
   const fetchUserData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await fetch('/api/user/dashboard', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
       });
+      const data = await res.json();
+      console.log('🔍 dashboard API returned:', data);
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch user data');
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      const data = await res.json();
       setUserData(data.user);
-      setRecentTransactions(data.transactions);
-    } catch (error) {
-      console.error('Error fetching user data:', error);
+
+      // FIX: use tx._id (from API) as key, not tx.reference
+      setRecentTransactions(
+        (data.recent as any[]).map((tx) => ({
+          _id: tx._id,
+          type: tx.type,
+          currency: tx.currency,
+          amount: tx.amount,
+          date: typeof tx.date === 'string'
+            ? tx.date
+            : new Date(tx.date).toISOString(),
+          description: tx.description,
+        }))
+      );
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
       router.push('/auth/signin');
     } finally {
       setLoading(false);
@@ -83,11 +94,11 @@ export default function DashboardPage() {
 
   const {
     name,
-    balance = 0,
-    btcBalance = 0,
-    accountNumber = '',
-    routingNumber = '',
-    bitcoinAddress = '',
+    balance,
+    btcBalance,
+    accountNumber,
+    routingNumber,
+    bitcoinAddress,
   } = userData;
 
   return (
@@ -98,64 +109,34 @@ export default function DashboardPage() {
           <Image src="/icons/logo.svg" alt="Logo" width={32} height={32} />
           <span className={styles.brandName}>Horizon Global Capital</span>
         </div>
-
         <div className={styles.navLinks}>
-          <Link href="/dashboard" className={styles.navLink}>
-            Dashboard
-          </Link>
-          <Link href="/send-money" className={styles.navLink}>
-            Send Money
-          </Link>
-          <Link href="/deposit" className={styles.navLink}>
-            Deposit
-          </Link>
-          <Link href="/transfer" className={styles.navLink}>
-            Transfer
-          </Link>
-          <Link href="/settings" className={styles.navLink}>
-            Settings
-          </Link>
+          <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+          <Link href="/send-money" className={styles.navLink}>Send Money</Link>
+          <Link href="/deposit" className={styles.navLink}>Deposit</Link>
+          <Link href="/transfer" className={styles.navLink}>Transfer</Link>
+          <Link href="/settings" className={styles.navLink}>Settings</Link>
           <Link href="/profile">
-            <div className={styles.profileIcon}>
-              {name.charAt(0).toUpperCase()}
-            </div>
+            <div className={styles.profileIcon}>{name.charAt(0).toUpperCase()}</div>
           </Link>
         </div>
       </div>
 
       {/* Main Content */}
       <div className={styles.mainContent}>
-        {/* Balance & Actions Row */}
+        {/* Balances & Actions */}
         <div className={styles.balanceRow}>
           <div className={styles.balanceCard}>
             <div className={styles.label}>Total Balance (USD)</div>
             <p className={styles.amount}>${balance.toFixed(2)}</p>
           </div>
-
           <div className={styles.balanceCard}>
             <div className={styles.label}>Bitcoin Balance</div>
             <p className={styles.amount}>{btcBalance.toFixed(6)} BTC</p>
           </div>
-
           <div className={styles.actions}>
-            <button 
-              className={styles.actionButton}
-              onClick={() => router.push('/send-money')}
-            >
-              Send Money
-            </button>
-            <button 
-              className={styles.actionButton}
-              onClick={() => router.push('/deposit')}
-            >
-              Deposit
-            </button>
-            <button 
-              className={styles.actionButton}
-              onClick={() => router.push('/transfer')}
-            >
-              Transfer
-            </button>
+            <button onClick={() => router.push('/send-money')} className={styles.actionButton}>Send Money</button>
+            <button onClick={() => router.push('/deposit')} className={styles.actionButton}>Deposit</button>
+            <button onClick={() => router.push('/transfer')} className={styles.actionButton}>Transfer</button>
           </div>
         </div>
 
@@ -171,7 +152,6 @@ export default function DashboardPage() {
             <div className={styles.accountBalance}>${balance.toFixed(2)}</div>
             <div className={styles.accountNote}>Routing: {routingNumber}</div>
           </div>
-
           <div className={styles.cryptoCard}>
             <div className={styles.cardHeader}>
               <h3>Bitcoin Wallet</h3>
@@ -202,9 +182,9 @@ export default function DashboardPage() {
               <tbody>
                 {recentTransactions.map((txn) => (
                   <tr key={txn._id}>
-                    <td className={styles.dateCell}>{txn.date}</td>
+                    <td className={styles.dateCell}>{new Date(txn.date).toLocaleString()}</td>
                     <td>{txn.description || 'No description'}</td>
-                    <td>{txn.type.replace('_', ' ')}</td>
+                    <td>{txn.type.replace(/_/g, ' ')}</td>
                     <td className={txn.amount >= 0 ? styles.positiveAmount : styles.negativeAmount}>
                       {txn.amount >= 0 ? '+' : '-'}
                       {txn.currency === 'USD' ? '$' : ''}
