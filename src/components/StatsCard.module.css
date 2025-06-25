@@ -1,0 +1,47 @@
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: var(--white);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+}
+.chart {
+  width: 80px;
+  height: 80px;
+}
+.bg {
+  fill: none;
+  stroke: var(--light-gray);
+  stroke-width: 4;
+}
+.fg {
+  fill: none;
+  stroke: var(--primary-color);
+  stroke-width: 4;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+.info h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+.info p {
+  margin: 0.25rem 0;
+  color: var(--text-muted);
+}
+.info strong {
+  font-size: 1.5rem;
+}
+.addBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+}

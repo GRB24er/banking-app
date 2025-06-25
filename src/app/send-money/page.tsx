@@ -9,18 +9,16 @@ interface ApiResponse {
   success: boolean;
   debit: ITransaction;
   credit: ITransaction;
-  message?: string;
+  error?: string;
 }
 
 export default function SendMoneyPage() {
   const router = useRouter();
-
   const [sendBy, setSendBy] = useState<'email' | 'account'>('email');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientAccount, setRecipientAccount] = useState('');
   const [recipientRouting, setRecipientRouting] = useState('');
   const [amount, setAmount] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<ApiResponse | null>(null);
@@ -32,22 +30,22 @@ export default function SendMoneyPage() {
 
     // Validation
     if (sendBy === 'email' && !recipientEmail.trim()) {
-      setErrorMsg('Please enter recipient’s email.');
+      setErrorMsg('Please enter the recipient’s email.');
       return;
     }
     if (sendBy === 'account' && (!recipientAccount.trim() || !recipientRouting.trim())) {
-      setErrorMsg('Please enter recipient’s account and routing numbers.');
+      setErrorMsg('Please enter the recipient’s account and routing numbers.');
       return;
     }
-    if (!amount || Number(amount) <= 0) {
+    const amtNum = parseFloat(amount);
+    if (isNaN(amtNum) || amtNum <= 0) {
       setErrorMsg('Please enter a valid positive amount.');
       return;
     }
 
     setLoading(true);
 
-    // Build payload matching API
-    const payload: any = { amount: Number(amount) };
+    const payload: any = { amount: amtNum };
     if (sendBy === 'email') {
       payload.email = recipientEmail.trim();
     } else {
@@ -65,20 +63,17 @@ export default function SendMoneyPage() {
       setLoading(false);
 
       if (!data.success) {
-        setErrorMsg(data.message || 'Transaction failed.');
+        setErrorMsg(data.error || 'Transaction failed.');
         return;
       }
 
       setSuccessData(data);
-      // reset form
-      setRecipientEmail('');
-      setRecipientAccount('');
-      setRecipientRouting('');
-      setAmount('');
+      // Navigate back to dashboard (it will re-fetch fresh transaction data)
+      router.push('/dashboard');
     } catch (err) {
-      console.error('send-money error', err);
+      console.error('SendMoney error', err);
       setLoading(false);
-      setErrorMsg('Network or server error. Please try again.');
+      setErrorMsg('Network error. Please try again.');
     }
   };
 
@@ -95,10 +90,8 @@ export default function SendMoneyPage() {
         <div className={styles.successBox}>
           <p>✅ Transfer Successful!</p>
           <p>
-            Transaction Reference:{' '}
-            <strong>{successData.credit.reference}</strong>
+            Reference: <strong>{successData.credit.reference}</strong>
           </p>
-          <p>A confirmation email has been sent.</p>
         </div>
       )}
 
@@ -120,7 +113,7 @@ export default function SendMoneyPage() {
               />
               Email
             </label>
-            <label className="ml-4">
+            <label>
               <input
                 type="radio"
                 name="sendBy"

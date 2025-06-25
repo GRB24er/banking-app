@@ -1,111 +1,195 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useState, useEffect }      from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import styles                       from './admin.module.css';
+
+interface UserRow {
+  id:        string;
+  name:      string;
+  email:     string;
+  role:      string;
+  verified:  boolean;
+}
+
+interface RecentTx {
+  id:     string;
+  type:   string;
+  amount: number;
+  date:   string;
+}
 
 export default function AdminPage() {
-  const [data, setData] = useState<any>(null);
+  const { data: session, status } = useSession();
+  const [users, setUsers]         = useState<UserRow[]>([]);
+  const [recent, setRecent]       = useState<RecentTx[]>([]);
+  const [search, setSearch]       = useState('');
+  const [page, setPage]           = useState(0);
+  const [error, setError]         = useState<string|null>(null);
+  const pageSize = 10;
 
+  // Load overview (users + recent)
+  async function load() {
+    try {
+      const res = await fetch('/api/admin/overview');
+      if (!res.ok) throw new Error('Failed to load');
+      const json = await res.json();
+      setUsers(json.users);
+      setRecent(json.recent);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  }
+
+  // Perform an admin action and reload
+  async function action(url: string, payload?: any) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: payload ? JSON.stringify(payload) : undefined
+    });
+    if (!res.ok) {
+      const { error } = await res.json();
+      throw new Error(error || 'Action failed');
+    }
+    await load();
+  }
+
+  // Initial data fetch
   useEffect(() => {
-    fetch('/api/admin/overview')
-      .then(res => res.json())
-      .then(setData);
-  }, []);
+    if (status === 'authenticated' && session?.user.role === 'admin') {
+      load();
+    }
+  }, [status, session]);
 
-  if (!data) return <p>Loading admin overview...</p>;
+  // Auth & role guards
+  if (status === 'loading') return <p className={styles.loading}>Loading…</p>;
+  if (status === 'unauthenticated') {
+    return (
+      <div className={styles.centered}>
+        <h1>Admin Sign In</h1>
+        <button className={styles.btnPrimary}
+                onClick={()=>signIn('credentials',{callbackUrl:'/admin'})}>
+          Sign In
+        </button>
+      </div>
+    );
+  }
+  if (session?.user.role !== 'admin') {
+    return (
+      <div className={styles.centered}>
+        <h1>Access Denied</h1>
+        <button className={styles.btnSecondary}
+                onClick={()=>signOut({callbackUrl:'/'})}>
+          Sign Out
+        </button>
+      </div>
+    );
+  }
+
+  // Filter & paginate
+  const filtered = users.filter(u =>
+    u.name.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase())
+  );
+  const pages     = Math.ceil(filtered.length / pageSize);
+  const pageUsers = filtered.slice(page*pageSize, (page+1)*pageSize);
 
   return (
-    <div style={{ padding: '40px', fontFamily: 'Segoe UI' }}>
-      <h2>Admin Overview Panel</h2>
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <h1>Admin Dashboard</h1>
+        <button className={styles.btnDanger}
+                onClick={()=>signOut({callbackUrl:'/'})}>
+          Sign Out
+        </button>
+      </header>
 
-      <div style={{ margin: '20px 0' }}>
-        <p><strong>Total Users:</strong> {data.summary.totalUsers}</p>
-        <p><strong>Verified Users:</strong> {data.summary.verified}</p>
-        <p><strong>Total USD Balance:</strong> ${data.summary.totalBalance.toFixed(2)}</p>
-        <p><strong>Total BTC Balance:</strong> {data.summary.totalBTC.toFixed(8)} BTC</p>
-      </div>
+      {error && <div className={styles.error}>{error}</div>}
 
-      <h3>Recent Transactions</h3>
-      <table border={1} cellPadding={8} style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '30px' }}>
+      <input
+        className={styles.search}
+        type="text"
+        placeholder="Search by name or email…"
+        value={search}
+        onChange={e=>{ setSearch(e.target.value); setPage(0); }}
+      />
+
+      <table className={styles.usersTable}>
         <thead>
           <tr>
-            <th>Name</th><th>Email</th><th>Type</th><th>Amount</th><th>Status</th><th>Date</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Verified</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {data.recent.map((t: any, i: number) => (
-            <tr key={i}>
-              <td>{t.user}</td>
-              <td>{t.email}</td>
-              <td>{t.type}</td>
-              <td>${t.amount.toFixed(2)}</td>
-              <td>{t.status}</td>
-              <td>{new Date(t.date).toLocaleString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h3>All Users</h3>
-      <table border={1} cellPadding={8} style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr>
-            <th>Name</th><th>Email</th><th>Status</th><th>USD</th><th>BTC</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.users.map((u: any, i: number) => (
-            <tr key={i}>
+          {pageUsers.map(u => (
+            <tr key={u.id}>
               <td>{u.name}</td>
               <td>{u.email}</td>
-              <td>{u.verified ? '✔ Verified' : '⛔ Unverified'}</td>
-              <td>${u.balance.toFixed(2)}</td>
-              <td>{u.btcBalance.toFixed(8)} BTC</td>
+              <td>{u.role}</td>
+              <td>{u.verified ? '✅' : '❌'}</td>
+              <td className={styles.actions}>
+                <button className={styles.btnPrimary}
+                        onClick={()=>{
+                          const amt = prompt('Deposit amount:');
+                          return amt && action(`/api/admin/user/${u.id}/deposit`,{amount:amt});
+                        }}>
+                  Deposit
+                </button>
+                <button className={styles.btnWarning}
+                        onClick={()=>{
+                          const amt = prompt('Withdraw amount:');
+                          return amt && action(`/api/admin/user/${u.id}/withdraw`,{amount:amt});
+                        }}>
+                  Withdraw
+                </button>
+                {!u.verified && (
+                  <button className={styles.btnSuccess}
+                          onClick={()=>action(`/api/admin/user/${u.id}/verify`)}>
+                    Verify
+                  </button>
+                )}
+                <button className={styles.btnInfo}
+                        onClick={()=>
+                          action(`/api/admin/user/${u.id}/statement`)
+                          .then(()=>alert('Statement sent'))
+                        }>
+                  Statement
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <h3 style={{ marginTop: '40px' }}>Manual Balance Update</h3>
-      <form
-        onSubmit={async e => {
-          e.preventDefault();
-          const form = e.target as HTMLFormElement;
-          const formData = new FormData(form);
+      <div className={styles.pagination}>
+        <button disabled={page===0}
+                onClick={()=>setPage(p=>p-1)}>
+          Prev
+        </button>
+        <span>Page {page+1} of {pages||1}</span>
+        <button disabled={page+1>=pages}
+                onClick={()=>setPage(p=>p+1)}>
+          Next
+        </button>
+      </div>
 
-          const res = await fetch('/api/admin/update-balance', {
-            method: 'POST',
-            body: JSON.stringify({
-              userId: formData.get('userId'),
-              amount: Number(formData.get('amount')),
-              type: formData.get('type'),
-              currency: formData.get('currency'),
-              description: formData.get('description') || 'Admin balance update',
-            }),
-            headers: { 'Content-Type': 'application/json' }
-          });
-
-          const json = await res.json();
-          if (json.success) {
-            alert('✅ Transaction successful. Email sent.');
-            window.location.reload();
-          } else {
-            alert(`❌ ${json.error}`);
-          }
-        }}
-        style={{ marginTop: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}
-      >
-        <input name="userId" placeholder="User ID" required style={{ padding: '8px', width: '220px' }} />
-        <input name="amount" placeholder="Amount" type="number" required style={{ padding: '8px', width: '120px' }} />
-        <select name="type" required style={{ padding: '8px' }}>
-          <option value="credit">Credit</option>
-          <option value="debit">Debit</option>
-        </select>
-        <select name="currency" required style={{ padding: '8px' }}>
-          <option value="USD">USD</option>
-          <option value="BTC">BTC</option>
-        </select>
-        <input name="description" placeholder="Description (optional)" style={{ padding: '8px', width: '250px' }} />
-        <button type="submit" style={{ padding: '8px 16px' }}>Apply</button>
-      </form>
+      <section className={styles.recentSection}>
+        <h2>Recent Transactions</h2>
+        <ul className={styles.recentList}>
+          {recent.map(tx => (
+            <li key={tx.id}>
+              <strong>{new Date(tx.date).toLocaleString()}</strong>:
+              {` ${tx.type} ${tx.amount}`}
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

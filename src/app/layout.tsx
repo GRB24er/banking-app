@@ -1,17 +1,23 @@
-// src/app/layout.tsx
-'use client';
+import './globals.css';
+import { ReactNode } from 'react';
+import { Providers } from '@/components/Providers';
+import { Header } from '@/components/Header';
 
-import { SessionProvider } from 'next-auth/react';
-import './globals.css'; // if you have global CSS
+export const metadata = {
+  title: 'Horizon Global Capital',
+  description: 'Your banking dashboard',
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        {/* SessionProvider makes `useSession()` work throughout your app */}
-        <SessionProvider>
-          {children}
-        </SessionProvider>
+        <Providers>
+          <Header />
+          <main style={{ padding: '1rem', fontFamily: 'Segoe UI' }}>
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

@@ -1,0 +1,68 @@
+.tableContainer {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+.table th,
+.table td {
+  padding: 16px 20px;
+  font-size: 0.875rem;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+.table thead th {
+  font-weight: 600;
+  background: #f9fafb;
+}
+.left {
+  text-align: left;
+}
+.right {
+  text-align: right;
+}
+.txnCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #2563eb;
+}
+.credit {
+  color: #16a34a;
+  font-weight: 500;
+}
+.debit {
+  color: #dc2626;
+  font-weight: 500;
+}
+.status {
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.table tbody tr:hover {
+  background: #f3f4f6;
+}

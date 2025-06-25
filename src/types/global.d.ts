@@ -26,3 +26,20 @@ declare module '@/lib/mail' {
 
 // src/types/global.d.ts
 // Additional type declarations can be added here
+
+declare module '@/lib/mail' {
+  export const transporter: any;
+  export const sendTransactionEmail: any;
+  export const sendWelcomeEmail: any;
+  export function sendBankStatementEmail(
+    to: string,
+    transactions: {
+      date: Date;
+      type: string;
+      currency: string;
+      amount: number;
+      description: string;
+      reference?: string;
+    }[]
+  ): Promise<void>;
+}

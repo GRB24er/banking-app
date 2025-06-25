@@ -1,5 +1,3 @@
-// File: src/app/auth/signin/page.tsx
-
 import React, { Suspense } from 'react';
 import SignInContent from './SignInContent';
 

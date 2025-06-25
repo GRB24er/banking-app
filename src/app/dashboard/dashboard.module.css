@@ -204,3 +204,88 @@
   color: var(--error-color);
   font-weight: 500;
 }
+
+
+/* … your existing CSS above … */
+
+/* Stats + Debit-Card row */
+.statsDebitRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+/* Responsive stack on tablet/mobile */
+@media (max-width: 768px) {
+  .statsDebitRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .statsDebitRow > * {
+    width: 100%;
+  }
+}
+
+/* Balances row unchanged… */
+
+/* Revealable details row */
+.detailCardsRow {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+/* Transactions section */
+.transactionsSection {
+  margin-top: var(--space-lg);
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+}
+
+/* Add approximate fiat under BTC */
+.fiatApprox {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* … rest of your existing CSS … */
+
+/* Sign Out button styling */
+.signOutButton {
+  background: none;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-left: 1rem;
+  transition: background 0.2s;
+}
+.signOutButton:hover {
+  background: #f3f4f6;
+}
+
+/* Append if not already present */
+.signOutLink {
+  background: none;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s, color 0.2s;
+}
+.signOutLink:hover {
+  background: #dc2626;
+  color: #fff;
+}

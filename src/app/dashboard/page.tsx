@@ -1,4 +1,3 @@
-// File: src/app/dashboard/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,7 +7,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
 
-interface Transaction {
+import { StatsCard } from '@/components/StatsCard';
+import { DebitCard } from '@/components/DebitCard';
+import { RevealCard } from '@/components/RevealCard';
+import { TransactionTable, Transaction } from '@/components/TransactionTable';
+
+interface APITransaction {
   _id: string;
   type: 'deposit' | 'send' | 'transfer_usd' | 'transfer_btc';
   currency: 'USD' | 'BTC';
@@ -19,75 +23,63 @@ interface Transaction {
 
 interface UserData {
   name: string;
-  email: string;
-  role: 'user' | 'admin';
   balance: number;
   btcBalance: number;
   accountNumber: string;
   routingNumber: string;
   bitcoinAddress: string;
+  createdAt: string;
 }
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [recentTxs, setRecentTxs] = useState<APITransaction[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // live BTC→USD rate
+  const [btcRate, setBtcRate] = useState(0);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin');
-      return;
-    }
-    if (status === 'authenticated') {
-      fetchUserData();
+    } else if (status === 'authenticated') {
+      fetchData();
+      fetchRate();
+      const iv = setInterval(fetchRate, 60_000);
+      return () => clearInterval(iv);
     }
   }, [status]);
 
-  const fetchUserData = async () => {
+  async function fetchData() {
     setLoading(true);
     try {
-      const res = await fetch('/api/user/dashboard', {
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      const data = await res.json();
-      console.log('🔍 dashboard API returned:', data);
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setUserData(data.user);
-
-      // FIX: use tx._id (from API) as key, not tx.reference
-      setRecentTransactions(
-        (data.recent as any[]).map((tx) => ({
-          _id: tx._id,
-          type: tx.type,
-          currency: tx.currency,
-          amount: tx.amount,
-          date: typeof tx.date === 'string'
-            ? tx.date
-            : new Date(tx.date).toISOString(),
-          description: tx.description,
-        }))
-      );
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      router.push('/auth/signin');
+      const res = await fetch('/api/user/dashboard', { credentials: 'include' });
+      const { user, recent } = await res.json();
+      setUserData(user);
+      setRecentTxs(recent);
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  async function fetchRate() {
+    try {
+      const res = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd'
+      );
+      const data = await res.json();
+      setBtcRate(data.bitcoin.usd);
+    } catch {}
+  }
 
   if (loading || !userData) {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.loadingSpinner}></div>
-        <p>Loading your dashboard...</p>
+        <p>Loading your dashboard…</p>
       </div>
     );
   }
@@ -99,7 +91,41 @@ export default function DashboardPage() {
     accountNumber,
     routingNumber,
     bitcoinAddress,
+    createdAt,
   } = userData;
+
+  // DebitCard props
+  const last4 = accountNumber.slice(-4);
+  const cardNumber = `•••• •••• •••• ${last4}`;
+  const reg = new Date(createdAt);
+  reg.setFullYear(reg.getFullYear() + 5);
+  const month = String(reg.getMonth() + 1).padStart(2, '0');
+  const year = String(reg.getFullYear()).slice(-2);
+  const expiry = `${month}/${year}`;
+
+  // Map APITransaction → TransactionTable row
+  const txns: Transaction[] = recentTxs.map((tx) => ({
+    id: tx._id,
+    description:
+      tx.type === 'send'
+        ? `Sent $${Math.abs(tx.amount).toFixed(2)} to ${tx.description}`
+        : tx.description ?? '—',
+    amount: tx.amount,
+    currency: tx.currency,
+    status:
+      tx.type === 'send' || tx.type === 'deposit' ? 'Completed' : 'Pending',
+    date: tx.date,
+    category:
+      tx.type === 'send'
+        ? 'Transfer'
+        : tx.type === 'deposit'
+        ? 'Deposit'
+        : tx.type === 'transfer_btc'
+        ? 'Crypto'
+        : 'Other',
+  }));
+
+  const fiatValue = btcBalance * btcRate;
 
   return (
     <div className={styles.dashboardContainer}>
@@ -109,96 +135,80 @@ export default function DashboardPage() {
           <Image src="/icons/logo.svg" alt="Logo" width={32} height={32} />
           <span className={styles.brandName}>Horizon Global Capital</span>
         </div>
-        <div className={styles.navLinks}>
-          <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-          <Link href="/send-money" className={styles.navLink}>Send Money</Link>
-          <Link href="/deposit" className={styles.navLink}>Deposit</Link>
-          <Link href="/transfer" className={styles.navLink}>Transfer</Link>
-          <Link href="/settings" className={styles.navLink}>Settings</Link>
-          <Link href="/profile">
-            <div className={styles.profileIcon}>{name.charAt(0).toUpperCase()}</div>
+        <nav className={styles.navLinks}>
+          <Link href="/dashboard" className={styles.navLink}>
+            Dashboard
           </Link>
-        </div>
+          <Link href="/send-money" className={styles.navLink}>
+            Send Money
+          </Link>
+          <Link href="/settings" className={styles.navLink}>
+            Settings
+          </Link>
+        </nav>
       </div>
 
-      {/* Main Content */}
+      {/* Main */}
       <div className={styles.mainContent}>
+        {/* Stats & Card */}
+        <div className={styles.statsDebitRow}>
+          <StatsCard accountsCount={2} totalBalance={balance} />
+          <DebitCard
+            accountName={name}
+            holderName={name}
+            cardNumber={cardNumber}
+            expiry={expiry}
+          />
+        </div>
+
         {/* Balances & Actions */}
         <div className={styles.balanceRow}>
           <div className={styles.balanceCard}>
-            <div className={styles.label}>Total Balance (USD)</div>
-            <p className={styles.amount}>${balance.toFixed(2)}</p>
+            <div className={styles.label}>USD Balance</div>
+            <p className={styles.amount}>
+              ${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
           </div>
           <div className={styles.balanceCard}>
-            <div className={styles.label}>Bitcoin Balance</div>
-            <p className={styles.amount}>{btcBalance.toFixed(6)} BTC</p>
+            <div className={styles.label}>BTC Balance</div>
+            <p className={styles.amount}>
+              ₿{' '}
+              {new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8,
+              }).format(btcBalance)}
+            </p>
+            <p className={styles.fiatApprox}>
+              ≈{' '}
+              {new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+              }).format(fiatValue)}{' '}
+              USD
+            </p>
           </div>
           <div className={styles.actions}>
-            <button onClick={() => router.push('/send-money')} className={styles.actionButton}>Send Money</button>
-            <button onClick={() => router.push('/deposit')} className={styles.actionButton}>Deposit</button>
-            <button onClick={() => router.push('/transfer')} className={styles.actionButton}>Transfer</button>
+            <button className={styles.actionButton}>Deposit USD</button>
+            <button className={styles.actionButton}>Buy/Sell BTC</button>
           </div>
         </div>
 
-        {/* Account Cards */}
-        <div className={styles.secondaryRow}>
-          <div className={styles.accountCard}>
-            <div className={styles.cardHeader}>
-              <h3>Checking Account</h3>
-              <div className={styles.accountNumber}>
-                {accountNumber.replace(/.(?=.{4})/g, '•')}
-              </div>
-            </div>
-            <div className={styles.accountBalance}>${balance.toFixed(2)}</div>
-            <div className={styles.accountNote}>Routing: {routingNumber}</div>
-          </div>
-          <div className={styles.cryptoCard}>
-            <div className={styles.cardHeader}>
-              <h3>Bitcoin Wallet</h3>
-            </div>
-            <div className={styles.cryptoBalance}>{btcBalance.toFixed(6)} BTC</div>
-            <div className={styles.accountNote}>
-              {bitcoinAddress.slice(0, 4)}…{bitcoinAddress.slice(-4)}
-            </div>
-          </div>
+        {/* Revealable Details */}
+        <div className={styles.detailCardsRow}>
+          <RevealCard label="Account Number" value={accountNumber} />
+          <RevealCard label="Routing Number" value={routingNumber} />
+          <RevealCard
+            label="Bitcoin Address"
+            value={bitcoinAddress}
+          />
         </div>
 
         {/* Recent Transactions */}
-        <div className={styles.transactionsSection}>
-          <h2>Recent Transactions</h2>
-          {recentTransactions.length === 0 ? (
-            <p className={styles.noTransactions}>You have no transactions yet.</p>
-          ) : (
-            <table className={styles.transactionsTable}>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Type</th>
-                  <th>Amount</th>
-                  <th>Currency</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentTransactions.map((txn) => (
-                  <tr key={txn._id}>
-                    <td className={styles.dateCell}>{new Date(txn.date).toLocaleString()}</td>
-                    <td>{txn.description || 'No description'}</td>
-                    <td>{txn.type.replace(/_/g, ' ')}</td>
-                    <td className={txn.amount >= 0 ? styles.positiveAmount : styles.negativeAmount}>
-                      {txn.amount >= 0 ? '+' : '-'}
-                      {txn.currency === 'USD' ? '$' : ''}
-                      {Math.abs(txn.amount).toFixed(txn.currency === 'USD' ? 2 : 6)}
-                      {txn.currency === 'BTC' ? ' BTC' : ''}
-                    </td>
-                    <td>{txn.currency}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <section className={styles.transactionsSection}>
+          <h2 className={styles.sectionTitle}>Recent transactions</h2>
+          <TransactionTable transactions={txns} />
+        </section>
       </div>
     </div>
-  );
+  )
 }
