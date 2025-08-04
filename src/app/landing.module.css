@@ -1,0 +1,151 @@
+/* ===== Modal ===== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modalContent {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+}
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+.modalButton {
+  margin-top: 1.5rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.modalButton:hover {
+  background: var(--primary-hover);
+}
+
+/* ===== Header ===== */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.headerContent {
+  max-width: 1200px;
+  margin: auto;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+.nav {
+  display: flex;
+  gap: 1.5rem;
+}
+.nav a {
+  text-decoration: none;
+  color: #1f2937;
+  font-weight: 500;
+}
+.nav a:hover {
+  text-decoration: underline;
+}
+.loginButton {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+}
+.loginButton:hover {
+  background: var(--primary-hover);
+}
+
+/* ===== Hero ===== */
+.hero {
+  display: flex;
+  min-height: 80vh;
+}
+.heroText {
+  flex: 1;
+  background: #0a1e3a;
+  color: white;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.heroText h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+.heroText p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+.learnMoreButton {
+  background: #fff;
+  color: #0a1e3a;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.learnMoreButton:hover {
+  background: #f1f5f9;
+}
+.heroImage {
+  flex: 1;
+  background: url("/images/bank-hero.jpg") no-repeat center center;
+  background-size: cover;
+}
+
+/* ===== Footer ===== */
+.footer {
+  text-align: center;
+  padding: 1rem;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+
+.authButtons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.signupButton {
+  background: transparent;
+  color: var(--primary-color);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signupButton:hover {
+  background: var(--primary-color);
+  color: #fff;
+}

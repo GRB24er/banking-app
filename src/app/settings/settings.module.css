@@ -1,53 +1,139 @@
-/* src/app/settings/settings.module.css */
-.settingsContainer {
-  /* Component-specific variables */
-  --settings-primary: var(--primary-color);
-  --settings-text-dark: var(--text-dark);
-  --settings-text-muted: var(--text-muted);
+/* Full-page background with hero */
+.page {
+  min-height: 100vh;
+  background: url("/images/bank-hero.jpg") no-repeat center center fixed;
+  background-size: cover;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+/* Overlay for readability */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 0;
+}
+
+/* Settings card container */
+.settingsContainer {
+  position: relative;
+  z-index: 1;
   max-width: 600px;
-  margin: 2rem auto;
-  padding: 1rem;
-  background-color: var(--bg-white);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
+  width: 100%;
+  margin: 2rem;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-family: var(--font-sans);
 }
 
-.settingsTitle {
+/* Back button */
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  cursor: pointer;
   margin-bottom: 1rem;
-  color: var(--settings-text-dark);
-  font-size: 1.5rem;
 }
 
-.settingItem {
-  margin-bottom: 1.5rem;
+.backBtn:hover {
+  text-decoration: underline;
 }
 
-.settingLabel {
-  display: block;
+/* Title */
+.settingsTitle {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 2rem;
+}
+
+/* Error & success messages */
+.errorMsg {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.successMsg {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Form field styling */
+.formField {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.25rem;
+}
+
+.formField label {
   margin-bottom: 0.5rem;
-  color: var(--settings-text-dark);
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.95rem;
 }
 
-.settingDescription {
-  color: var(--settings-text-muted);
-  font-size: 0.875rem;
-  margin-bottom: 0.5rem;
+.formField input {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s ease;
 }
 
+.formField input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+/* Readonly fields (like account number) */
+.readOnlyField {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* Primary save button */
 .saveBtn {
-  background-color: var(--settings-primary);
+  background-color: var(--primary-color);
   color: white;
   border: none;
-  border-radius: var(--border-radius);
+  border-radius: 8px;
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.2s ease;
+  width: 100%;
 }
 
 .saveBtn:hover {
   background-color: var(--primary-hover);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .settingsContainer {
+    padding: 1.5rem;
+  }
+
+  .settingsTitle {
+    font-size: 1.5rem;
+  }
 }

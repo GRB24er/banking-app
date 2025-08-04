@@ -1,0 +1,97 @@
+.footer {
+  background: var(--light-gray);
+  border-top: 1px solid #e5e7eb;
+  padding: 2rem 1.5rem;
+  margin-top: 2rem;
+  position: relative;
+}
+
+.footerContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.brandSection,
+.contactSection,
+.linksSection {
+  flex: 1;
+  min-width: 200px;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.brandName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.tagline {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-dark);
+}
+
+.contactList,
+.linkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.contactList a,
+.linkList a {
+  color: #374151;
+  text-decoration: none;
+}
+
+.contactList a:hover,
+.linkList a:hover {
+  color: var(--primary-color);
+}
+
+.copy {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 1rem;
+}
+
+/* Chatbox trigger (floating button) */
+.chatTrigger {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s ease;
+}
+
+.chatTrigger:hover {
+  background: var(--primary-hover);
+}

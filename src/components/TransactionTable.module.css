@@ -2,67 +2,104 @@
   background: #ffffff;
   border-radius: 12px;
   overflow-x: auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
 }
+
+/* Table base */
 .table {
   width: 100%;
   border-collapse: collapse;
   min-width: 600px;
 }
+
 .table th,
 .table td {
-  padding: 16px 20px;
-  font-size: 0.875rem;
+  padding: 14px 20px;
+  font-size: 0.9rem;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
   white-space: nowrap;
 }
+
 .table thead th {
   font-weight: 600;
-  background: #f9fafb;
+  background: #f3f4f6;
+  color: #111827;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
 }
+
+/* Alignments */
 .left {
   text-align: left;
 }
 .right {
   text-align: right;
 }
+
+/* Transaction cell with icon */
 .txnCell {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .icon {
   width: 1.5rem;
   height: 1.5rem;
-  color: #2563eb;
+  color: var(--primary-color);
 }
+
+/* Amount color coding */
 .credit {
   color: #16a34a;
-  font-weight: 500;
+  font-weight: 600;
 }
 .debit {
   color: #dc2626;
-  font-weight: 500;
+  font-weight: 600;
 }
+
+/* Status badge improvements */
 .status {
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
 }
+
 .completed {
   background: #d1fae5;
   color: #065f46;
 }
+
 .pending {
-  background: #fef3c7;
+  background: #fef9c3;
   color: #92400e;
 }
+
 .failed {
   background: #fee2e2;
   color: #991b1b;
 }
+
+/* Row hover with smooth transition */
+.table tbody tr {
+  transition: background 0.2s ease;
+}
 .table tbody tr:hover {
-  background: #f3f4f6;
+  background: #f9fafb;
+}
+
+/* Responsive table scroll hint */
+.tableContainer::-webkit-scrollbar {
+  height: 6px;
+}
+.tableContainer::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
 }

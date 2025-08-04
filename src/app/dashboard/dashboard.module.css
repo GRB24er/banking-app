@@ -1,291 +1,142 @@
-/* src/app/dashboard/dashboard.module.css */
 .dashboardContainer {
   display: flex;
-  flex-direction: column;
+  position: relative;
   min-height: 100vh;
-  background-color: var(--light-gray);
-}
-
-.header {
-  background-color: var(--white);
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: var(--card-shadow);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.logo .brandName {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.navLinks {
-  display: flex;
-  gap: var(--space-lg);
-  align-items: center;
-}
-
-.navLinks a {
+  background: url('/images/bank-hero.jpg') no-repeat center center fixed;
+  background-size: cover;
   color: var(--text-dark);
-  font-weight: 500;
 }
 
-.navLinks a:hover {
-  color: var(--primary-color);
+/* Dark overlay */
+.dashboardContainer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 0;
 }
 
-.profileIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: var(--light-gray);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: background 0.15s ease;
+/* Right-side content after sidebar */
+.dashboardContainer > div {
+  flex: 1;
+  position: relative;
+  z-index: 1; /* ensure above overlay */
 }
 
-.profileIcon:hover {
-  background-color: #e0e5ea;
-}
-
+/* Main content wrapper */
 .mainContent {
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  padding: var(--space-lg);
+  gap: 2rem;
 }
 
-.balanceRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-lg);
-  align-items: center;
-  justify-content: space-between;
+/* Generic white card section */
+.sectionCard {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
 }
 
-.balanceCard {
-  background-color: var(--white);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  padding: var(--space-lg) var(--space-xl);
-  flex: 1 1 300px;
-}
-
-.balanceCard .label {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin-bottom: var(--space-sm);
-}
-
-.balanceCard .amount {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin: 0;
-}
-
-.actions {
-  display: flex;
-  gap: var(--space-md);
-  flex: 1 1 300px;
-  justify-content: flex-end;
-}
-
-.actionButton {
-  background-color: var(--primary-color);
-  color: var(--white);
-  border: none;
-  border-radius: var(--border-radius);
-  padding: var(--space-sm) var(--space-lg);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.actionButton:hover {
-  background-color: var(--primary-hover);
-}
-
-.secondaryRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-lg);
-}
-
-.accountCard, .cryptoCard {
-  background-color: var(--white);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  padding: var(--space-lg) var(--space-xl);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.cardHeader h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: var(--text-dark);
-}
-
-.accountNumber, .cryptoPrice {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-.accountBalance, .cryptoBalance {
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--text-dark);
-}
-
-.transactionsSection {
-  background-color: var(--white);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  overflow: auto;
-  padding: var(--space-lg) var(--space-xl);
-}
-
-.transactionsSection h2 {
-  margin: 0 0 var(--space-md) 0;
-  font-size: 1.2rem;
-  color: var(--text-dark);
-}
-
-.transactionsTable {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.transactionsTable th,
-.transactionsTable td {
-  padding: var(--space-sm) var(--space-md);
-  text-align: left;
-  font-size: 0.95rem;
-  color: var(--text-dark);
-}
-
-.transactionsTable th {
-  background-color: var(--light-gray);
-  font-weight: 600;
-  border-bottom: 1px solid var(--medium-gray);
-}
-
-.transactionsTable tr:nth-child(even) {
-  background-color: var(--light-gray);
-}
-
-.txnPositive {
-  color: var(--success-color);
-  font-weight: 500;
-}
-
-.txnNegative {
-  color: var(--error-color);
-  font-weight: 500;
-}
-
-
-/* … your existing CSS above … */
-
-/* Stats + Debit-Card row */
+/* Stats + DebitCard row */
 .statsDebitRow {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-lg);
-}
-
-/* Responsive stack on tablet/mobile */
-@media (max-width: 768px) {
-  .statsDebitRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .statsDebitRow > * {
-    width: 100%;
-  }
-}
-
-/* Balances row unchanged… */
-
-/* Revealable details row */
-.detailCardsRow {
-  display: flex;
-  gap: var(--space-md);
-  margin-bottom: var(--space-lg);
+  gap: 2rem;
   flex-wrap: wrap;
 }
 
-/* Transactions section */
+/* Balance Row */
+.balanceRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+/* Individual balance card */
+.balanceCard {
+  flex: 1 1 200px;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.fiatApprox {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Buttons */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.actionButton {
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.actionButton:hover {
+  background: var(--primary-hover);
+}
+
+/* Reveal details cards row */
+.detailCardsRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Transactions Section */
 .transactionsSection {
-  margin-top: var(--space-lg);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
 .sectionTitle {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: var(--space-md);
+  margin-bottom: 1rem;
 }
 
-/* Add approximate fiat under BTC */
-.fiatApprox {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-top: 4px;
+/* Loading state */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #ffffff;
+}
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ffffff;
+  border-top: 4px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
-/* … rest of your existing CSS … */
-
-/* Sign Out button styling */
-.signOutButton {
-  background: none;
-  border: 1px solid #e5e7eb;
-  color: #374151;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  margin-left: 1rem;
-  transition: background 0.2s;
-}
-.signOutButton:hover {
-  background: #f3f4f6;
-}
-
-/* Append if not already present */
-.signOutLink {
-  background: none;
-  border: 1px solid #dc2626;
-  color: #dc2626;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background 0.2s, color 0.2s;
-}
-.signOutLink:hover {
-  background: #dc2626;
-  color: #fff;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import styles from './sendMoney.module.css';
-import type { ITransaction } from '@/types/transaction';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import styles from "./sendMoney.module.css";
+import type { ITransaction } from "@/types/transaction";
+import { motion } from "framer-motion";
 
 interface ApiResponse {
   success: boolean;
@@ -14,11 +15,11 @@ interface ApiResponse {
 
 export default function SendMoneyPage() {
   const router = useRouter();
-  const [sendBy, setSendBy] = useState<'email' | 'account'>('email');
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [recipientAccount, setRecipientAccount] = useState('');
-  const [recipientRouting, setRecipientRouting] = useState('');
-  const [amount, setAmount] = useState('');
+  const [sendBy, setSendBy] = useState<"email" | "account">("email");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientAccount, setRecipientAccount] = useState("");
+  const [recipientRouting, setRecipientRouting] = useState("");
+  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<ApiResponse | null>(null);
@@ -29,24 +30,27 @@ export default function SendMoneyPage() {
     setSuccessData(null);
 
     // Validation
-    if (sendBy === 'email' && !recipientEmail.trim()) {
-      setErrorMsg('Please enter the recipient’s email.');
+    if (sendBy === "email" && !recipientEmail.trim()) {
+      setErrorMsg("Please enter the recipient’s email.");
       return;
     }
-    if (sendBy === 'account' && (!recipientAccount.trim() || !recipientRouting.trim())) {
-      setErrorMsg('Please enter the recipient’s account and routing numbers.');
+    if (
+      sendBy === "account" &&
+      (!recipientAccount.trim() || !recipientRouting.trim())
+    ) {
+      setErrorMsg("Please enter the recipient’s account and routing numbers.");
       return;
     }
     const amtNum = parseFloat(amount);
     if (isNaN(amtNum) || amtNum <= 0) {
-      setErrorMsg('Please enter a valid positive amount.');
+      setErrorMsg("Please enter a valid positive amount.");
       return;
     }
 
     setLoading(true);
 
     const payload: any = { amount: amtNum };
-    if (sendBy === 'email') {
+    if (sendBy === "email") {
       payload.email = recipientEmail.trim();
     } else {
       payload.accountNumber = recipientAccount.trim();
@@ -54,137 +58,143 @@ export default function SendMoneyPage() {
     }
 
     try {
-      const res = await fetch('/api/transactions/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/transactions/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data: ApiResponse = await res.json();
       setLoading(false);
 
       if (!data.success) {
-        setErrorMsg(data.error || 'Transaction failed.');
+        setErrorMsg(data.error || "Transaction failed.");
         return;
       }
 
       setSuccessData(data);
-      // Navigate back to dashboard (it will re-fetch fresh transaction data)
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (err) {
-      console.error('SendMoney error', err);
+      console.error("SendMoney error", err);
       setLoading(false);
-      setErrorMsg('Network error. Please try again.');
+      setErrorMsg("Network error. Please try again.");
     }
   };
 
   return (
-    <div className={styles.container}>
-      <button onClick={() => router.back()} className={styles.backButton}>
-        ← Back
-      </button>
+    <div className={styles.page}>
+      <motion.div
+        className={styles.container}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <button onClick={() => router.back()} className={styles.backButton}>
+          ← Back
+        </button>
 
-      <h1 className={styles.title}>Send Money</h1>
+        <h1 className={styles.title}>Send Money</h1>
 
-      {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
-      {successData && (
-        <div className={styles.successBox}>
-          <p>✅ Transfer Successful!</p>
-          <p>
-            Reference: <strong>{successData.credit.reference}</strong>
-          </p>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.fieldGroup}>
-          <label>Send By:</label>
-          <div className={styles.radioGroup}>
-            <label>
-              <input
-                type="radio"
-                name="sendBy"
-                value="email"
-                checked={sendBy === 'email'}
-                onChange={() => {
-                  setSendBy('email');
-                  setRecipientAccount('');
-                  setRecipientRouting('');
-                }}
-              />
-              Email
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="sendBy"
-                value="account"
-                checked={sendBy === 'account'}
-                onChange={() => {
-                  setSendBy('account');
-                  setRecipientEmail('');
-                }}
-              />
-              Account Number
-            </label>
+        {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
+        {successData && (
+          <div className={styles.successBox}>
+            <p>✅ Transfer Successful!</p>
+            <p>
+              Reference: <strong>{successData.credit.reference}</strong>
+            </p>
           </div>
-        </div>
+        )}
 
-        {sendBy === 'email' ? (
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.fieldGroup}>
+            <label>Send By:</label>
+            <div className={styles.radioGroup}>
+              <label>
+                <input
+                  type="radio"
+                  name="sendBy"
+                  value="email"
+                  checked={sendBy === "email"}
+                  onChange={() => {
+                    setSendBy("email");
+                    setRecipientAccount("");
+                    setRecipientRouting("");
+                  }}
+                />
+                Email
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="sendBy"
+                  value="account"
+                  checked={sendBy === "account"}
+                  onChange={() => {
+                    setSendBy("account");
+                    setRecipientEmail("");
+                  }}
+                />
+                Account Number
+              </label>
+            </div>
+          </div>
+
+          {sendBy === "email" ? (
+            <div className={styles.formField}>
+              <label htmlFor="recipientEmail">Recipient Email</label>
+              <input
+                id="recipientEmail"
+                type="email"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                placeholder="friend@example.com"
+                required
+              />
+            </div>
+          ) : (
+            <>
+              <div className={styles.formField}>
+                <label htmlFor="recipientAccount">Account Number</label>
+                <input
+                  id="recipientAccount"
+                  type="text"
+                  value={recipientAccount}
+                  onChange={(e) => setRecipientAccount(e.target.value)}
+                  placeholder="1234567890"
+                  required
+                />
+              </div>
+              <div className={styles.formField}>
+                <label htmlFor="recipientRouting">Routing Number</label>
+                <input
+                  id="recipientRouting"
+                  type="text"
+                  value={recipientRouting}
+                  onChange={(e) => setRecipientRouting(e.target.value)}
+                  placeholder="021000021"
+                  required
+                />
+              </div>
+            </>
+          )}
+
           <div className={styles.formField}>
-            <label htmlFor="recipientEmail">Recipient Email</label>
+            <label htmlFor="amount">Amount (USD)</label>
             <input
-              id="recipientEmail"
-              type="email"
-              value={recipientEmail}
-              onChange={(e) => setRecipientEmail(e.target.value)}
-              placeholder="friend@example.com"
+              id="amount"
+              type="number"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="e.g. 100.00"
               required
             />
           </div>
-        ) : (
-          <>
-            <div className={styles.formField}>
-              <label htmlFor="recipientAccount">Account Number</label>
-              <input
-                id="recipientAccount"
-                type="text"
-                value={recipientAccount}
-                onChange={(e) => setRecipientAccount(e.target.value)}
-                placeholder="1234567890"
-                required
-              />
-            </div>
-            <div className={styles.formField}>
-              <label htmlFor="recipientRouting">Routing Number</label>
-              <input
-                id="recipientRouting"
-                type="text"
-                value={recipientRouting}
-                onChange={(e) => setRecipientRouting(e.target.value)}
-                placeholder="021000021"
-                required
-              />
-            </div>
-          </>
-        )}
 
-        <div className={styles.formField}>
-          <label htmlFor="amount">Amount (USD)</label>
-          <input
-            id="amount"
-            type="number"
-            step="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="e.g. 100.00"
-            required
-          />
-        </div>
-
-        <button type="submit" disabled={loading} className={styles.submitBtn}>
-          {loading ? 'Processing…' : 'Send Money'}
-        </button>
-      </form>
+          <button type="submit" disabled={loading} className={styles.submitBtn}>
+            {loading ? "Processing…" : "Send Money"}
+          </button>
+        </form>
+      </motion.div>
     </div>
   );
 }
