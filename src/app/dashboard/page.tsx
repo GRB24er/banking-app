@@ -1,224 +1,255 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import styles from "./dashboard.module.css";
-
-import { motion } from "framer-motion";
-import { StatsCard } from "@/components/StatsCard";
-import { DebitCard } from "@/components/DebitCard";
-import { RevealCard } from "@/components/RevealCard";
-import { TransactionTable, Transaction } from "@/components/TransactionTable";
+import { useEffect, useState } from "react";
+import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Sidebar from "@/components/Sidebar";
 import CountUpNumber from "@/components/CountUpNumber";
+import TransactionTable, { Transaction } from "@/components/TransactionTable";
+import styles from "./dashboard.module.css";
+import { ResponsiveContainer, LineChart, Line } from "recharts";
 
-interface APITransaction {
-  _id: string;
-  type: "deposit" | "send" | "transfer_usd" | "transfer_btc";
-  currency: "USD" | "BTC";
+interface RawTxn {
+  reference: string;
+  description?: string;
   amount: number;
   date: string;
-  description?: string;
+  status?: string;
+  accountType?: string;
 }
 
-interface UserData {
-  name: string;
-  balance: number;
-  btcBalance: number;
-  accountNumber: string;
-  routingNumber: string;
-  bitcoinAddress: string;
-  createdAt: string;
+interface DashboardResponse {
+  balances: {
+    checking: number;
+    savings: number;
+    investment: number;
+    checkingSpark?: number[];
+    savingsSpark?: number[];
+    investmentSpark?: number[];
+  };
+  recent: RawTxn[];
+  lastTransactions?: {
+    checking?: RawTxn;
+    savings?: RawTxn;
+    investment?: RawTxn;
+  };
 }
 
 export default function DashboardPage() {
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   const router = useRouter();
-
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [recentTxs, setRecentTxs] = useState<APITransaction[]>([]);
+  const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [btcRate, setBtcRate] = useState(0);
+  const [ipWarn, setIpWarn] = useState<string | null>(null);
 
+  // Fetch user IP for location detection (basic)
+  useEffect(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then(res => res.json())
+      .then(json => {
+        const lastIp = window.localStorage.getItem("last_ip");
+        if (lastIp && lastIp !== json.ip) {
+          setIpWarn(`We noticed a login from a new location (IP: ${json.ip}). If this wasn't you, please contact support.`);
+        }
+        window.localStorage.setItem("last_ip", json.ip);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Session/auth flow
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
-    } else if (status === "authenticated") {
-      fetchData();
-      fetchRate();
-      const iv = setInterval(fetchRate, 60_000);
-      return () => clearInterval(iv);
+      return;
     }
-  }, [status]);
-
-  async function fetchData() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/user/dashboard", { credentials: "include" });
-      const { user, recent } = await res.json();
-      setUserData(user);
-      setRecentTxs(recent);
-    } finally {
-      setLoading(false);
+    if (status === "authenticated") {
+      fetch("/api/user/dashboard", { credentials: "include" })
+        .then((res) => res.json())
+        .then((json: DashboardResponse) => setData(json))
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }
+  }, [status, router]);
+
+  if (loading || !data) {
+    return <div className={styles.loading}>Loading dashboard…</div>;
   }
 
-  async function fetchRate() {
-    try {
-      const res = await fetch(
-        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
-      );
-      const data = await res.json();
-      setBtcRate(data.bitcoin.usd);
-    } catch {}
-  }
-
-  if (loading || !userData) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.loadingSpinner}></div>
-        <p>Loading your dashboard…</p>
-      </div>
-    );
-  }
+  // Welcome user (using NextAuth session data)
+  const userName =
+    session?.user?.name ||
+    session?.user?.email?.split("@")[0] ||
+    "Customer";
 
   const {
-    name,
-    balance,
-    btcBalance,
-    accountNumber,
-    routingNumber,
-    bitcoinAddress,
-    createdAt,
-  } = userData;
+    balances: { checking, savings, investment, checkingSpark, savingsSpark, investmentSpark },
+    recent,
+    lastTransactions,
+  } = data;
 
-  const last4 = accountNumber.slice(-4);
-  const cardNumber = `•••• •••• •••• ${last4}`;
-  const reg = new Date(createdAt);
-  reg.setFullYear(reg.getFullYear() + 5);
-  const month = String(reg.getMonth() + 1).padStart(2, "0");
-  const year = String(reg.getFullYear()).slice(-2);
-  const expiry = `${month}/${year}`;
+  const totalBalance = checking + savings + investment;
+  const toSparkData = (arr?: number[]) => (arr ?? []).map((v) => ({ value: v }));
 
-  const txns: Transaction[] = recentTxs.map((tx) => ({
-    id: tx._id,
-    description:
-      tx.type === "send"
-        ? `Sent $${Math.abs(tx.amount).toFixed(2)} to ${tx.description}`
-        : tx.description ?? "—",
-    amount: tx.amount,
-    currency: tx.currency,
-    status:
-      tx.type === "send" || tx.type === "deposit" ? "Completed" : "Pending",
-    date: tx.date,
-    category:
-      tx.type === "send"
-        ? "Transfer"
-        : tx.type === "deposit"
-        ? "Deposit"
-        : tx.type === "transfer_btc"
-        ? "Crypto"
-        : "Other",
-  }));
+  // Simulate last txns if not provided by API
+  const lastTxns = lastTransactions || {
+    checking: recent.find((t) => t.accountType === "checking") || recent[0],
+    savings: recent.find((t) => t.accountType === "savings") || recent[1],
+    investment: recent.find((t) => t.accountType === "investment") || recent[2],
+  };
 
-  const fiatValue = btcBalance * btcRate;
+  const sections = [
+    {
+      title: "Checking",
+      balance: checking,
+      spark: checkingSpark,
+      color: "#4F46E5",
+      lastTransaction: lastTxns.checking,
+    },
+    {
+      title: "Savings",
+      balance: savings,
+      spark: savingsSpark,
+      color: "#22D3EE",
+      lastTransaction: lastTxns.savings,
+    },
+    {
+      title: "Investment",
+      balance: investment,
+      spark: investmentSpark,
+      color: "#10B981",
+      lastTransaction: lastTxns.investment,
+    },
+  ];
+
+  const txns: Transaction[] = recent.map((t) => {
+    const rawStatus = typeof t.status === "string" ? t.status : "pending";
+    const statusLabel = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+    const rawAcct = typeof t.accountType === "string" ? t.accountType : "checking";
+    const category = rawAcct.charAt(0).toUpperCase() + rawAcct.slice(1);
+    return {
+      id: t.reference,
+      description: t.description ?? t.reference,
+      amount: t.amount,
+      status: statusLabel,
+      date: t.date,
+      category,
+    };
+  });
 
   return (
-    <div className={styles.dashboardContainer}>
-      <Sidebar />
-      <div style={{ marginLeft: "240px" }}>
-        <Header />
+    <div className={styles.wrapper}>
+      <aside className={styles.sidebar}>
+        <Sidebar />
+      </aside>
+      <div className={styles.main}>
+        <header className={styles.header}>
+          <Header />
+        </header>
+        <div className={styles.content}>
+          {/* --- Welcome Banner --- */}
+          <div className={styles.welcomeBanner}>
+            <div className={styles.bannerOverlay}>
+              <h2>
+                Welcome, <span className={styles.userName}>{userName}</span>
+              </h2>
+              <p className={styles.subtitle}>
+                Here’s an overview of your accounts. Your total balance across all accounts is&nbsp;
+                <span className={styles.totalBalance}>
+                  ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </p>
+            </div>
+          </div>
+          {/* --- Location Warning --- */}
+          {ipWarn && (
+            <div className={styles.ipWarning}>
+              {ipWarn}
+            </div>
+          )}
+  {/* --- Account Overview Section --- */}
+<div className={styles.accountOverviewSection}>
+  <div className={styles.overviewBanner}>
+  <div className={styles.bannerOverlay}>
+    <h3 className={styles.sectionTitle}>
+      <span role="img" aria-label="bank" style={{ marginRight: 6 }}>🏦</span>
+      Account Overview
+    </h3>
+  </div>
+</div>
 
-        <motion.main
-          className={styles.mainContent}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
+  <div className={styles.accountGrid}>
+    {sections.map(({ title, balance, spark, color, lastTransaction }, idx) => {
+      // Masked account numbers: e.g. ...1000, ...2000, ...3000
+      const maskedNumber = `••••${(1000 * (idx + 1)).toString().padStart(4, '0')}`;
+      return (
+        <div
+          key={title}
+          className={styles.accountCard}
+          style={{ "--accent-color": color } as React.CSSProperties}
         >
-          {/* Stats & Card */}
-          <motion.div
-            className={`${styles.statsDebitRow} ${styles.sectionCard}`}
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <StatsCard accountsCount={2} totalBalance={balance} />
-            <DebitCard
-              accountName={name}
-              holderName={name}
-              cardNumber={cardNumber}
-              expiry={expiry}
-            />
-          </motion.div>
+          <div className={styles.cardHeader}>
+            <span className={styles.cardTitle}>{title} Account</span>
+            <span className={styles.maskedNumber}>{maskedNumber}</span>
+          </div>
+          <div className={styles.balanceSection}>
+            <span className={styles.balanceLabel}>Available Balance</span>
+            <span className={styles.cardBalance}>
+              <CountUpNumber value={balance} prefix="$" decimals={2} />
+            </span>
+          </div>
+          <div className={styles.balanceSection}>
+            <span className={styles.balanceLabel}>Current Balance</span>
+            <span className={styles.currentBalance}>
+              <CountUpNumber value={balance} prefix="$" decimals={2} />
+            </span>
+          </div>
+          <div className={styles.sparkChart}>
+            <ResponsiveContainer width="100%" height={50}>
+              <LineChart data={toSparkData(spark)}>
+                <Line dataKey="value" stroke={color} strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className={styles.lastTransaction}>
+            <span className={styles.lastTxnLabel}>Last Transaction:</span>
+            {lastTransaction ? (
+              <div className={styles.lastTxnDetails}>
+                <span className={styles.lastTxnDate}>
+                  {lastTransaction.date
+                    ? new Date(lastTransaction.date).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "--"}
+                </span>
+                <span className={styles.lastTxnDesc}>
+                  {lastTransaction.description || "--"}
+                </span>
+                <span className={styles.lastTxnAmount}>
+                  {lastTransaction.amount >= 0 ? "+" : "-"}${Math.abs(lastTransaction.amount ?? 0).toFixed(2)}
+                </span>
+              </div>
+            ) : (
+              <span className={styles.noTxn}>No recent transaction</span>
+            )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
 
-          {/* Balances & Actions */}
-          <motion.div
-            className={`${styles.balanceRow} ${styles.sectionCard}`}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <div className={styles.balanceCard}>
-              <div className={styles.label}>USD Balance</div>
-              <p className={styles.amount}>
-                <CountUpNumber value={balance} prefix="$" decimals={2} />
-              </p>
-            </div>
-            <div className={styles.balanceCard}>
-              <div className={styles.label}>BTC Balance</div>
-              <p className={styles.amount}>
-                <CountUpNumber value={btcBalance} prefix="₿ " decimals={8} />
-              </p>
-              <p className={styles.fiatApprox}>
-                ≈ <CountUpNumber value={fiatValue} prefix="$" decimals={2} /> USD
-              </p>
-            </div>
-            <div className={styles.actions}>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ scale: 1.05 }}
-                className={styles.actionButton}
-              >
-                Deposit USD
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ scale: 1.05 }}
-                className={styles.actionButton}
-              >
-                Buy/Sell BTC
-              </motion.button>
-            </div>
-          </motion.div>
-
-          {/* Revealable Details */}
-          <motion.div
-            className={styles.detailCardsRow}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-          >
-            <RevealCard label="Account Number" value={accountNumber} />
-            <RevealCard label="Routing Number" value={routingNumber} />
-            <RevealCard label="Bitcoin Address" value={bitcoinAddress} />
-          </motion.div>
-
-          {/* Recent Transactions */}
-          <motion.section
-            className={`${styles.transactionsSection}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-          >
-            <h2 className={styles.sectionTitle}>Recent transactions</h2>
+          {/* --- Recent Transactions --- */}
+          <div className={styles.transactionsSection}>
             <TransactionTable transactions={txns} />
-          </motion.section>
-        </motion.main>
-
-        <Footer />
+          </div>
+          <footer className={styles.footer}>
+            <Footer />
+          </footer>
+        </div>
       </div>
     </div>
   );

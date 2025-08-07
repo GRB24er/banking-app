@@ -1,142 +1,286 @@
-.dashboardContainer {
+/* ...YOUR ORIGINAL CSS ABOVE... */
+
+.wrapper {
   display: flex;
-  position: relative;
-  min-height: 100vh;
-  background: url('/images/bank-hero.jpg') no-repeat center center fixed;
-  background-size: cover;
-  color: var(--text-dark);
+  height: 100vh;
+  overflow: hidden;
+  background: url("/images/bank-hero.jpg") center/cover no-repeat;
 }
 
-/* Dark overlay */
-.dashboardContainer::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 0;
+.sidebar {
+  flex: 0 0 240px;
 }
 
-/* Right-side content after sidebar */
-.dashboardContainer > div {
+.main {
   flex: 1;
-  position: relative;
-  z-index: 1; /* ensure above overlay */
-}
-
-/* Main content wrapper */
-.mainContent {
-  padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  background: transparent;
+  overflow-y: auto;
 }
 
-/* Generic white card section */
-.sectionCard {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+.header {
+  flex: 0 0 auto;
+}
+
+.content {
   padding: 1.5rem;
+  display: grid;
+  grid-template-rows:
+    auto    /* stats */
+    auto    /* cards */
+    1fr     /* transactions */
+    auto;   /* footer */
+  row-gap: 2rem;
 }
 
-/* Stats + DebitCard row */
-.statsDebitRow {
+.loading {
   display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-
-/* Balance Row */
-.balanceRow {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
-}
-
-/* Individual balance card */
-.balanceCard {
-  flex: 1 1 200px;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.label {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-.amount {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-dark);
-}
-.fiatApprox {
-  font-size: 0.85rem;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  font-size: 1.125rem;
   color: #6b7280;
 }
 
-/* Buttons */
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-.actionButton {
-  background: var(--primary-color);
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.actionButton:hover {
-  background: var(--primary-hover);
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
 }
 
-/* Reveal details cards row */
-.detailCardsRow {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+.accountGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
 }
 
-/* Transactions Section */
-.transactionsSection {
-  background: #ffffff;
-  border-radius: 12px;
+.accountCard {
+  position: relative;
+  background: #fff;
+  border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+.accountCard:hover {
+  transform: translateY(-4px);
+}
+.accountCard::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 4px;
+  background: var(--accent-color, #4F46E5);
+}
+.cardTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+.cardBalance {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+.sparkChart {
+  width: 100%;
+  height: 50px;
+}
+.transactionsSection {
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  padding: 1.75rem;
+  overflow: auto;
+}
+.footer {
+  flex: 0 0 auto;
+}
+
+/* --- ENHANCEMENTS START HERE --- */
+
+/* Welcome Banner */
+.welcomeBanner {
+  position: relative;
+  width: 100%;
+  margin-bottom: 2rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  min-height: 110px;
+}
+.bannerOverlay {
+  background: rgba(36, 36, 36, 0.70);
+  backdrop-filter: blur(2.5px);
+  border-radius: 1.1rem;
+  padding: 1.5rem 2.5rem;
+  color: #fff;
+  box-shadow: 0 6px 24px 0 rgba(0,0,0,0.14);
+  min-width: 390px;
+  max-width: 640px;
+}
+.userName {
+  color: #22D3EE;
+  font-weight: 700;
+  font-size: 1.7rem;
+  letter-spacing: 0.01em;
+}
+.subtitle {
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  font-weight: 400;
+}
+.totalBalance {
+  font-weight: 700;
+  color: #10B981;
+}
+
+/* Account Section Heading */
+.accountOverviewSection h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #181818;
+}
+
+/* Last Transaction Styling */
+.lastTransaction {
+  margin-top: 1.2rem;
+  width: 100%;
+  font-size: 0.97rem;
+}
+.lastTxnLabel {
+  font-size: 0.97rem;
+  font-weight: 600;
+  color: #22223b;
+  margin-bottom: 0.11rem;
+  display: block;
+}
+.lastTxnDetails {
+  display: flex;
+  gap: 0.65rem;
+  font-size: 0.96rem;
+  color: #5c6c80;
+  font-weight: 400;
+  align-items: center;
+  margin-top: 0.05rem;
+}
+.lastTxnDate {
+  color: #22D3EE;
+  font-size: 0.96rem;
+  font-family: "Inter", Arial, sans-serif;
+}
+.lastTxnDesc {
+  color: #232323;
+  font-size: 0.95rem;
+  flex: 1 1 0;
+  font-family: "Inter", Arial, sans-serif;
+}
+.lastTxnAmount {
+  font-weight: 600;
+  color: #10B981;
+  font-size: 1rem;
+  font-family: "Inter", Arial, sans-serif;
+}
+.noTxn {
+  color: #b3b3b3;
+  font-style: italic;
+}
+.ipWarning {
+  background: #fffbe6;
+  border-left: 4px solid #facc15;
+  color: #ad850c;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .accountGrid {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+  .accountCard {
+    min-width: 95vw;
+    max-width: 98vw;
+  }
+  .bannerOverlay {
+    min-width: unset;
+    max-width: 95vw;
+  }
+}
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.7rem;
+}
+.maskedNumber {
+  font-size: 0.98rem;
+  color: #757c8a;
+  background: #f3f4f6;
+  padding: 0.16em 0.8em;
+  border-radius: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.balanceSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+  width: 100%;
+}
+.balanceLabel {
+  font-size: 0.99rem;
+  color: #868ea5;
+  font-weight: 500;
+}
+.currentBalance {
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: #374151;
+}
+.overviewBanner {
+  width: 100%;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  z-index: 3;
+}
+.overviewBannerWhite {
+  background: #ffffff;
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  margin-bottom: 1.5rem;
 }
 
 .sectionTitle {
   font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-/* Loading state */
-.loadingContainer {
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
-  color: #ffffff;
-}
-.loadingSpinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #ffffff;
-  border-top: 4px solid transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
