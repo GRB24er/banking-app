@@ -1,29 +1,51 @@
+// File: src/app/profile/ProfileClient.tsx
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import styles from "./profile.module.css";
-import BackButton from "@/components/BackButton";
 
-interface UserProps {
-  user: {
-    name: string;
-    email: string;
-    role: string;
-    balance: number;
-    btcBalance: number;
-  };
+interface AccountInfo {
+  type: string;
+  accountNumber: string;
+  balance: number;
 }
 
-export default function ProfileClient({ user }: UserProps) {
-  const { name, email, role, balance = 0, btcBalance = 0 } = user;
+interface ProfileData {
+  name:      string;
+  email:     string;
+  phone?:    string;
+  kycStatus: "Verified" | "Pending";
+  accounts:  AccountInfo[];
+}
 
-  const initials = name
-    ? name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-    : "?";
+export default function ProfileClient() {
+  const router = useRouter();
+  const [data, setData]     = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string|null>(null);
+
+  useEffect(() => {
+    fetch("/api/user/profile", { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load profile");
+        return res.json();
+      })
+      .then(setData)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p>Loading profile…</p>;
+  if (error)   return <p className={styles.error}>{error}</p>;
+  if (!data)  return <p>No profile data.</p>;
+
+  const initials = data.name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
 
   return (
     <div className={styles.page}>
@@ -31,49 +53,56 @@ export default function ProfileClient({ user }: UserProps) {
         className={styles.container}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
-        <BackButton />
+        <button onClick={() => router.back()} className={styles.backLink}>
+          ← Back
+        </button>
 
         <div className={styles.avatar}>{initials}</div>
+        <h1 className={styles.title}>{data.name}</h1>
+        <p className={styles.email}>{data.email}</p>
+        {data.phone && <p className={styles.phone}>📞 {data.phone}</p>}
 
-        <h1 className={styles.title}>My Profile</h1>
+        <p className={styles.kyc}>
+          KYC Status:{" "}
+          <span
+            className={
+              data.kycStatus === "Verified"
+                ? styles.kycVerified
+                : styles.kycPending
+            }
+          >
+            {data.kycStatus}
+          </span>
+        </p>
 
-        <motion.div
-          className={styles.infoBox}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <p>
-            <strong>Name:</strong> {name}
-          </p>
-          <p>
-            <strong>Email:</strong> {email}
-          </p>
-          <p>
-            <strong>Role:</strong> {role.charAt(0).toUpperCase() + role.slice(1)}
-          </p>
-          <p>
-            <strong>USD Balance:</strong> ${balance.toFixed(2)}
-          </p>
-          <p>
-            <strong>BTC Balance:</strong> {btcBalance.toFixed(6)} BTC
-          </p>
-        </motion.div>
+        <div className={styles.accounts}>
+          {data.accounts.map((acct) => (
+            <div key={acct.type} className={styles.accountCard}>
+              <div className={styles.acctType}>{acct.type}</div>
+              <div className={styles.acctNumber}>{acct.accountNumber}</div>
+              <div className={styles.acctBalance}>
+                ${acct.balance.toFixed(2)}
+              </div>
+            </div>
+          ))}
+        </div>
 
-        <motion.div
-          className={styles.signOutContainer}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-        >
-          <form action="/api/auth/signout" method="post">
-            <button type="submit" className={styles.signOutLink}>
-              Sign Out
-            </button>
-          </form>
-        </motion.div>
+        <div className={styles.links}>
+          <button
+            onClick={() => router.push("/support/contact")}
+            className={styles.supportBtn}
+          >
+            Contact Support
+          </button>
+          <button
+            onClick={() => router.push("/help-center")}
+            className={styles.helpBtn}
+          >
+            Help Center
+          </button>
+        </div>
       </motion.div>
     </div>
   );

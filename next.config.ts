@@ -1,10 +1,16 @@
+// next.config.ts
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // ✅ Allows builds to pass even with ESLint errors
+    ignoreDuringBuilds: true,
   },
-  // other config options...
+  images: {
+    // 1) allow SVGs  
+    dangerouslyAllowSVG: true,
+    // 2) disable all built-in optimization & blur placeholders
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;

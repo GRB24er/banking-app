@@ -1,58 +1,94 @@
+// File: src/components/Sidebar.tsx
+
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  BarChart3,
+  User,
+  FileText,
+  Settings,
+  ChevronLeft,
+  Menu,
+} from "lucide-react";
 import styles from "./Sidebar.module.css";
-import AppIcon from "@/components/AppIcon";
 
+interface NavItem {
+  label: string;
+  href: string;
+  Icon: React.FC<React.SVGProps<SVGSVGElement>>;
+}
 
-const Sidebar = () => {
+const NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", Icon: BarChart3 },
+  { label: "Profile",   href: "/profile",   Icon: User },
+  { label: "Reports",   href: "/reports",   Icon: FileText },
+  { label: "Settings",  href: "/settings",  Icon: Settings },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
-
-  const navLinks = [
-    { href: "/dashboard", label: "Dashboard", icon: "home" },
-    { href: "/send-money", label: "Transfers", icon: "money-send" },
-    { href: "/settings", label: "Settings", icon: "settings" },
-    { href: "/reports", label: "Reports", icon: "bar-chart3" },
-  ];
-
-  const toggleCollapse = () => setCollapsed(!collapsed);
-  const toggleMobile = () => setMobileOpen(!mobileOpen);
 
   return (
     <>
-      <button className={styles.mobileToggle} onClick={toggleMobile}>
-        {mobileOpen ? <AppIcon name="x" /> : <AppIcon name="hamburger" />}
+      {/* Mobile toggle */}
+      <button
+        className={styles.mobileToggle}
+        onClick={() => setMobileOpen((o) => !o)}
+        aria-label="Open sidebar"
+      >
+        <Menu width={20} height={20} />
       </button>
 
-      <aside
-        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""} ${
-          mobileOpen ? styles.mobileOpen : ""
-        }`}
+      <nav
+        className={[
+          styles.sidebar,
+          collapsed && styles.collapsed,
+          mobileOpen && styles.mobileOpen,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
-        <button className={styles.collapseBtn} onClick={toggleCollapse}>
-          {collapsed ? "→" : "←"}
+        {/* Collapse button */}
+        <button
+          className={styles.collapseBtn}
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <ChevronLeft
+            width={20}
+            height={20}
+            className={collapsed ? styles.rotate180 : ""}
+          />
         </button>
 
-        <nav className={styles.nav}>
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`${styles.navItem} ${pathname === link.href ? styles.active : ""}`}
-              onClick={() => setMobileOpen(false)}
-            >
-              <AppIcon name={link.icon} />
-              {!collapsed && <span className={styles.label}>{link.label}</span>}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+        <div className={styles.nav}>
+          {NAV_ITEMS.map(({ label, href, Icon }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={[
+                  styles.navItem,
+                  isActive && styles.active,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <div className={styles.icon}>
+                  <Icon width={20} height={20} />
+                </div>
+                {!collapsed && <span>{label}</span>}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </>
   );
-};
-
-export default Sidebar;
+}

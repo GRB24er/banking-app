@@ -1,16 +1,17 @@
-import mongoose from 'mongoose';
-
+// File: src/types/transaction.ts
 export interface ITransaction {
-  id?: string;
-  _id?: mongoose.Types.ObjectId;
-  type: 'deposit' | 'withdrawal' | 'transfer' | 'debit' | 'credit';
-  amount: number;
-  description: string;
-  date: Date;
+  _id?:         string;
+  reference:    string;
+  type:         'deposit' | 'credit' | 'withdrawal' | 'transfer' | 'send' | string;
+  currency:     string;
+  amount:       number;
+  date:         Date;
   balanceAfter: number;
-  relatedUser?: mongoose.Types.ObjectId | string;
-  currency?: string;
-  status: 'pending' | 'completed' | 'failed' | 'reversed';
-  reference: string;
-  metadata?: Record<string, any>;
+  status:       'pending' | 'completed' | 'failed' | 'reversed' | string;
+  description?: string;
+  /**
+   * Which user account this transaction hit.
+   * 'checking' | 'savings' | 'investment' 
+   */
+  accountType?: 'checking' | 'savings' | 'investment';
 }

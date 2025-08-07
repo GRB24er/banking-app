@@ -1,27 +1,35 @@
-/* Full-page background */
 .page {
   min-height: 100vh;
-  background: url("/images/bank-hero.jpg") no-repeat center center fixed;
-  background-size: cover;
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: url("/images/bank-hero.jpg") center/cover no-repeat;
+  position: relative;
 }
-
-/* Dark overlay */
 .page::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0,0,0,0.4);
   z-index: 0;
 }
 
-/* Avatar circle */
+.container {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
 .avatar {
   width: 80px;
   height: 80px;
+  margin: 0 auto 1rem;
   border-radius: 50%;
   background: var(--primary-color);
   color: #fff;
@@ -30,6 +38,85 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1rem auto;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.title {
+  margin: 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.email, .phone {
+  margin: 0.25rem 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.kyc {
+  margin: 1rem 0;
+}
+.kycVerified {
+  color: #10B981;
+}
+.kycPending {
+  color: #F59E0B;
+}
+
+.accounts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.accountCard {
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+.acctType {
+  font-size: 0.85rem;
+  color: #374151;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+.acctNumber {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+.acctBalance {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.supportBtn,
+.helpBtn {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.supportBtn {
+  background: #4f46e5;
+  color: #fff;
+}
+.supportBtn:hover {
+  background: #4338ca;
+}
+.helpBtn {
+  background: #e5e7eb;
+  color: #374151;
+}
+.helpBtn:hover {
+  background: #d1d5db;
+}
+
+.error {
+  color: #b91c1c;
+  margin-bottom: 1rem;
 }

@@ -1,84 +1,94 @@
-.tableContainer {
+/* File: src/components/TransactionTable.module.css */
+
+.card {
   background: #ffffff;
-  border-radius: 12px;
-  overflow-x: auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 1rem 1.5rem;
+  margin-top: 2rem;
 }
 
-/* Table base */
+.header {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1f2937;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
   min-width: 600px;
 }
 
+/* Apply to both th and td within our .table */
 .table th,
 .table td {
-  padding: 14px 20px;
-  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.95rem;
   color: #374151;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap;
 }
 
-.table thead th {
-  font-weight: 600;
+/* Style the header row */
+.table thead {
   background: #f3f4f6;
-  color: #111827;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.03em;
 }
 
-/* Alignments */
+/* Header cells */
+.table th {
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.rowEven {
+  background: #ffffff;
+}
+
+.rowOdd {
+  background: #f9fafb;
+}
+
 .left {
   text-align: left;
 }
+
 .right {
   text-align: right;
 }
 
-/* Transaction cell with icon */
-.txnCell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.icon {
-  width: 1.5rem;
-  height: 1.5rem;
-  color: var(--primary-color);
-}
-
-/* Amount color coding */
 .credit {
-  color: #16a34a;
-  font-weight: 600;
-}
-.debit {
-  color: #dc2626;
-  font-weight: 600;
+  color: #10b981;
+  font-weight: 500;
 }
 
-/* Status badge improvements */
-.status {
-  padding: 4px 10px;
+.debit {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.statusPill {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 600;
-  display: inline-block;
-  text-align: center;
+  font-weight: 500;
+  text-transform: capitalize;
 }
 
 .completed {
   background: #d1fae5;
-  color: #065f46;
+  color: #047857;
 }
 
 .pending {
-  background: #fef9c3;
+  background: #fef3c7;
   color: #92400e;
 }
 
@@ -86,20 +96,59 @@
   background: #fee2e2;
   color: #991b1b;
 }
+/* Make header stick and a touch darker */
+.tableWrapper {
+  max-height: 400px;
+  overflow: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: #f9fafb;         /* slightly lighter */
+  border-bottom: 2px solid #e5e7eb;
+  z-index: 1;
+}
 
-/* Row hover with smooth transition */
+/* Row hover effect */
 .table tbody tr {
-  transition: background 0.2s ease;
+  transition: background-color 0.2s;
 }
 .table tbody tr:hover {
+  background-color: #f3f4f6;
+}
+
+/* Even stronger zebra stripes */
+.rowEven {
+  background: #ffffff;
+}
+.rowOdd {
   background: #f9fafb;
 }
 
-/* Responsive table scroll hint */
-.tableContainer::-webkit-scrollbar {
-  height: 6px;
+/* Increase cell padding */
+.table td,
+.table th {
+  padding: 1rem 1.25rem;
 }
-.tableContainer::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+
+/* Status pills sharper contrast */
+.statusPill {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+}
+.completed {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.pending {
+  background: #fffbeb;
+  color: #92400e;
+}
+.failed {
+  background: #fef2f2;
+  color: #7f1d1d;
 }

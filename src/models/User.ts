@@ -3,6 +3,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// ── Transaction sub‐document interface ───────────────────────────────────────
 export interface ITransaction {
   type: 'deposit' | 'withdrawal' | 'transfer' | 'debit' | 'credit';
   amount: number;
@@ -12,22 +13,32 @@ export interface ITransaction {
   relatedUser?: mongoose.Types.ObjectId;
 }
 
+// ── User document interface ─────────────────────────────────────────────────
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  /** ← new: distinguish between regular users & admins */
+  /** Distinguish regular users & admins */
   role: 'user' | 'admin';
   verified: boolean;
-  balance: number;
+
+  /** New: separate account balances */
+  checkingBalance: number;
+  savingsBalance: number;
+  investmentBalance: number;
+
+  /** Crypto balance remains */
   btcBalance: number;
+
   accountNumber: string;
   routingNumber: string;
   bitcoinAddress: string;
+
   transactions: ITransaction[];
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
+// ── Transaction schema ─────────────────────────────────────────────────────
 const TransactionSchema = new Schema<ITransaction>({
   type:        { type: String, enum: ['deposit','withdrawal','transfer','debit','credit'], required: true },
   amount:      { type: Number, required: true },
@@ -37,23 +48,30 @@ const TransactionSchema = new Schema<ITransaction>({
   relatedUser: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { _id: false });
 
+// ── User schema ────────────────────────────────────────────────────────────
 const UserSchema = new Schema<IUser>({
   name:           { type: String, required: true, trim: true, maxlength: 50 },
-  email:          { 
+  email:          {
                    type: String, required: true, unique: true,
                    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email']
                   },
   password:       { type: String, required: true, minlength: 8, select: false },
 
-  /** ← NEW FIELD */
   role:           { type: String, enum: ['user','admin'], default: 'user' },
-
   verified:       { type: Boolean, default: false },
-  balance:        { type: Number, default: 0, min: 0 },
+
+  // ── Replaced single balance with three separate balances ────────────────
+  checkingBalance:   { type: Number, default: 0, min: 0 },
+  savingsBalance:    { type: Number, default: 0, min: 0 },
+  investmentBalance: { type: Number, default: 0, min: 0 },
+
+  // ── Crypto balance unchanged ────────────────────────────────────────────
   btcBalance:     { type: Number, default: 0, min: 0 },
+
   accountNumber:  { type: String, required: true, unique: true },
   routingNumber:  { type: String, required: true },
   bitcoinAddress: { type: String, required: true, unique: true },
+
   transactions:   [TransactionSchema]
 }, {
   timestamps: true,
@@ -69,7 +87,7 @@ const UserSchema = new Schema<IUser>({
   },
 });
 
-// Hash password on save
+// ── Password hashing ───────────────────────────────────────────────────────
 UserSchema.pre<IUser>('save', async function(next) {
   if (!this.isModified('password')) return next();
   try {
@@ -81,7 +99,7 @@ UserSchema.pre<IUser>('save', async function(next) {
   }
 });
 
-// Auto‐generate account, routing & BTC address
+// ── Auto‐generate account, routing & BTC address ───────────────────────────
 UserSchema.pre<IUser>('save', function(next) {
   if (!this.accountNumber)  this.accountNumber  = 'AC' + Math.floor(1e8 + Math.random()*9e8);
   if (!this.routingNumber)  this.routingNumber  = 'RT' + Math.floor(1e8 + Math.random()*9e8);

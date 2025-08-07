@@ -1,97 +1,124 @@
+/* File: src/components/Footer.module.css */
+
 .footer {
-  background: var(--light-gray);
-  border-top: 1px solid #e5e7eb;
-  padding: 2rem 1.5rem;
-  margin-top: 2rem;
+  background: #1b1d2b;
+  color: #cbd5e1;
+  padding: 2rem 1rem 1rem;    /* reduced top/bottom padding */
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .footerContainer {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;                   /* tighter gutters */
+  align-items: start;
+}
+
+/* Brand Section */
+.brandSection {
   display: flex;
-  justify-content: space-between;
-  gap: 2rem;
-  flex-wrap: wrap;
+  flex-direction: column;
 }
-
-.brandSection,
-.contactSection,
-.linksSection {
-  flex: 1;
-  min-width: 200px;
-}
-
 .logoRow {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.5rem;      /* less space under logo */
 }
-
+.logoImage {
+  margin-right: 0.5rem;
+}
 .brandName {
-  font-size: 1.25rem;
+  font-size: 1.3rem;          /* slightly smaller */
   font-weight: 700;
-  color: var(--primary-color);
+  color: #ffffff;
+  line-height: 1.2;
 }
-
 .tagline {
-  font-size: 0.9rem;
-  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #94a3b8;
 }
 
+/* Section Headers */
 .sectionTitle {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: 0.75rem;
-  color: var(--text-dark);
+  color: #ffffff;
+  margin-bottom: 0.5rem;      /* reduced gap */
+  line-height: 1.3;
 }
 
+/* Contact Section */
 .contactList,
 .linkList {
   list-style: none;
-  padding: 0;
   margin: 0;
-  font-size: 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  padding: 0;
+}
+.contactList li,
+.linkList li {
+  margin-bottom: 0.4rem;      /* tighter list spacing */
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
-.contactList a,
-.linkList a {
-  color: #374151;
+/* Links */
+.link {
+  color: #cbd5e1;
   text-decoration: none;
+  transition: color 0.2s;
+}
+.link:hover {
+  color: #ffffff;
 }
 
-.contactList a:hover,
-.linkList a:hover {
-  color: var(--primary-color);
+/* Legal Notice */
+.legalSection {
+  grid-column: 1 / -1;
+  text-align: center;
+  margin-top: 1.5rem;         /* less top margin */
 }
-
 .copy {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Chatbox positioning */
+.footer :global(.chatbox) {
+  position: absolute;
+  bottom: 1rem;               /* closer to footer */
+  right: 1rem;
+}
+
+
+.footerContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+
+  /* explicit 3-column layout */
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "brand contact links"
+    "legal legal  legal";
+
+  gap: 1rem;
+  align-items: start;
+}
+
+/* map each section to its area */
+.brandSection   { grid-area: brand; }
+.contactSection { grid-area: contact; }
+.linksSection   { grid-area: links; }
+.legalSection   { grid-area: legal; text-align: center; }
+
+/* tighten the legal margin now that it’s its own row */
+.legalSection {
   margin-top: 1rem;
-}
-
-/* Chatbox trigger (floating button) */
-.chatTrigger {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: background 0.2s ease;
-}
-
-.chatTrigger:hover {
-  background: var(--primary-hover);
 }
