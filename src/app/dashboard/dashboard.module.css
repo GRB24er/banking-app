@@ -4,7 +4,7 @@
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: url("/images/bank-hero.jpg") center/cover no-repeat;
+  background: #f5f6fa; /* light neutral background instead of image */
 }
 
 .sidebar {
