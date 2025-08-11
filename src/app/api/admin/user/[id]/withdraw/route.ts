@@ -1,68 +1,47 @@
-// File: src/app/api/admin/user/[id]/withdraw/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession }        from 'next-auth';
-import { authOptions }             from '@/lib/authOptions';
-import dbConnect, { db }           from '@/lib/mongodb';
-import TransactionModel            from '@/models/Transaction';
-import User                        from '@/models/User';
-import { sendTransactionEmail }    from '@/lib/mail';
+import connectDB from '@/lib/mongodb';
+import Transaction from '@/models/Transaction';
+import User from '@/models/User';
 
-export async function POST(
-  request: NextRequest,
-  context: any    // ← accept context as any so Next.js ParamCheck passes
-) {
-  // 1) Auth guard
-  const session = await getServerSession(authOptions);
-  if (!session?.user || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // 2) Validate amount
-  const { amount } = await request.json();
-  const amt = Number(amount);
-  if (isNaN(amt) || amt <= 0) {
-    return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
-  }
-
-  // 3) Connect
-  await dbConnect();
-
-  // 4) Pull out the dynamic [id] param
-  const userId: string = context.params.id;
-
-  // 5) Branded description
-  const description = 'Horizon Global Capital';
-
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    // 6) Embedded balance update
-    const { transaction } = await db.createTransaction(
-      userId,
-      { type: 'withdrawal', amount: amt, description },
-      'completed'
-    );
+    await connectDB();
+    const { id: userId } = await context.params;
 
-    // 7) Standalone record
-    await TransactionModel.create({
-      userId,
-      type:        'withdrawal',
-      amount:      amt,
-      currency:    transaction.currency,
-      description
-    });
+    const body = await req.json().catch(() => ({}));
+    let { amount, currency = 'USD', date, description, accountType = 'checking' } = body || {};
 
-    // 8) Notify user by email
-    const user = await User.findById(userId);
-    if (user) {
-      await sendTransactionEmail(user.email, {
-        name:        user.name,
-        transaction
-      });
+    if (amount == null || isNaN(Number(amount)) || Number(amount) <= 0) {
+      return NextResponse.json({ error: 'Valid `amount` > 0 required' }, { status: 400 });
+    }
+    amount = Number(amount);
+    if (!['USD', 'BTC'].includes(currency)) {
+      return NextResponse.json({ error: 'currency must be USD or BTC' }, { status: 400 });
+    }
+    if (!['checking', 'savings', 'investment'].includes(String(accountType))) {
+      return NextResponse.json({ error: 'accountType must be checking|savings|investment' }, { status: 400 });
     }
 
-    // 9) Return success
-    return NextResponse.json({ success: true, transaction });
+    const user = await User.findById(userId).lean();
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    // ALWAYS create as PENDING; balances move only on Approve
+    const txn = await Transaction.create({
+      userId,
+      type: 'send', // withdraw reduces balance
+      currency,
+      amount,
+      date: date ? new Date(date) : new Date(),
+      description: description || 'Admin Withdrawal',
+      status: 'pending',
+      posted: false,
+      postedAt: null,
+      accountType,
+    });
+
+    return NextResponse.json({ success: true, transaction: txn });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    console.error('Admin withdraw error:', err);
+    return NextResponse.json({ error: err?.message || 'Failed to create admin withdrawal' }, { status: 500 });
   }
 }

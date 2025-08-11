@@ -1,42 +1,59 @@
-// File: src/app/api/user/dashboard/route.ts
-
+// src/app/api/user/dashboard/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
-import type { ITransaction } from "@/types/transaction";
+import Transaction from "@/models/Transaction";
 
-export async function GET(request: Request) {
-  // 1) Authenticate
+function displayStatus(status: string) {
+  // Map DB statuses to human/banking labels
+  if (status === "completed" || status === "approved") return "Completed";
+  if (status === "pending_verification") return "Pending – Verification";
+  if (status === "pending") return "Pending";
+  if (status === "rejected") return "Rejected";
+  return status ?? "Pending";
+}
+
+export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 2) Connect to DB and load user + embedded transactions
   await connectDB();
+
   const user = await User.findOne({ email: session.user.email })
-    .select("balance savingsBalance investmentBalance transactions")
+    .select("_id checkingBalance savingsBalance investmentBalance")
     .lean();
-  if (!user) {
+
+  if (!user?._id) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // 3) Prepare balances object
   const balances = {
-    checking:   user.balance,
+    checking:   (user as any).checkingBalance   ?? 0,
     savings:    (user as any).savingsBalance    ?? 0,
     investment: (user as any).investmentBalance ?? 0,
   };
 
-  // 4) Sort & take the latest 10 transactions
-  const recent: ITransaction[] = (user.transactions || [])
-    .sort((a: ITransaction, b: ITransaction) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-    .slice(0, 10);
+  const txDocs = await Transaction.find({ userId: user._id })
+    .sort({ date: -1, createdAt: -1 })
+    .limit(10)
+    .select("_id reference type currency amount date description status accountType createdAt")
+    .lean();
 
-  // 5) Return raw data—statuses and amounts come straight from DB
-  return NextResponse.json({ balances, recent });
+  const recent = txDocs.map((t: any) => ({
+    reference: t.reference ?? String(t._id),
+    type: t.type ?? "deposit",
+    currency: t.currency ?? "USD",
+    amount: typeof t.amount === "number" ? t.amount : Number(t.amount) || 0,
+    date: t.date ?? t.createdAt ?? new Date(),
+    description: t.description === "Admin deposit" ? "Bank credit" : (t.description ?? "Bank credit"),
+    status: displayStatus(t.status),
+    rawStatus: t.status, // keep raw for UI chips if needed
+    accountType: t.accountType ?? "checking",
+  }));
+
+  return NextResponse.json({ balances, recent }, { status: 200 });
 }

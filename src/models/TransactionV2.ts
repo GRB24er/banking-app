@@ -1,9 +1,9 @@
-// src/models/Transaction.ts
+// src/models/TransactionV2.ts
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type TxStatus =
   | "pending"
-  | "approved"                 // admin uses this; UI shows “Completed”
+  | "approved"                 // admin uses; UI shows “Completed”
   | "rejected"
   | "completed"                // legacy alias; treated as cleared
   | "pending_verification";
@@ -98,8 +98,7 @@ function balanceKey(acct: ITransaction["accountType"]) {
     ? "investmentBalance"
     : "checkingBalance";
 }
-
-const USERS_COLLECTION = "users"; // adjust if your collection name differs
+const USERS_COLLECTION = "users";
 
 async function applyBalanceEffectOnce(doc: ITransaction) {
   if (doc.posted || !isCleared(doc.status)) return;
@@ -118,33 +117,20 @@ async function applyBalanceEffectOnce(doc: ITransaction) {
   doc.postedAt = new Date();
 }
 
-// Post-save hook
 TransactionSchema.post("save", async function (doc) {
-  try {
-    await applyBalanceEffectOnce(doc as ITransaction);
-  } catch (e) {
+  try { await applyBalanceEffectOnce(doc as ITransaction); } catch (e) {
     console.error("Transaction post-save apply failed:", e);
   }
 });
-
-// Post findOneAndUpdate hook (e.g., admin approve/reject)
 TransactionSchema.post("findOneAndUpdate", async function (res) {
-  try {
-    if (!res) return;
-    await applyBalanceEffectOnce(res as unknown as ITransaction);
-  } catch (e) {
+  try { if (res) await applyBalanceEffectOnce(res as unknown as ITransaction); } catch (e) {
     console.error("Transaction post-findOneAndUpdate apply failed:", e);
   }
 });
 
-// Ensure fresh model in dev when file changes
-const modelName = "Transaction";
-if (mongoose.models[modelName]) {
-  // @ts-ignore
-  delete mongoose.models[modelName];
-}
+// Use SAME COLLECTION NAME: "transactions"
+const TransactionV2: Model<ITransaction> =
+  mongoose.models.TransactionV2 ||
+  mongoose.model<ITransaction>("TransactionV2", TransactionSchema, "transactions");
 
-const Transaction: Model<ITransaction> =
-  mongoose.models[modelName] || mongoose.model<ITransaction>(modelName, TransactionSchema);
-
-export default Transaction;
+export default TransactionV2;

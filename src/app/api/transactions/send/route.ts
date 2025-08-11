@@ -1,122 +1,227 @@
-// File: src/app/api/transactions/send/route.ts
+// src/app/api/transactions/send/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
+import connectDB from "@/lib/mongodb";
+import User from "@/models/User";
+import Transaction from "@/models/TransactionV2"; // <-- use V2
+import { parseAmount } from "@/lib/amount";
+import { sendTransactionEmail } from "@/lib/mail";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession }      from 'next-auth'; 
-import { authOptions }           from '@/lib/authOptions';
-import { db }                    from '@/lib/mongodb';                          // embedded-transaction + balance updates
-import TransactionModel          from '@/models/Transaction';                   // ← new: standalone collection
-import { sendTransactionEmail }  from '@/lib/mail';
+export const runtime = "nodejs";
+
+type AccountType = "checking" | "savings" | "investment";
+
+function normalizeAcct(input: any): AccountType {
+  const v = String(input || "").toLowerCase();
+  if (v === "savings") return "savings";
+  if (v === "investment") return "investment";
+  return "checking";
+}
+function balanceKey(acct: AccountType) {
+  return acct === "savings"
+    ? "savingsBalance"
+    : acct === "investment"
+    ? "investmentBalance"
+    : "checkingBalance";
+}
+function makeReference() {
+  const rnd = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const ts = Date.now().toString().slice(-6);
+  return `TRF-${ts}-${rnd}`;
+}
+
+export async function GET() {
+  return NextResponse.json({ ok: true, route: "/api/transactions/send" }, { status: 200 });
+}
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    console.error('❌ send: no session user');
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // 1) Decode + validate payload
-  let body: any;
   try {
-    body = await request.json();
-  } catch (err) {
-    console.error('❌ send: invalid JSON', err);
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-  const {
-    email,
-    accountNumber,
-    routingNumber,
-    amount,
-    currency = 'USD',
-  } = body;
-  const amt = Number(amount);
-  if (isNaN(amt) || amt <= 0) {
-    console.error('❌ send: missing or invalid amount:', amount);
-    return NextResponse.json({ error: 'Amount is required and must be a number' }, { status: 400 });
-  }
-  if (!email && !(accountNumber && routingNumber)) {
-    console.error('❌ send: no recipient identifier provided:', { email, accountNumber, routingNumber });
-    return NextResponse.json({ error: 'Must provide an email or accountNumber + routingNumber' }, { status: 400 });
-  }
-
-  // 2) Lookup sender + recipient
-  // ── sender (for description use) 
-  const sender = await db.getUserById(session.user.id);
-  if (!sender) {
-    console.error('❌ send: sender not found');
-    return NextResponse.json({ error: 'Sender not found' }, { status: 404 });
-  }
-  // ── recipient
-  let recipient;
-  try {
-    recipient = await db.findUser({ email, accountNumber, routingNumber });
-  } catch (err: any) {
-    console.error('❌ send: findUser error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 400 });
-  }
-  if (!recipient) {
-    console.error('❌ send: recipient not found with', { email, accountNumber, routingNumber });
-    return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
-  }
-
-  // 3) Build plain descriptions (front-end will prepend "Sent $X to …" automatically)
-  const toIdentifier   = email ? recipient.email         : recipient.accountNumber;
-  const fromIdentifier = sender.email  || sender.accountNumber;
-
-  try {
-    // 4a) Debit sender (embedded + balance)
-    const { transaction: debitTx } = await db.createTransaction(
-      session.user.id,
-      { type: 'withdrawal', amount: amt, description: toIdentifier, currency },
-      'completed'
-    );
-
-    // 4b) Credit recipient (embedded + balance)
-    const { transaction: creditTx } = await db.createTransaction(
-      recipient.id,
-      { type: 'deposit', amount: amt, description: fromIdentifier, currency },
-      'completed'
-    );
-
-    console.log('✅ send: embedded transactions created', {
-      from: session.user.id, to: recipient.id,
-      debitRef: debitTx.reference, creditRef: creditTx.reference,
-    });
-
-    // 5) ALSO record in standalone Transaction collection
-    await TransactionModel.create({
-      userId: session.user.id,
-      type:     'send',           // matches your dashboard’s APITransaction type union :contentReference[oaicite:0]{index=0}
-      currency,
-      amount:   amt,
-      description: toIdentifier,
-      // date defaults to `new Date()` per your TransactionSchema :contentReference[oaicite:1]{index=1}
-    });
-    await TransactionModel.create({
-      userId: recipient.id,
-      type:     'deposit',
-      currency,
-      amount:   amt,
-      description: fromIdentifier,
-    });
-
-    // 6) Notify recipient by email
-    try {
-      await sendTransactionEmail(recipient.email, { name: recipient.name, transaction: creditTx });
-      console.log('📧 send: notification email sent to', recipient.email);
-    } catch (emailErr) {
-      console.error('❌ send: failed notification email:', emailErr);
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    // 7) Return success + both legs
-    return NextResponse.json({
-      success: true,
-      debit:   debitTx,
-      credit:  creditTx
+    const raw = await request.json().catch(() => ({} as any));
+    const fromAccount: AccountType = normalizeAcct(raw?.fromAccountType);
+    const toAccount: AccountType | undefined =
+      raw?.toAccountType ? normalizeAcct(raw?.toAccountType) : undefined;
+
+    const toEmail: string | undefined =
+      typeof raw?.toEmail === "string" && raw.toEmail.trim()
+        ? raw.toEmail.trim().toLowerCase()
+        : undefined;
+
+    let amount: number;
+    try {
+      amount = parseAmount(raw?.amount);
+    } catch (err: any) {
+      return NextResponse.json({ ok: false, error: err?.message ?? "Invalid amount." }, { status: 400 });
+    }
+
+    const descriptionInput =
+      typeof raw?.description === "string" && raw.description.trim()
+        ? raw.description.trim()
+        : "";
+
+    if (!toEmail && !toAccount) {
+      return NextResponse.json(
+        { ok: false, error: "Provide either toEmail (P2P) or toAccountType (internal transfer)." },
+        { status: 400 }
+      );
+    }
+    if (toAccount && toAccount === fromAccount && !toEmail) {
+      return NextResponse.json(
+        { ok: false, error: "From and To accounts cannot be the same for internal transfer." },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    const sender = await User.findById(session.user.id)
+      .select("_id email name checkingBalance savingsBalance investmentBalance")
+      .lean();
+    if (!sender) {
+      return NextResponse.json({ ok: false, error: "Sender not found." }, { status: 404 });
+    }
+
+    const senderKey = balanceKey(fromAccount);
+    const senderAvail = (sender as any)[senderKey] || 0;
+    if (senderAvail < amount) {
+      return NextResponse.json(
+        { ok: false, error: "Insufficient cleared funds in the selected account." },
+        { status: 400 }
+      );
+    }
+
+    const reference = makeReference();
+    const now = new Date();
+
+    // P2P (to another user)
+    if (toEmail && toEmail !== String(sender.email).toLowerCase()) {
+      const recipient = await User.findOne({ email: toEmail })
+        .select("_id email name")
+        .lean();
+      if (!recipient?._id) {
+        return NextResponse.json({ ok: false, error: "Recipient not found for the provided email." }, { status: 404 });
+      }
+
+      const toAcct: AccountType = toAccount ?? "checking";
+
+      const outTx = await Transaction.create({
+        userId: sender._id,
+        type: "transfer-out",
+        currency: "USD",
+        amount,
+        description: descriptionInput || `Transfer to ${toEmail}`,
+        status: "pending",
+        date: now,
+        accountType: fromAccount,
+        posted: false,
+        postedAt: null,
+        reference,
+        channel: "p2p",
+        origin: "user_transfer",
+      });
+
+      const inTx = await Transaction.create({
+        userId: recipient._id,
+        type: "transfer-in",
+        currency: "USD",
+        amount,
+        description: descriptionInput || `Transfer from ${sender.email}`,
+        status: "pending",
+        date: now,
+        accountType: toAcct,
+        posted: false,
+        postedAt: null,
+        reference,
+        channel: "p2p",
+        origin: "user_transfer",
+      });
+
+      try {
+        await Promise.allSettled([
+          sendTransactionEmail(String(sender.email), {
+            name: (sender as any).name || undefined,
+            transaction: outTx,
+          }),
+          sendTransactionEmail(String(recipient.email), {
+            name: (recipient as any).name || undefined,
+            transaction: inTx,
+          }),
+        ]);
+      } catch {}
+
+      return NextResponse.json(
+        {
+          ok: true,
+          message: "Transfer created and set to pending.",
+          reference,
+          senderTransactionId: String(outTx._id),
+          recipientTransactionId: String(inTx._id),
+          status: "pending",
+        },
+        { status: 201 }
+      );
+    }
+
+    // Internal transfer (same user)
+    const toAcct: AccountType = toAccount ?? "checking";
+
+    const outTx = await Transaction.create({
+      userId: sender._id,
+      type: "transfer-out",
+      currency: "USD",
+      amount,
+      description: descriptionInput || `Transfer to ${toAcct}`,
+      status: "pending",
+      date: now,
+      accountType: fromAccount,
+      posted: false,
+      postedAt: null,
+      reference,
+      channel: "internal",
+      origin: "user_transfer",
     });
-  } catch (err: any) {
-    console.error('❌ send: db.createTransaction error:', err.message);
-    const status = err.message.includes('Insufficient') ? 402 : 500;
-    return NextResponse.json({ error: err.message }, { status });
+
+    const inTx = await Transaction.create({
+      userId: sender._id,
+      type: "transfer-in",
+      currency: "USD",
+      amount,
+      description: descriptionInput || `Transfer from ${fromAccount}`,
+      status: "pending",
+      date: now,
+      accountType: toAcct,
+      posted: false,
+      postedAt: null,
+      reference,
+      channel: "internal",
+      origin: "user_transfer",
+    });
+
+    try {
+      await sendTransactionEmail(String(sender.email), {
+        name: (sender as any).name || undefined,
+        transaction: outTx,
+      });
+    } catch {}
+
+    return NextResponse.json(
+      {
+        ok: true,
+        message: "Internal transfer created and set to pending.",
+        reference,
+        debitTransactionId: String(outTx._id),
+        creditTransactionId: String(inTx._id),
+        status: "pending",
+      },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("Transfer error:", err);
+    return NextResponse.json({ ok: false, error: "Internal Server Error" }, { status: 500 });
   }
 }

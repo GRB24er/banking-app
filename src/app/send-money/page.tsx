@@ -1,329 +1,349 @@
-// File: src/app/send-money/page.tsx
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import styles from "./sendMoney.module.css";
+import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
+import styles from './sendMoney.module.css';
 
-type DestMethod = "email" | "phone" | "bank";
-type SourceAccount = "checking" | "savings" | "investment";
+type AccountType = 'checking' | 'savings' | 'investment';
+type Mode = 'p2p' | 'internal';
 
-interface CountryConfig {
-  label: string;
-  fields: { id: string; label: string; placeholder?: string; type?: string }[];
-}
-
-interface ConfirmData {
-  reference: string;
-  date: string;
-  from: string;
-  to: string;
-  amount: number;
-  memo: string;
-}
-
-// Configuration for each country’s required fields
-const countryConfigs: Record<string, CountryConfig> = {
-  US: {
-    label: "United States",
-    fields: [
-      { id: "accountNumber", label: "Account Number", placeholder: "12345678" },
-      { id: "routingNumber", label: "Routing Number", placeholder: "021000021" },
-    ],
-  },
-  UK: {
-    label: "United Kingdom",
-    fields: [
-      { id: "accountNumber", label: "Account Number", placeholder: "01234567" },
-      { id: "sortCode", label: "Sort Code", placeholder: "12-34-56" },
-    ],
-  },
-  IN: {
-    label: "India",
-    fields: [
-      { id: "accountNumber", label: "Account Number", placeholder: "12345678901" },
-      { id: "ifsc", label: "IFSC Code", placeholder: "ABCD0123456" },
-    ],
-  },
-  IBAN: {
-    label: "Any IBAN Country",
-    fields: [
-      { id: "iban", label: "IBAN", placeholder: "DE89 3704 0044 0532 0130 00" },
-      { id: "swift", label: "SWIFT/BIC", placeholder: "DEUTDEFF" },
-    ],
-  },
+type Receipt = {
+  reference?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'pending_verification';
+  amount: string;
+  currency: string;
+  fromAccountType: AccountType;
+  toAccountType?: AccountType;
+  toEmail?: string;
+  description?: string;
+  submittedAt: string; // ISO
 };
 
-export default function SendMoneyPage() {
-  const router = useRouter();
-
-  // Form state
-  const [source, setSource] = useState<SourceAccount>("checking");
-  const [method, setMethod] = useState<DestMethod>("email");
-  const [country, setCountry] = useState<string>("US");
-
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [fields, setFields] = useState<Record<string, string>>({});
-  const [amount, setAmount] = useState("");
-
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [confirm, setConfirm] = useState<ConfirmData | null>(null);
-
-  // Initialize country-specific fields whenever country changes
-  useEffect(() => {
-    const cfg = countryConfigs[country];
-    const initial: Record<string, string> = {};
-    cfg.fields.forEach((f) => {
-      initial[f.id] = "";
-    });
-    setFields(initial);
-  }, [country]);
-
-  // Handle form submission
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-
-    const amtNum = parseFloat(amount);
-    if (!amtNum || amtNum <= 0) {
-      setError("Enter a valid amount.");
-      return;
-    }
-    if (method === "email" && !email) {
-      setError("Enter recipient email.");
-      return;
-    }
-    if (method === "phone" && !phone) {
-      setError("Enter recipient phone.");
-      return;
-    }
-    if (method === "bank") {
-      const cfg = countryConfigs[country];
-      for (let f of cfg.fields) {
-        if (!fields[f.id]) {
-          setError(`Enter ${f.label}.`);
-          return;
-        }
-      }
-    }
-
-    const payload: any = { source, amount: amtNum, method };
-    let toDesc = "";
-    if (method === "email") {
-      payload.email = email;
-      toDesc = email;
-    } else if (method === "phone") {
-      payload.phone = phone;
-      toDesc = phone;
-    } else {
-      payload.country = country;
-      countryConfigs[country].fields.forEach((f) => {
-        payload[f.id] = fields[f.id];
-      });
-      toDesc = `${countryConfigs[country].label} Transfer`;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/user/transfer", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Transfer failed");
-
-      const tx = data.transaction;
-      setConfirm({
-        reference: tx.reference,
-        date: new Date(tx.date).toLocaleDateString(),
-        from: source.charAt(0).toUpperCase() + source.slice(1),
-        to: toDesc,
-        amount: tx.amount,
-        memo: tx.description || "Online Transfer",
-      });
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Confirmation modal
-  if (confirm) {
-    return (
-      <div className={styles.overlay}>
-        <div className={styles.card}>
-          <div className={styles.checkmark}>✓</div>
-          <h2 className={styles.confirmTitle}>Transaction Authorized</h2>
-          <p className={styles.confirmText}>
-            #{confirm.reference} scheduled on {confirm.date}
-          </p>
-          <div className={styles.confirmDetails}>
-            <div>
-              <strong>From:</strong> {confirm.from}
-            </div>
-            <div>
-              <strong>To:</strong> {confirm.to}
-            </div>
-            <div>
-              <strong>Amount:</strong> ${confirm.amount.toFixed(2)}
-            </div>
-            <div>
-              <strong>Memo:</strong> {confirm.memo}
-            </div>
-          </div>
-          <div className={styles.confirmActions}>
-            <button
-              className={styles.secondaryBtn}
-              onClick={() => {
-                router.push("/dashboard/transfers");
-                router.refresh();
-              }}
-            >
-              Manage Transfer
-            </button>
-            <button
-              className={styles.primaryBtn}
-              onClick={() => {
-                router.push("/dashboard");
-                router.refresh();
-              }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
+function titleCase(s: string) {
+  return (s || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+}
+function fmtAmount(n: string | number, currency = 'USD') {
+  const num = Number(String(n).replace(/,/g, ''));
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(isFinite(num) ? num : 0);
+  } catch {
+    return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+      isFinite(num) ? num : 0
     );
   }
+}
 
-  // Main form
+function StatusChip({ status }: { status: Receipt['status'] }) {
+  const s = (status || 'pending').toLowerCase() as Receipt['status'];
+  const label =
+    s === 'approved' || s === 'completed'
+      ? 'Completed'
+      : s === 'pending_verification'
+      ? 'Pending — Verification'
+      : s === 'rejected'
+      ? 'Rejected'
+      : 'Pending';
+  const cls =
+    s === 'approved' || s === 'completed'
+      ? styles.chipCompleted
+      : s === 'rejected'
+      ? styles.chipRejected
+      : styles.chipPending;
+  return <span className={`${styles.chip} ${cls}`}>{label}</span>;
+}
+
+export default function SendMoneyPage() {
+  const [mode, setMode] = useState<Mode>('p2p');
+  const [fromAccountType, setFromAccountType] = useState<AccountType>('checking');
+  const [toAccountType, setToAccountType] = useState<AccountType>('checking');
+  const [toEmail, setToEmail] = useState('');
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+
+  const canSubmit = useMemo(() => {
+    if (!amount.trim()) return false;
+    if (mode === 'p2p' && !toEmail.trim()) return false;
+    if (mode === 'internal' && fromAccountType === toAccountType) return false;
+    return true;
+  }, [mode, amount, toEmail, fromAccountType, toAccountType]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canSubmit || submitting) return;
+
+    setSubmitting(true);
+    setError(null);
+    setReceipt(null);
+
+    const payload: any = {
+      fromAccountType,
+      amount, // server parses commas via parseAmount
+      description: description || undefined,
+    };
+    if (mode === 'p2p') {
+      payload.toEmail = toEmail.trim();
+      payload.toAccountType = toAccountType; // optional; API defaults to checking
+    } else {
+      payload.toAccountType = toAccountType;
+    }
+
+    try {
+      const res = await fetch('/api/transactions/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+
+      // Safe parse with clone() in case of HTML error responses
+      const clone = res.clone();
+      let data: any = null;
+      const ct = res.headers.get('content-type') || '';
+      const probablyJson = ct.includes('application/json');
+
+      try {
+        data = probablyJson ? await res.json() : null;
+      } catch {
+        data = null;
+      }
+      if (!data) {
+        const text = await clone.text();
+        throw new Error(`Request failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || `Request failed (${res.status})`);
+      }
+
+      const nowIso = new Date().toISOString();
+      const r: Receipt = {
+        reference: data.reference,
+        status: (data.status as Receipt['status']) || 'pending',
+        amount,
+        currency: 'USD',
+        fromAccountType,
+        toAccountType: mode === 'internal' ? toAccountType : payload.toAccountType,
+        toEmail: mode === 'p2p' ? payload.toEmail : undefined,
+        description: description || undefined,
+        submittedAt: nowIso,
+      };
+      setReceipt(r);
+
+      setAmount('');
+      setDescription('');
+      if (mode === 'p2p') setToEmail('');
+    } catch (err: any) {
+      setError(err?.message || 'Transfer failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function resetForm() {
+    setReceipt(null);
+    setError(null);
+  }
+
   return (
-    <div className={styles.overlay}>
-      <div className={styles.card}>
-        <button onClick={() => router.back()} className={styles.backLink}>
-          ← Back
-        </button>
-        <h2 className={styles.title}>Send Money</h2>
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {/* Source Account */}
-          <div className={styles.field}>
-            <label>From Account</label>
-            <select
-              value={source}
-              onChange={(e) =>
-                setSource(e.target.value as SourceAccount)
-              }
-            >
-              <option value="checking">Checking</option>
-              <option value="savings">Savings</option>
-              <option value="investment">Investment</option>
-            </select>
+    <main className={styles.container}>
+      {/* Top back bar */}
+      <div className={styles.topbar}>
+        <Link href="/dashboard" className={styles.backBtn} aria-label="Back to Dashboard">
+          <span className={styles.backArrow} aria-hidden>←</span>
+          <span className={styles.backText}>Back to Dashboard</span>
+        </Link>
+        <Link href="/" className={styles.homeLink}>Home</Link>
+      </div>
+
+      <h1 className={styles.h1}>Send Money</h1>
+      {!receipt && (
+        <p className={styles.lead}>
+          Submit a transfer to another customer or move funds between your accounts. Transfers are reviewed before posting.
+        </p>
+      )}
+
+      {/* Success Receipt */}
+      {receipt && (
+        <section className={styles.cardSuccess}>
+          <div className={styles.cardHeader}>
+            <div className={styles.iconCircle} aria-hidden>
+              ✓
+            </div>
+            <div>
+              <h2 className={styles.cardTitle}>Transfer submitted</h2>
+              <div className={styles.subtle}>
+                We’re processing your request. You’ll receive an email when the transfer is completed.
+              </div>
+            </div>
+            <div className={styles.headerStatus}>
+              <StatusChip status={receipt.status} />
+            </div>
           </div>
 
-          {/* Destination Method */}
-          <div className={styles.field}>
-            <label>Destination Method</label>
-            <select
-              value={method}
-              onChange={(e) =>
-                setMethod(e.target.value as DestMethod)
-              }
-            >
-              <option value="email">Email</option>
-              <option value="phone">Phone</option>
-              <option value="bank">Bank Transfer</option>
-            </select>
+          <div className={styles.detailsGrid}>
+            {receipt.reference && (
+              <>
+                <div className={styles.dt}>Reference</div>
+                <div className={styles.dd}>{receipt.reference}</div>
+              </>
+            )}
+
+            <div className={styles.dt}>Amount</div>
+            <div className={styles.dd}>{fmtAmount(receipt.amount, receipt.currency)}</div>
+
+            <div className={styles.dt}>From</div>
+            <div className={styles.dd}>{titleCase(receipt.fromAccountType)}</div>
+
+            {receipt.toEmail ? (
+              <>
+                <div className={styles.dt}>To</div>
+                <div className={styles.dd}>{receipt.toEmail}</div>
+              </>
+            ) : (
+              <>
+                <div className={styles.dt}>To</div>
+                <div className={styles.dd}>{titleCase(receipt.toAccountType || 'checking')}</div>
+              </>
+            )}
+
+            {receipt.description && (
+              <>
+                <div className={styles.dt}>Description</div>
+                <div className={styles.dd}>{receipt.description}</div>
+              </>
+            )}
+
+            <div className={styles.dt}>Submitted</div>
+            <div className={styles.dd}>{new Date(receipt.submittedAt).toLocaleString()}</div>
           </div>
 
-          {/* Conditional Inputs */}
-          {method === "email" && (
-            <div className={styles.field}>
-              <label>Recipient Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="user@example.com"
-              />
-            </div>
-          )}
+          <div className={styles.actionsRow}>
+            <Link className={styles.btnGhost} href="/dashboard">View dashboard</Link>
+            <button type="button" className={styles.btnPrimary} onClick={resetForm}>
+              Make another transfer
+            </button>
+          </div>
+        </section>
+      )}
 
-          {method === "phone" && (
-            <div className={styles.field}>
-              <label>Recipient Phone</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 555 123 4567"
-              />
+      {/* Form */}
+      {!receipt && (
+        <form onSubmit={handleSubmit} className={styles.formCard}>
+          {/* Mode */}
+          <div className={styles.row}>
+            <div className={styles.segmented}>
+              <label className={styles.segment}>
+                <input
+                  type="radio"
+                  name="mode"
+                  value="p2p"
+                  checked={mode === 'p2p'}
+                  onChange={() => setMode('p2p')}
+                />
+                <span>To another customer (email)</span>
+              </label>
+              <label className={styles.segment}>
+                <input
+                  type="radio"
+                  name="mode"
+                  value="internal"
+                  checked={mode === 'internal'}
+                  onChange={() => setMode('internal')}
+                />
+                <span>Between my accounts</span>
+              </label>
             </div>
-          )}
+          </div>
 
-          {method === "bank" && (
-            <>
-              <div className={styles.field}>
-                <label>Country</label>
+          {/* From / To */}
+          <div className={styles.rowGrid}>
+            <div>
+              <label className={styles.label}>From account</label>
+              <select
+                value={fromAccountType}
+                onChange={(e) => setFromAccountType(e.target.value as AccountType)}
+                className={styles.select}
+              >
+                <option value="checking">Checking</option>
+                <option value="savings">Savings</option>
+                <option value="investment">Investment</option>
+              </select>
+            </div>
+
+            {mode === 'p2p' ? (
+              <div>
+                <label className={styles.label}>Recipient email</label>
+                <input
+                  type="email"
+                  placeholder="recipient@example.com"
+                  value={toEmail}
+                  onChange={(e) => setToEmail(e.target.value)}
+                  className={styles.input}
+                  required
+                />
+              </div>
+            ) : (
+              <div>
+                <label className={styles.label}>To account</label>
                 <select
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
+                  value={toAccountType}
+                  onChange={(e) => setToAccountType(e.target.value as AccountType)}
+                  className={styles.select}
                 >
-                  {Object.entries(countryConfigs).map(
-                    ([code, cfg]) => (
-                      <option key={code} value={code}>
-                        {cfg.label}
-                      </option>
-                    )
-                  )}
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                  <option value="investment">Investment</option>
                 </select>
               </div>
-              {countryConfigs[country].fields.map((f) => (
-                <div key={f.id} className={styles.field}>
-                  <label>{f.label}</label>
-                  <input
-                    type={f.type || "text"}
-                    placeholder={f.placeholder}
-                    value={fields[f.id] || ""}
-                    onChange={(e) =>
-                      setFields({
-                        ...fields,
-                        [f.id]: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              ))}
-            </>
-          )}
-
-          {/* Amount */}
-          <div className={styles.field}>
-            <label>Amount (USD)</label>
-            <input
-              type="number"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="100.00"
-            />
+            )}
           </div>
 
-          {error && <p className={styles.error}>{error}</p>}
+          {/* Amount / Description */}
+          <div className={styles.rowGrid}>
+            <div>
+              <label className={styles.label}>Amount (USD)</label>
+              <input
+                inputMode="decimal"
+                placeholder="e.g. 45,909,900.98"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className={styles.input}
+                required
+              />
+            </div>
+            <div>
+              <label className={styles.label}>Description (optional)</label>
+              <input
+                placeholder={mode === 'p2p' ? 'Payment to recipient' : 'Internal transfer'}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={styles.input}
+              />
+            </div>
+          </div>
 
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={loading}
-          >
-            {loading ? "Sending…" : "Send Money"}
-          </button>
+          {/* Errors */}
+          {error && <div className={styles.alertError}>{error}</div>}
+
+          {/* Submit */}
+          <div className={styles.actionsRow}>
+            <button
+              type="submit"
+              disabled={!canSubmit || submitting}
+              className={styles.btnPrimary}
+            >
+              {submitting ? 'Submitting…' : 'Submit transfer'}
+            </button>
+          </div>
         </form>
-      </div>
-    </div>
+      )}
+    </main>
   );
 }

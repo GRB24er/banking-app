@@ -1,37 +1,24 @@
-// File: src/app/api/admin/user/[id]/verify/route.ts
-
+// src/app/api/admin/user/[id]/verify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession }         from 'next-auth';
-import { authOptions }              from '@/lib/authOptions';
-import dbConnect                    from '@/lib/mongodb';
-import User                         from '@/models/User';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
 
-export async function POST(
-  request: NextRequest,
-  context: any    // ← accept context as any to satisfy Next.js ParamCheck
-) {
-  // 1) Auth guard: only admins
-  const session = await getServerSession(authOptions);
-  if (!session?.user || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function PATCH(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    await connectDB();
+    const { id } = await context.params;
+
+    const user: any = await User.findById(id);
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    // we’re not assuming a schema; we’ll use a soft boolean
+    if (typeof user.verified !== 'boolean') user.verified = false;
+    user.verified = !user.verified;
+    await user.save();
+
+    return NextResponse.json({ success: true, verified: user.verified });
+  } catch (err: any) {
+    console.error('Verify toggle error:', err);
+    return NextResponse.json({ error: err?.message || 'Failed to toggle verify' }, { status: 500 });
   }
-
-  // 2) Connect to the database
-  await dbConnect();
-
-  // 3) Extract the dynamic [id] parameter
-  const userId: string = context.params.id;
-
-  // 4) Find the user
-  const user = await User.findById(userId);
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  }
-
-  // 5) Verify the user
-  user.verified = true;
-  await user.save();
-
-  // 6) Return success
-  return NextResponse.json({ success: true });
 }
