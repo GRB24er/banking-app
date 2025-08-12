@@ -9,11 +9,11 @@ const SMTP_PORT = 465; // SSL/TLS
 const SMTP_SECURE = true;
 const SMTP_USER = "support@horizongroup.it.com";
 // TODO: put your REAL password here:
-const SMTP_PASS = "Valmont15#";
+const SMTP_PASS = "REPLACE_WITH_REAL_PASSWORD";
 
-// Use “display name” in the visible From header:
+// Visible From with display name:
 const FROM_DISPLAY = `Horizon Group Support <${SMTP_USER}>`;
-// Keep envelope MAIL FROM aligned with the authenticated user
+// Envelope MAIL FROM must match auth user to avoid 553
 const ENVELOPE_FROM = SMTP_USER;
 const REPLY_TO = "support@horizongroup.it.com";
 const LIST_UNSUBSCRIBE = "<mailto:support@horizongroup.it.com?subject=Unsubscribe>";
@@ -36,7 +36,7 @@ async function getTransporter(): Promise<Transporter> {
     rateDelta: 1000,
     rateLimit: 5,
 
-    // Timeouts
+    // Timeouts (quiet down pool "Timeout" noise while keeping reliability)
     logger: true,
     debug: true,
     connectionTimeout: 20_000,
@@ -54,7 +54,7 @@ async function getTransporter(): Promise<Transporter> {
 }
 
 /** ==============================
- * TX NORMALIZATION (local type)
+ * Local transaction type + helpers
  * ============================== */
 type TxLike = {
   _id?: any;
@@ -212,8 +212,10 @@ async function sendWithRetry(
 }
 
 /** ==============================
- * PUBLIC API
+ * PUBLIC APIs
  * ============================== */
+
+// 1) Transaction event email (used by deposits/transfers)
 export async function sendTransactionEmail(
   to: string | string[],
   args: { name?: string; transaction: TxLike }
@@ -234,7 +236,6 @@ export async function sendTransactionEmail(
   <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
     <h2 style="margin:0 0 8px 0;">${greetingName},</h2>
     <p style="margin:0 0 16px 0;">A recent transaction on your account is now <strong>${label}</strong>.</p>
-
     <table style="border-collapse:collapse; width:100%; max-width:560px;">
       <tr><td style="padding:8px 0; color:#64748b; width:160px;">Reference</td><td style="padding:8px 0;">${tx.reference || String(tx._id)}</td></tr>
       <tr><td style="padding:8px 0; color:#64748b;">Description</td><td style="padding:8px 0;">${tx.description}</td></tr>
@@ -244,7 +245,6 @@ export async function sendTransactionEmail(
       <tr><td style="padding:8px 0; color:#64748b;">Date</td><td style="padding:8px 0;">${fmtDate(tx.date)}</td></tr>
       <tr><td style="padding:8px 0; color:#64748b;">Account</td><td style="padding:8px 0; text-transform:capitalize;">${tx.accountType}</td></tr>
     </table>
-
     <p style="margin:16px 0 0 0; color:#64748b;">If you did not authorize this activity, please contact support immediately.</p>
   </div>
   `;
@@ -267,9 +267,9 @@ export async function sendTransactionEmail(
 
   return sendWithRetry(
     {
-      from: FROM_DISPLAY,                            // ← display name here
+      from: FROM_DISPLAY,
       replyTo: REPLY_TO,
-      envelope: { from: ENVELOPE_FROM, to: recipientList }, // ← aligned envelope
+      envelope: { from: ENVELOPE_FROM, to: recipientList },
       to: recipientList,
       subject,
       text,
@@ -285,6 +285,102 @@ export async function sendTransactionEmail(
   );
 }
 
+// 2) Welcome email (register flow) — flexible args to match existing calls
+export async function sendWelcomeEmail(to: string, opts?: any) {
+  const name = (opts?.name as string) || "Customer";
+  const subject = "Welcome to Horizon Group";
+  const text = [
+    `Hi ${name},`,
+    ``,
+    `Welcome to Horizon Group. Your online banking profile has been created successfully.`,
+    `If you have questions, reply to this email and our team will help.`,
+  ].join("\n");
+  const html = `
+    <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
+      <h2 style="margin:0 0 8px 0;">Welcome, ${name}</h2>
+      <p>Your Horizon Group online banking profile has been created successfully.</p>
+      <p>If you have any questions, just reply to this email and our team will help.</p>
+    </div>
+  `;
+  return sendWithRetry(
+    {
+      from: FROM_DISPLAY,
+      replyTo: REPLY_TO,
+      envelope: { from: ENVELOPE_FROM, to: [to] },
+      to,
+      subject,
+      text,
+      html,
+      headers: { "List-Unsubscribe": LIST_UNSUBSCRIBE },
+    },
+    3
+  );
+}
+
+// 3) Bank statement email (admin -> user) — accepts either a simple opts object or raw buffer args
+export async function sendBankStatementEmail(
+  to: string,
+  optsOrBuffer?: any,
+  filename?: string,
+  name?: string,
+  periodStart?: any,
+  periodEnd?: any
+) {
+  // Normalize inputs
+  let attachment: { filename: string; content: any } | undefined;
+  let periodText = "";
+  let displayName = name || "Customer";
+
+  if (optsOrBuffer && (optsOrBuffer instanceof Buffer || typeof (optsOrBuffer as any)?.byteLength === "number")) {
+    // Legacy call signature: (to, pdfBuffer, filename, name, start, end)
+    attachment = { filename: filename || "statement.pdf", content: optsOrBuffer };
+    if (periodStart && periodEnd) {
+      periodText = `for ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`;
+    }
+  } else if (optsOrBuffer && typeof optsOrBuffer === "object") {
+    // New call signature: (to, { name, periodText, attachmentBuffer, attachmentFilename })
+    displayName = optsOrBuffer.name || displayName;
+    periodText = optsOrBuffer.periodText || periodText;
+    if (optsOrBuffer.attachmentBuffer) {
+      attachment = {
+        filename: optsOrBuffer.attachmentFilename || "statement.pdf",
+        content: optsOrBuffer.attachmentBuffer,
+      };
+    }
+  }
+
+  const subject = `Your account statement ${periodText || ""}`.trim();
+  const text = [
+    `Hi ${displayName},`,
+    ``,
+    `Your account statement ${periodText || ""} is attached.`,
+    `If you have any questions, reply to this email.`,
+  ].join("\n");
+  const html = `
+    <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
+      <p>Hi ${displayName},</p>
+      <p>Your account statement ${periodText || ""} is attached.</p>
+      <p>If you have any questions, reply to this email.</p>
+    </div>
+  `;
+
+  return sendWithRetry(
+    {
+      from: FROM_DISPLAY,
+      replyTo: REPLY_TO,
+      envelope: { from: ENVELOPE_FROM, to: [to] },
+      to,
+      subject,
+      text,
+      html,
+      attachments: attachment ? [attachment] : undefined,
+      headers: { "List-Unsubscribe": LIST_UNSUBSCRIBE },
+    },
+    3
+  );
+}
+
+// 4) Simple utility for ad-hoc messages
 export async function sendSimpleEmail(
   to: string | string[],
   subject: string,
@@ -297,9 +393,9 @@ export async function sendSimpleEmail(
   }
   return sendWithRetry(
     {
-      from: FROM_DISPLAY,                            // ← display name here
+      from: FROM_DISPLAY,
       replyTo: REPLY_TO,
-      envelope: { from: ENVELOPE_FROM, to: recipientList }, // ← aligned envelope
+      envelope: { from: ENVELOPE_FROM, to: recipientList },
       to: recipientList,
       subject,
       text,
@@ -309,3 +405,12 @@ export async function sendSimpleEmail(
     3
   );
 }
+
+/** Optional: export a transporter proxy to keep legacy imports working.
+ * This exposes a `.sendMail()` that defers to the real transporter. */
+export const transporter = {
+  async sendMail(options: Parameters<Transporter["sendMail"]>[0]) {
+    const t = await getTransporter();
+    return t.sendMail(options);
+  },
+};

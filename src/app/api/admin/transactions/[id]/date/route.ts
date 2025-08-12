@@ -1,34 +1,67 @@
+// src/app/api/admin/transactions/[id]/date/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
 
-const ENABLED = process.env.ENABLE_PENDING_TX === "1";
-
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+// Update a transaction's effective date (admin only)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> } // 👈 params is async in Next.js 15
+) {
   try {
-    if (!ENABLED) {
-      return NextResponse.json({ error: "Pending transaction feature is disabled" }, { status: 503 });
+    const session = await getServerSession(authOptions);
+    const isAdmin =
+      session?.user &&
+      (((session.user as any).role === "admin") ||
+        ((session.user as any).role === "superadmin") ||
+        (session.user as any).isAdmin === true);
+
+    if (!isAdmin) {
+      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const { date } = body || {};
-    if (!date || isNaN(Date.parse(date))) {
-      return NextResponse.json({ error: "Valid `date` (ISO string) is required" }, { status: 400 });
+    const { id } = await params; // 👈 await it
+    if (!id) {
+      return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const iso = body?.date as string | undefined;
+
+    if (!iso || isNaN(new Date(iso).getTime())) {
+      return NextResponse.json({ ok: false, error: "Invalid date" }, { status: 400 });
     }
 
     await connectDB();
 
-    const tx = await Transaction.findById(params.id);
-    if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const tx = await Transaction.findById(id);
+    if (!tx) {
+      return NextResponse.json({ ok: false, error: "Transaction not found" }, { status: 404 });
+    }
 
-    if (!tx.originalDate) tx.originalDate = tx.date || tx.createdAt;
-    tx.date = new Date(date);
-    tx.editedDateByAdmin = true;
+    tx.date = new Date(iso);
+    (tx as any).editedDateByAdmin = true;
     await tx.save();
 
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error("Edit date error:", err);
-    return NextResponse.json({ error: err?.message || "Failed to update date" }, { status: 500 });
+    return NextResponse.json({ ok: true, transaction: tx }, { status: 200 });
+  } catch (err) {
+    console.error("Transaction date update error:", err);
+    return NextResponse.json({ ok: false, error: "Internal Server Error" }, { status: 500 });
   }
+}
+
+// Optional: 405 for other verbs
+export function GET() {
+  return NextResponse.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+}
+export function POST() {
+  return NextResponse.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+}
+export function PUT() {
+  return NextResponse.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+}
+export function DELETE() {
+  return NextResponse.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
 }

@@ -1,303 +1,178 @@
-// File: src/lib/mongodb.ts
+// src/lib/mongodb.ts
+import mongoose from "mongoose";
+import User from "@/models/User";
+import Transaction from "@/models/Transaction";
 
-import mongoose, { ConnectOptions } from 'mongoose';
-import User from '@/models/User';
-import type { ITransaction } from '@/types/transaction';
+/** =========================================================
+ * Mongo connection (cached)
+ * ========================================================= */
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sarahmorganme2844:WWznuJXRceASUfa4@justimagine.pvtpi05.mongodb.net/?retryWrites=true&w=majority&appName=Justimagine';
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  'mongodb+srv://sarahmorganme2844:WWznuJXRceASUfa4@justimagine.pvtpi05.mongodb.net/?retryWrites=true&w=majority&appName=Justimagine';
+let isConnecting = false;
+let hasLoggedConnected = false;
 
-declare global {
-  // Allow mongoose to be cached across hot reloads in development
-  var _mongoose: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
-}
+export default async function connectDB() {
+  if (mongoose.connection.readyState === 1) return mongoose;
+  if (isConnecting) return mongoose;
 
-const cached = global._mongoose || { conn: null, promise: null };
-
-/**
- * Connects to MongoDB, caching the connection for reuse.
- */
-export default async function connectDB(): Promise<typeof mongoose> {
-  if (cached.conn) {
-    return cached.conn;
+  isConnecting = true;
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      // @ts-ignore – let mongoose decide defaults
+      dbName: process.env.MONGODB_DB || undefined,
+    });
+    if (!hasLoggedConnected) {
+      console.log("✅ MongoDB connected");
+      hasLoggedConnected = true;
+    }
+    return mongoose;
+  } finally {
+    isConnecting = false;
   }
-  if (!cached.promise) {
-    const opts: ConnectOptions = {
-      bufferCommands: false,
-      autoIndex: process.env.NODE_ENV !== 'production',
-    };
-    cached.promise = mongoose
-      .connect(MONGODB_URI, opts)
-      .then((m) => {
-        console.log('✅ MongoDB connected');
-        return m;
-      })
-      .catch((err) => {
-        cached.promise = null;
-        console.error('❌ MongoDB connection error:', err);
-        throw err;
-      });
+}
+
+/** =========================================================
+ * Types & helpers (align with your schema)
+ * ========================================================= */
+export type AccountType = "checking" | "savings" | "investment";
+
+export type TxType =
+  | "deposit"
+  | "withdraw"
+  | "transfer-in"
+  | "transfer-out"
+  | "fee"
+  | "interest"
+  | "adjustment-credit"
+  | "adjustment-debit";
+
+export type TxStatus = "pending" | "completed" | "rejected" | "pending_verification";
+
+const CREDIT_TYPES: ReadonlySet<TxType> = new Set([
+  "deposit",
+  "transfer-in",
+  "interest",
+  "adjustment-credit",
+]);
+
+const DEBIT_TYPES: ReadonlySet<TxType> = new Set([
+  "withdraw",
+  "transfer-out",
+  "fee",
+  "adjustment-debit",
+]);
+
+function normalizeTxType(t: any): TxType {
+  const v = String(t || "").toLowerCase() as TxType;
+  if (CREDIT_TYPES.has(v) || DEBIT_TYPES.has(v)) return v;
+  return "deposit"; // safe fallback
+}
+
+function isCreditType(t: TxType): boolean {
+  return CREDIT_TYPES.has(t);
+}
+
+function normalizeAccountType(v: any): AccountType {
+  const s = String(v || "").toLowerCase();
+  if (s === "savings") return "savings";
+  if (s === "investment") return "investment";
+  return "checking";
+}
+
+function balanceKey(acct: AccountType): "checkingBalance" | "savingsBalance" | "investmentBalance" {
+  return acct === "savings" ? "savingsBalance" : acct === "investment" ? "investmentBalance" : "checkingBalance";
+}
+
+function makeReferenceFor(type: TxType) {
+  const rnd = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const ts = Date.now().toString().slice(-6);
+  if (type === "deposit") return `DEP-${ts}-${rnd}`;
+  if (type === "withdraw") return `WTH-${ts}-${rnd}`;
+  if (type === "transfer-in" || type === "transfer-out") return `TRF-${ts}-${rnd}`;
+  if (type === "fee") return `FEE-${ts}-${rnd}`;
+  if (type === "interest") return `INT-${ts}-${rnd}`;
+  if (type === "adjustment-credit" || type === "adjustment-debit") return `ADJ-${ts}-${rnd}`;
+  return `TX-${ts}-${rnd}`;
+}
+
+/** =========================================================
+ * Public DB helpers
+ * ========================================================= */
+async function createTransaction(
+  userId: string,
+  data: any,
+  initialStatus?: TxStatus
+): Promise<{ user: any; transaction: any }> {
+  await connectDB();
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
+
+  // Normalize inputs
+  const type: TxType = normalizeTxType(data?.type);
+  const currency: string = (data?.currency ? String(data.currency) : "USD").toUpperCase();
+  const amount: number = Number(
+    typeof data?.amount === "string" ? data.amount.replace(/[^\d.-]/g, "") : data?.amount || 0
+  );
+  const description: string =
+    typeof data?.description === "string" && data.description.trim()
+      ? data.description.trim()
+      : (type === "withdraw" || type === "transfer-out" || type === "fee" || type === "adjustment-debit")
+      ? "Debit"
+      : "Credit";
+
+  const accountType: AccountType = normalizeAccountType(data?.accountType);
+  const status: TxStatus =
+    (initialStatus as TxStatus) && ["pending", "completed", "rejected", "pending_verification"].includes(initialStatus!)
+      ? (initialStatus as TxStatus)
+      : "pending";
+
+  const ref: string = data?.reference || makeReferenceFor(type);
+  const date: Date = data?.date ? new Date(data.date) : new Date();
+
+  // Create the transaction (not posted by default)
+  const transaction = await Transaction.create({
+    userId: user._id,
+    type,
+    currency,
+    amount,
+    description,
+    status,
+    date,
+    accountType,
+    posted: false,
+    postedAt: null,
+    reference: ref,
+    channel: data?.channel || "system",
+    origin: data?.origin || "db_helper",
+    // keep any extra custom fields if passed
+    ...("editedDateByAdmin" in (data || {}) ? { editedDateByAdmin: Boolean(data.editedDateByAdmin) } : {}),
+  });
+
+  // If created in "completed" state, post immediately to balances.
+  if (status === "completed") {
+    const key = balanceKey(accountType);
+    const current = Number((user as any)[key] || 0);
+    const delta = isCreditType(type) ? amount : -amount;
+    const newBalance = current + delta;
+
+    (user as any)[key] = newBalance;
+    await user.save();
+
+    transaction.posted = true;
+    transaction.postedAt = new Date();
+    await transaction.save();
+  }
+
+  // Return lean-ish versions to keep response small
+  return {
+    user: user.toObject ? user.toObject() : user,
+    transaction: transaction.toObject ? transaction.toObject() : transaction,
+  };
 }
 
-/**
- * Generates a unique reference string for a transaction.
- */
-export function generateTransactionReference(prefix = 'txn'): string {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-}
-
-/**
- * Database helper methods for users and transactions.
- */
 export const db = {
-  // ─── User lookups ─────────────────────────────────────────────
-
-  async getUserById(id: string) {
-    await connectDB();
-    return User.findById(id).select('-password -__v');
-  },
-
-  async getUserByEmail(email: string) {
-    await connectDB();
-    return User.findOne({ email }).select('-password -__v');
-  },
-
-  async getUserByAccount(accountNumber: string, routingNumber: string) {
-    await connectDB();
-    return User.findOne({ accountNumber, routingNumber }).select('-password -__v');
-  },
-
-  async getUserByBitcoinAddress(bitcoinAddress: string) {
-    await connectDB();
-    return User.findOne({ bitcoinAddress }).select('-password -__v');
-  },
-
-  // ─── Unified lookup by email OR account+routing ────────────────
-
-  async findUser(criteria: {
-    email?: string;
-    accountNumber?: string;
-    routingNumber?: string;
-  }) {
-    await connectDB();
-    if (criteria.email) {
-      return User.findOne({ email: criteria.email }).select('-password -__v');
-    }
-    if (criteria.accountNumber && criteria.routingNumber) {
-      return User.findOne({
-        accountNumber: criteria.accountNumber,
-        routingNumber: criteria.routingNumber,
-      }).select('-password -__v');
-    }
-    throw new Error('Must provide either email or both accountNumber & routingNumber');
-  },
-
-  // ─── User management ───────────────────────────────────────────
-
-  async verifyUser(userId: string) {
-    await connectDB();
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { verified: true },
-      { new: true }
-    ).select('-password -__v');
-    if (!user) throw new Error('User not found');
-    return user;
-  },
-
-  async deleteUser(userId: string) {
-    await connectDB();
-    const user = await User.findByIdAndDelete(userId).select('-password -__v');
-    if (!user) throw new Error('User not found');
-    return user;
-  },
-
-  async getUsers() {
-    await connectDB();
-    return User.find({}).select('-password -__v').sort({ createdAt: -1 });
-  },
-
-  // ─── Transaction helpers ───────────────────────────────────────
-
-  /**
-   * Creates a transaction against one of the three balance fields.
-   * accountType: 'checking' | 'savings' | 'investment'
-   */
-  async createAccountTransaction(
-    userId: string,
-    accountType: 'checking' | 'savings' | 'investment',
-    transactionData: Omit<ITransaction, 'date' | 'balanceAfter' | 'status' | 'reference'>,
-    initialStatus: 'pending' | 'completed' = 'completed'
-  ) {
-    await connectDB();
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    try {
-      const user = await User.findById(userId).session(session);
-      if (!user) throw new Error('User not found');
-
-      // pick current balance
-      let current: number =
-        accountType === 'checking'
-          ? user.checkingBalance
-          : accountType === 'savings'
-          ? user.savingsBalance
-          : user.investmentBalance;
-
-      // calculate new balance
-      const delta =
-        transactionData.type === 'deposit' || transactionData.type === 'credit'
-          ? transactionData.amount
-          : -transactionData.amount;
-      const newBalance = current + delta;
-      if (newBalance < 0) throw new Error('Insufficient funds');
-
-      // build transaction record
-      const txn: ITransaction = {
-        ...transactionData,
-        date: new Date(),
-        balanceAfter: newBalance,
-        status: initialStatus,
-        reference: generateTransactionReference(accountType.slice(0, 3)),
-        currency: transactionData.currency || 'USD',
-        accountType,
-      };
-
-      // apply to the correct field
-      if (accountType === 'checking') {
-        user.checkingBalance = newBalance;
-      } else if (accountType === 'savings') {
-        user.savingsBalance = newBalance;
-      } else {
-        user.investmentBalance = newBalance;
-      }
-
-      user.transactions.push(txn);
-      await user.save({ session });
-      await session.commitTransaction();
-      return { user, transaction: txn };
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
-  },
-
-  /**
-   * Legacy helper: creates a transaction on the checking balance.
-   * Delegates to createAccountTransaction for backward compatibility.
-   */
-  async createTransaction(
-    userId: string,
-    transactionData: Omit<ITransaction, 'date' | 'balanceAfter' | 'status' | 'reference'>,
-    initialStatus: 'pending' | 'completed' = 'completed'
-  ) {
-    return this.createAccountTransaction(userId, 'checking', transactionData, initialStatus);
-  },
-
-  /**
-   * Creates a Bitcoin transaction (always on user's btcBalance)
-   */
-  async createBitcoinTransaction(
-    userId: string,
-    transactionData: Omit<ITransaction, 'date' | 'balanceAfter' | 'status' | 'reference'>,
-    initialStatus: 'pending' | 'completed' = 'completed'
-  ) {
-    await connectDB();
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    try {
-      const user = await User.findById(userId).session(session);
-      if (!user) throw new Error('User not found');
-
-      let current = user.btcBalance;
-      const delta =
-        transactionData.type === 'deposit' || transactionData.type === 'credit'
-          ? transactionData.amount
-          : -transactionData.amount;
-      const newBalance = current + delta;
-      if (newBalance < 0) throw new Error('Insufficient Bitcoin balance');
-
-      const txn: ITransaction = {
-        ...transactionData,
-        date: new Date(),
-        balanceAfter: newBalance,
-        status: initialStatus,
-        reference: generateTransactionReference('btc'),
-        currency: 'BTC',
-      };
-
-      user.btcBalance = newBalance;
-      user.transactions.push(txn);
-      await user.save({ session });
-      await session.commitTransaction();
-      return { user, transaction: txn };
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
-  },
-
-  /**
-   * Updates an existing transaction's status.
-   */
-  async updateTransactionStatus(
-    userId: string,
-    transactionReference: string,
-    newStatus: 'completed' | 'failed' | 'reversed'
-  ) {
-    await connectDB();
-    const user = await User.findOneAndUpdate(
-      { _id: userId, 'transactions.reference': transactionReference },
-      { $set: { 'transactions.$.status': newStatus } },
-      { new: true }
-    );
-    if (!user) throw new Error('User or transaction not found');
-    return user.transactions.find((t: ITransaction) => t.reference === transactionReference);
-  },
-
-  /**
-   * Retrieves a paginated list of a user's transactions.
-   */
-  async getTransactions(
-    userId: string,
-    options: {
-      limit?: number;
-      page?: number;
-      status?: ITransaction['status'];
-      type?: ITransaction['type'];
-      startDate?: Date;
-      endDate?: Date;
-    } = {}
-  ) {
-    await connectDB();
-    const { limit = 10, page = 1, status, type, startDate, endDate } = options;
-    let query = User.findById(userId).select('transactions');
-    const filter: any = {};
-    if (status) filter['transactions.status'] = status;
-    if (type) filter['transactions.type'] = type;
-    if (startDate || endDate) {
-      filter['transactions.date'] = {};
-      if (startDate) filter['transactions.date'].$gte = startDate;
-      if (endDate) filter['transactions.date'].$lte = endDate;
-    }
-    if (Object.keys(filter).length) query = query.where(filter);
-
-    const user = await query
-      .slice('transactions', [(page - 1) * limit, limit])
-      .sort({ 'transactions.date': -1 });
-    if (!user) throw new Error('User not found');
-    return user.transactions;
-  },
+  createTransaction,
 };
-
-mongoose.connection.on('connected', () => console.log('🟢 Mongoose connected'));
-mongoose.connection.on('error', (err) => console.error('🔴 Mongoose connection error:', err));
-mongoose.connection.on('disconnected', () => console.log('🟡 Mongoose disconnected'));
