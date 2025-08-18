@@ -1,124 +1,503 @@
-/* File: src/components/Footer.module.css */
+/* Footer.module.css - Professional Banking Footer */
 
 .footer {
-  background: #1b1d2b;
+  background: linear-gradient(180deg, #0f1114 0%, #1a1d23 100%);
   color: #cbd5e1;
-  padding: 2rem 1rem 1rem;    /* reduced top/bottom padding */
   position: relative;
-  display: flex;
-  flex-direction: column;
+  margin-top: auto;
 }
 
-.footerContainer {
-  max-width: 1000px;
+/* Top Section */
+.footerTop {
+  padding: 4rem 2rem 3rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.container {
+  max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;                   /* tighter gutters */
-  align-items: start;
+  grid-template-columns: 1.5fr 2fr 1fr;
+  gap: 3rem;
 }
 
 /* Brand Section */
 .brandSection {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
 }
-.logoRow {
+
+.brandHeader {
   display: flex;
   align-items: center;
-  margin-bottom: 0.5rem;      /* less space under logo */
+  gap: 1rem;
 }
-.logoImage {
-  margin-right: 0.5rem;
+
+.brandIcon {
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
 }
+
+.brandInfo {
+  display: flex;
+  flex-direction: column;
+}
+
 .brandName {
-  font-size: 1.3rem;          /* slightly smaller */
+  font-size: 1.5rem;
   font-weight: 700;
   color: #ffffff;
-  line-height: 1.2;
+  margin: 0;
+  letter-spacing: -0.02em;
 }
-.tagline {
-  font-size: 0.85rem;
-  line-height: 1.4;
+
+.brandTagline {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.brandDescription {
+  font-size: 0.9rem;
+  line-height: 1.6;
   color: #94a3b8;
 }
 
-/* Section Headers */
-.sectionTitle {
-  font-size: 0.95rem;
+/* App Download Buttons */
+.appButtons {
+  display: flex;
+  gap: 1rem;
+}
+
+.appButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.appButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.appIcon {
+  font-size: 1.5rem;
+}
+
+.appText {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.appLabel {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.appStore {
+  font-size: 0.9rem;
   font-weight: 600;
   color: #ffffff;
-  margin-bottom: 0.5rem;      /* reduced gap */
-  line-height: 1.3;
+}
+
+/* Social Links */
+.socialLinks {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.socialLink {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.socialLink:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  color: #ffffff;
+  transform: translateY(-3px);
+}
+
+/* Links Grid */
+.linksGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+.linkSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.linkTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.linkTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea 0%, transparent 100%);
+}
+
+.linkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.linkList li {
+  margin: 0;
+}
+
+.linkList a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  display: inline-block;
+}
+
+.linkList a:hover {
+  color: #ffffff;
+  transform: translateX(4px);
 }
 
 /* Contact Section */
-.contactList,
-.linkList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.contactList li,
-.linkList li {
-  margin-bottom: 0.4rem;      /* tighter list spacing */
-  font-size: 0.85rem;
-  line-height: 1.4;
+.contactSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* Links */
-.link {
-  color: #cbd5e1;
+.contactTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+/* Newsletter */
+.newsletter {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.newsletterInput {
+  flex: 1;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.newsletterInput::placeholder {
+  color: #64748b;
+}
+
+.newsletterInput:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #667eea;
+}
+
+.newsletterButton {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.newsletterButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.successMessage {
+  color: #4ade80;
+  font-size: 0.875rem;
+  margin: 0;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Contact Info */
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.contactItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.contactIcon {
+  font-size: 1.25rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.contactLabel {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0 0 0.25rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.contactValue {
+  color: #ffffff;
   text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.contactValue:hover {
+  color: #667eea;
+}
+
+.chatButton {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chatButton:hover {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+/* Trust Badges */
+.trustBadges {
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem 2rem;
+}
+
+.badgesGrid {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badgeIcon {
+  font-size: 1.5rem;
+}
+
+.badgeText {
+  font-size: 0.875rem;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+/* Bottom Bar */
+.bottomBar {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1.5rem 2rem;
+}
+
+.bottomContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.copyright p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.registrationInfo {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  opacity: 0.8;
+}
+
+.legalLinks {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.legalLinks a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.875rem;
   transition: color 0.2s;
 }
-.link:hover {
+
+.legalLinks a:hover {
   color: #ffffff;
 }
 
-/* Legal Notice */
-.legalSection {
-  grid-column: 1 / -1;
-  text-align: center;
-  margin-top: 1.5rem;         /* less top margin */
+.separator {
+  color: #475569;
 }
-.copy {
-  font-size: 0.8rem;
+
+.compliance p {
+  margin: 0;
+  font-size: 0.875rem;
   color: #94a3b8;
-  line-height: 1.4;
 }
 
-/* Chatbox positioning */
-.footer :global(.chatbox) {
-  position: absolute;
-  bottom: 1rem;               /* closer to footer */
-  right: 1rem;
+/* Floating Help Button */
+.floatingHelp {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 50px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  z-index: 90;
+  transition: all 0.3s;
 }
 
-
-.footerContainer {
-  max-width: 1000px;
-  margin: 0 auto;
-  display: grid;
-
-  /* explicit 3-column layout */
-  grid-template-columns: 2fr 1fr 1fr;
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    "brand contact links"
-    "legal legal  legal";
-
-  gap: 1rem;
-  align-items: start;
+.floatingHelp:hover {
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
 }
 
-/* map each section to its area */
-.brandSection   { grid-area: brand; }
-.contactSection { grid-area: contact; }
-.linksSection   { grid-area: links; }
-.legalSection   { grid-area: legal; text-align: center; }
+.helpIcon {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
 
-/* tighten the legal margin now that it’s its own row */
-.legalSection {
-  margin-top: 1rem;
+.helpText {
+  font-size: 0.875rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .linksGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .footerTop {
+    padding: 2rem 1rem;
+  }
+  
+  .linksGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .appButtons {
+    flex-direction: column;
+  }
+  
+  .bottomContent {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .legalLinks {
+    justify-content: center;
+  }
+  
+  .floatingHelp {
+    bottom: 1rem;
+    right: 1rem;
+  }
 }

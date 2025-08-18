@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "seed:admin": "ts-node-esm --project scripts/tsconfig.json scripts/seedAdmin.ts"
+"scripts": {
+  "dev": "next dev --turbopack",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+  "seed:admin": "ts-node-esm --project scripts/tsconfig.json scripts/seedAdmin.ts",
+  "seed": "tsx src/scripts/seedDatabase.ts",
+  "seed:prod": "NODE_ENV=production tsx src/scripts/seedDatabase.ts",
+  "fix-balances": "tsx src/scripts/fixBalances.ts",
+  "create-admin": "tsx src/scripts/createAdmin.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -40,6 +44,7 @@
     "tailwindcss": "^4.0.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.4",
     "typescript": "^5.8.3"
   }
 }

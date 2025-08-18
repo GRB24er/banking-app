@@ -5,63 +5,106 @@ import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
 
-// Update a transaction's effective date (admin only)
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> } // 👈 params is async in Next.js 15
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    const isAdmin =
-      session?.user &&
-      (((session.user as any).role === "admin") ||
-        ((session.user as any).role === "superadmin") ||
-        (session.user as any).isAdmin === true);
+export const runtime = "nodejs";
 
-    if (!isAdmin) {
-      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+function bad(status: number, error: string) {
+  return NextResponse.json({ ok: false, error }, { status });
+}
+
+type Body = {
+  date?: string | Date;                 // required
+  syncPostedAtWithDate?: boolean;       // default: true if tx.posted === true
+  postedAt?: string | Date | null;      // optional explicit postedAt
+};
+
+async function handleUpdate(request: NextRequest, context: any) {
+  // Next 15: context.params is async
+  const { id } = (await context?.params) || {};
+  if (!id) return bad(400, "Missing transaction id.");
+
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return bad(401, "Unauthorized");
+
+  const isAdmin =
+    (session.user as any)?.isAdmin === true ||
+    (session.user as any)?.role === "admin" ||
+    (session.user as any)?.role === "superadmin";
+  if (!isAdmin) return bad(403, "Forbidden");
+
+  const body = (await request.json().catch(() => ({}))) as Body;
+
+  const rawDate = body?.date;
+  if (!rawDate) return bad(400, "New date is required.");
+  const newDate = new Date(rawDate);
+  if (isNaN(newDate.getTime())) return bad(400, "Invalid date.");
+
+  await connectDB();
+
+  const prev = await Transaction.findById(id).lean();
+  if (!prev?._id) return bad(404, "Transaction not found.");
+
+  const updates: Record<string, any> = {
+    date: newDate,
+    editedDateByAdmin: true,
+  };
+
+  if (Object.prototype.hasOwnProperty.call(body, "postedAt")) {
+    const p = body.postedAt;
+    if (p == null) {
+      updates.postedAt = null;
+    } else {
+      const pd = new Date(p as any);
+      if (isNaN(pd.getTime())) return bad(400, "Invalid postedAt.");
+      updates.postedAt = pd;
     }
-
-    const { id } = await params; // 👈 await it
-    if (!id) {
-      return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+  } else {
+    const sync =
+      typeof body?.syncPostedAtWithDate === "boolean"
+        ? body.syncPostedAtWithDate
+        : true;
+    if (prev.posted === true && sync) {
+      updates.postedAt = newDate;
     }
-
-    const body = await request.json().catch(() => ({}));
-    const iso = body?.date as string | undefined;
-
-    if (!iso || isNaN(new Date(iso).getTime())) {
-      return NextResponse.json({ ok: false, error: "Invalid date" }, { status: 400 });
-    }
-
-    await connectDB();
-
-    const tx = await Transaction.findById(id);
-    if (!tx) {
-      return NextResponse.json({ ok: false, error: "Transaction not found" }, { status: 404 });
-    }
-
-    tx.date = new Date(iso);
-    (tx as any).editedDateByAdmin = true;
-    await tx.save();
-
-    return NextResponse.json({ ok: true, transaction: tx }, { status: 200 });
-  } catch (err) {
-    console.error("Transaction date update error:", err);
-    return NextResponse.json({ ok: false, error: "Internal Server Error" }, { status: 500 });
   }
+
+  const updated = await Transaction.findByIdAndUpdate(
+    id,
+    { $set: updates },
+    { new: true }
+  ).lean();
+
+  return NextResponse.json(
+    { ok: true, message: "Transaction date updated.", transaction: updated },
+    { status: 200 }
+  );
 }
 
-// Optional: 405 for other verbs
-export function GET() {
-  return NextResponse.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+/** Accept BOTH PATCH and POST (some environments/proxies drop PATCH). */
+export async function PATCH(req: NextRequest, ctx: any) {
+  return handleUpdate(req, ctx);
 }
-export function POST() {
-  return NextResponse.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+export async function POST(req: NextRequest, ctx: any) {
+  return handleUpdate(req, ctx);
 }
-export function PUT() {
-  return NextResponse.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+
+/** Healthcheck to confirm you’re hitting THIS file locally. */
+export async function GET(_req: NextRequest, context: any) {
+  const { id } = (await context?.params) || {};
+  return NextResponse.json({ ok: true, route: "date", id }, { status: 200 });
 }
-export function DELETE() {
-  return NextResponse.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+
+/** OPTIONS responder (helps if a preflight happens) */
+export function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Allow": "GET,POST,PATCH,OPTIONS",
+      "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }
+
+/** 405 for the rest */
+export function PUT()  { return NextResponse.json({ ok:false, error:"Method Not Allowed" }, { status:405 }); }
+export function DELETE(){ return NextResponse.json({ ok:false, error:"Method Not Allowed" }, { status:405 }); }

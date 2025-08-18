@@ -1,160 +1,510 @@
+/* Header.module.css */
 .header {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.headerContent {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 0;
-  z-index: 50;
+  gap: 2rem;
+}
+
+/* Left Section */
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex: 1;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.brandName {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e3a8a;
-}
-
-.navLinks {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-}
-
-.navLink {
-  text-decoration: none;
-  color: #374151;
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: color 0.2s ease;
-}
-
-.navLink:hover {
-  color: #1e3a8a;
-}
-
-/* Notification + messages icons */
-.iconGroup {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.iconWrapper {
-  position: relative;
   cursor: pointer;
 }
 
-.badge {
-  position: absolute;
-  top: -5px;
-  right: -8px;
-  background: #dc2626;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 2px 5px;
-  border-radius: 9999px;
+.logoIcon {
+  font-size: 1.75rem;
 }
 
-/* Profile Section */
-.profile {
+.logoText {
+  display: flex;
+  flex-direction: column;
+}
+
+.bankName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.bankTagline {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Search */
+.searchForm {
+  flex: 1;
+  max-width: 400px;
+}
+
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.searchContainer:focus-within {
+  border-color: #667eea;
+  background: white;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  color: #94a3b8;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.625rem 3rem 0.625rem 2.5rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.searchShortcut {
+  position: absolute;
+  right: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Right Section */
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Market Info */
+.marketInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.marketItem {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  cursor: pointer;
 }
 
-.profileName {
+.marketLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.marketValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.marketChange {
+  font-size: 0.75rem;
   font-weight: 500;
-  color: #374151;
+  color: #10b981;
 }
 
-.profilePic {
+.marketDivider {
+  width: 1px;
+  height: 20px;
+  background: #e2e8f0;
+}
+
+/* Quick Actions */
+.quickActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionButton {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: #e5e7eb;
-}
-
-/* Sign Out Button */
-.signOutLink {
-  background: none;
-  border: 1px solid #dc2626;
-  color: #dc2626;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.125rem;
   cursor: pointer;
-  font-size: 0.875rem;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.3s;
 }
 
-.signOutLink:hover {
-  background: #dc2626;
-  color: #fff;
+.actionButton:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
 }
 
-/* Responsive for mobile */
-@media (max-width: 768px) {
-  .navLinks {
-    display: none; /* Hide nav links on mobile (later can add hamburger menu) */
+/* Notifications */
+.notificationWrapper {
+  position: relative;
+}
+
+.notificationButton {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.notificationButton:hover {
+  background: #e2e8f0;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
+.notificationDropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 360px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  animation: dropdownFade 0.2s ease;
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Dropdown menu styles */
-.dropdownMenu {
-  position: absolute;
-  top: 60px; /* below header */
-  right: 2rem;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.dropdownHeader {
   display: flex;
-  flex-direction: column;
-  min-width: 180px;
-  z-index: 100;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.dropdownItem {
+.dropdownHeader h3 {
+  font-size: 1rem;
+  color: #0f172a;
+  margin: 0;
+}
+
+.markAllRead {
+  font-size: 0.875rem;
+  color: #667eea;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.notificationList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notificationItem {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  color: #374151;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f8fafc;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notificationItem:hover {
+  background: #f8fafc;
+}
+
+.notifIcon {
+  font-size: 1.25rem;
+}
+
+.notifContent {
+  flex: 1;
+}
+
+.notifTitle {
+  font-size: 0.875rem;
+  color: #0f172a;
+  margin: 0 0 0.25rem 0;
+}
+
+.notifTime {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.dropdownFooter {
+  padding: 0.75rem;
+  text-align: center;
+  border-top: 1px solid #f1f5f9;
+}
+
+.dropdownFooter a {
+  color: #667eea;
+  font-size: 0.875rem;
+  font-weight: 500;
   text-decoration: none;
-  font-size: 0.9rem;
-  transition: background 0.2s ease;
 }
 
-.dropdownItem:hover {
-  background: #f3f4f6;
+/* Profile */
+.profileWrapper {
+  position: relative;
 }
 
-.signOutItem {
+.profileButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.profileButton:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.profileAvatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.profileName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.profileRole {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.profileArrow {
+  color: #94a3b8;
+  font-size: 0.625rem;
+  margin-left: 0.5rem;
+}
+
+.profileDropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 280px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  animation: dropdownFade 0.2s ease;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.profileLarge {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.profileFullName {
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 0.25rem 0;
+}
+
+.profileEmail {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.profileMenu {
+  padding: 0.5rem;
+}
+
+.profileMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #334155;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.profileMenuItem:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.profileFooter {
+  padding: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.signOutButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
   color: #dc2626;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.signOutItem:hover {
+.signOutButton:hover {
   background: #fee2e2;
 }
 
-.activeLink {
-  color: var(--primary-color);
-  font-weight: 600;
-  border-bottom: 2px solid var(--primary-color);
+/* Bottom Bar */
+.bottomBar {
+  padding: 0.5rem 2rem;
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.logoImage {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
+.dateTime {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.date {
+  font-weight: 500;
+}
+
+.time {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  color: #334155;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .marketInfo {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .searchForm {
+    display: none;
+  }
+  
+  .quickActions {
+    display: none;
+  }
+  
+  .bottomBar {
+    display: none;
+  }
 }

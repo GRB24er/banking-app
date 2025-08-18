@@ -4,7 +4,7 @@ import User from '@/models/User';
 
 export type AccountType = 'checking' | 'savings' | 'investment';
 export type Currency = 'USD' | 'BTC';
-export type TxType = 'deposit' | 'send' | 'transfer_usd' | 'transfer_btc';
+export type TxType = 'deposit' | 'withdraw' | 'transfer-in' | 'transfer-out' | 'fee' | 'interest' | 'adjustment-credit' | 'adjustment-debit';
 
 export interface ITransaction extends Document {
   userId: mongoose.Types.ObjectId;
@@ -14,7 +14,7 @@ export interface ITransaction extends Document {
   date: Date;
   description?: string;
 
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'completed' | 'approved' | 'rejected' | 'pending_verification';
   reviewedBy?: mongoose.Types.ObjectId | null;
   reviewedAt?: Date | null;
   originalDate?: Date | null;
@@ -24,18 +24,24 @@ export interface ITransaction extends Document {
   postedAt?: Date | null;
 
   accountType: AccountType;
+  
+  // Additional fields from your seed script
+  reference?: string;
+  category?: string;
+  channel?: string;
+  origin?: string;
 }
 
 const TransactionSchema: Schema<ITransaction> = new mongoose.Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    type: { type: String, enum: ['deposit', 'send', 'transfer_usd', 'transfer_btc'], required: true },
+    type: { type: String, enum: ['deposit', 'withdraw', 'transfer-in', 'transfer-out', 'fee', 'interest', 'adjustment-credit', 'adjustment-debit'], required: true },
     currency: { type: String, enum: ['USD', 'BTC'], required: true, default: 'USD' },
     amount: { type: Number, required: true },
     date: { type: Date, default: () => new Date() },
     description: { type: String },
 
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending', index: true },
+    status: { type: String, enum: ['pending', 'completed', 'approved', 'rejected', 'pending_verification'], default: 'pending', index: true },
     reviewedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     reviewedAt: { type: Date, default: null },
     originalDate: { type: Date, default: null },
@@ -45,6 +51,12 @@ const TransactionSchema: Schema<ITransaction> = new mongoose.Schema(
     postedAt: { type: Date, default: null },
 
     accountType: { type: String, enum: ['checking', 'savings', 'investment'], default: 'checking', index: true },
+    
+    // Additional fields
+    reference: { type: String },
+    category: { type: String },
+    channel: { type: String },
+    origin: { type: String },
   },
   { timestamps: true }
 );
@@ -53,21 +65,26 @@ const TransactionSchema: Schema<ITransaction> = new mongoose.Schema(
 function deltaUSD(type: TxType, currency: Currency, amount: number) {
   if (currency !== 'USD') return 0;
   switch (type) {
-    case 'deposit': return amount;
-    case 'send': return -amount;
-    case 'transfer_usd': return -amount;
+    case 'deposit':
+    case 'interest':
+    case 'adjustment-credit':
+      return amount;
+    case 'withdraw':
+    case 'transfer-out':
+    case 'fee':
+    case 'adjustment-debit':
+      return -amount;
+    case 'transfer-in':
+      return amount;
     default: return 0;
   }
 }
-function mapEmbeddedType(t: TxType): 'deposit' | 'withdrawal' | 'transfer' | 'debit' | 'credit' {
-  switch (t) {
-    case 'deposit': return 'deposit';
-    case 'send': return 'withdrawal';
-    case 'transfer_usd':
-    case 'transfer_btc': return 'transfer';
-    default: return 'deposit';
-  }
+
+function mapEmbeddedType(t: TxType): 'deposit' | 'withdraw' | 'transfer-in' | 'transfer-out' | 'fee' | 'interest' | 'adjustment-credit' | 'adjustment-debit' {
+  // Map to the updated enum values
+  return t;
 }
+
 const toNum = (v: any) => (typeof v === 'number' ? v : Number(v ?? 0)) || 0;
 
 // Record a PENDING line in embedded history (balanceAfter = current BEFORE value)
@@ -76,7 +93,7 @@ async function recordPendingOnce(doc: ITransaction) {
   if (!user) return;
 
   // ensure rollups exist
-  if (typeof user.balance !== 'number') user.balance = 0;
+  if (typeof user.checkingBalance !== 'number') user.checkingBalance = 0;
   if (typeof user.savingsBalance !== 'number') user.savingsBalance = 0;
   if (typeof user.investmentBalance !== 'number') user.investmentBalance = 0;
 
@@ -84,7 +101,7 @@ async function recordPendingOnce(doc: ITransaction) {
   const before =
     acct === 'savings' ? user.savingsBalance :
     acct === 'investment' ? user.investmentBalance :
-    user.balance;
+    user.checkingBalance;
 
   user.transactions = Array.isArray(user.transactions) ? user.transactions : [];
   const exists = user.transactions.some((t: any) => String(t._id || t.id) === String(doc._id));
@@ -92,30 +109,27 @@ async function recordPendingOnce(doc: ITransaction) {
 
   user.transactions.push({
     _id: doc._id,
-    type: mapEmbeddedType(doc.type as TxType), // 'deposit' | 'withdrawal' | 'transfer'
+    type: mapEmbeddedType(doc.type as TxType),
     amount: toNum(doc.amount),
     description: doc.description || '',
     date: doc.date || (doc as any).createdAt,
-    status: 'pending',              // helps UI label it
     balanceAfter: before,           // schema wants this; using BEFORE value while pending
     relatedUser: null,
-    accountType: acct,
-    currency: doc.currency,
   });
 
   await user.save();
 }
 
-// Apply APPROVED effect once: post balances + upgrade embedded entry
+// Apply APPROVED/COMPLETED effect once: post balances + upgrade embedded entry
 async function applyPostingOnce(doc: ITransaction | null) {
   if (!doc) return;
-  if (doc.status !== 'approved' || doc.posted) return;
+  if (!['approved', 'completed'].includes(doc.status) || doc.posted) return;
 
   const user: any = await User.findById(doc.userId);
   if (!user) return;
 
   // Ensure rollups exist
-  if (typeof user.balance !== 'number') user.balance = 0;
+  if (typeof user.checkingBalance !== 'number') user.checkingBalance = 0;
   if (typeof user.savingsBalance !== 'number') user.savingsBalance = 0;
   if (typeof user.investmentBalance !== 'number') user.investmentBalance = 0;
 
@@ -125,13 +139,13 @@ async function applyPostingOnce(doc: ITransaction | null) {
   const before =
     acct === 'savings' ? user.savingsBalance :
     acct === 'investment' ? user.investmentBalance :
-    user.balance;
+    user.checkingBalance;
 
   const after = before + dUSD;
 
   if (acct === 'savings')      user.savingsBalance    = after;
   else if (acct === 'investment') user.investmentBalance = after;
-  else                           user.balance          = after;
+  else                           user.checkingBalance  = after;
 
   // Upgrade (or create) embedded entry to approved + set final balanceAfter
   user.transactions = Array.isArray(user.transactions) ? user.transactions : [];
@@ -139,7 +153,6 @@ async function applyPostingOnce(doc: ITransaction | null) {
 
   if (idx >= 0) {
     const ref = user.transactions[idx];
-    ref.status = 'approved';
     ref.balanceAfter = after;       // final, post-approval balance
     ref.date = doc.date || (doc as any).createdAt;
   } else {
@@ -150,11 +163,8 @@ async function applyPostingOnce(doc: ITransaction | null) {
       amount: toNum(doc.amount),
       description: doc.description || '',
       date: doc.date || (doc as any).createdAt,
-      status: 'approved',
       balanceAfter: after,
       relatedUser: null,
-      accountType: acct,
-      currency: doc.currency,
     });
   }
 
@@ -169,7 +179,10 @@ async function applyPostingOnce(doc: ITransaction | null) {
 // New tx → force pending + unposted + normalized accountType
 TransactionSchema.pre('validate', function (next) {
   if (this.isNew) {
-    this.set('status', 'pending');
+    // Don't force pending if status is explicitly set to completed
+    if (!this.get('status')) {
+      this.set('status', 'pending');
+    }
     this.set('posted', false);
     this.set('postedAt', null);
     const acct = String(this.get('accountType') || 'checking').toLowerCase();
@@ -181,7 +194,9 @@ TransactionSchema.pre('validate', function (next) {
 // Catch bulk inserts too
 TransactionSchema.pre('insertMany', function (next, docs: any[]) {
   for (const d of docs) {
-    d.status = 'pending';
+    if (!d.status) {
+      d.status = 'pending';
+    }
     d.posted = false;
     d.postedAt = null;
     const acct = String(d.accountType || 'checking').toLowerCase();
@@ -190,18 +205,18 @@ TransactionSchema.pre('insertMany', function (next, docs: any[]) {
   next();
 });
 
-// save(): create → record pending; approve → post once
+// save(): create → record pending; approve/complete → post once
 TransactionSchema.post('save', function (doc) {
   const d = doc as ITransaction;
-  // If it’s new or still pending, ensure there’s a pending entry
+  // If it's new or still pending, ensure there's a pending entry
   if (d.isNew || d.status === 'pending') {
     recordPendingOnce(d).catch(err => console.error('recordPending(save):', err));
   }
-  // If approved, apply posting
+  // If approved or completed, apply posting
   applyPostingOnce(d).catch(err => console.error('auto-post(save):', err));
 });
 
-// findOneAndUpdate(...): after update, record pending if still pending; or post if approved
+// findOneAndUpdate(...): after update, record pending if still pending; or post if approved/completed
 TransactionSchema.post('findOneAndUpdate', function (doc) {
   const d = doc as ITransaction | null;
   if (!d) return;

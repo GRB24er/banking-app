@@ -1,65 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/admin/transactions/route.ts
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
-import User from "@/models/User";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    
+    // Check if user is admin
+    if (!session?.user?.email || session.user.email !== "admin@horizonbank.com") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await connectDB();
 
-    const { searchParams } = new URL(req.url);
-    const status = (searchParams.get("status") || "pending") as
-      | "pending" | "approved" | "rejected";
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const pageSize = Math.min(50, Math.max(1, parseInt(searchParams.get("pageSize") || "10", 10)));
-    const query = (searchParams.get("query") || "").trim();
+    const transactions = await Transaction.find({ status: "pending" })
+      .populate("userId", "name email")
+      .sort({ date: -1 })
+      .limit(50);
 
-    // Base filter
-    const filter: any = {};
-
-    // Treat docs without a status as "approved" (legacy data safety)
-    if (status === "approved") {
-      filter.$or = [{ status: "approved" }, { status: { $exists: false } }];
-    } else {
-      filter.status = status;
-    }
-
-    // Optional user/txn search
-    if (query) {
-      const users = await User.find(
-        {
-          $or: [
-            { name: { $regex: query, $options: "i" } },
-            { email: { $regex: query, $options: "i" } },
-          ],
-        },
-        { _id: 1 }
-      ).lean();
-      const userIds = users.map((u: any) => String(u._id));
-      filter.$or = (filter.$or || []).concat([
-        { _id: query },
-        { userId: { $in: userIds } },
-      ]);
-    }
-
-    const total = await Transaction.countDocuments(filter);
-    const items = await Transaction.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * pageSize)
-      .limit(pageSize)
-      .populate({ path: "userId", select: "name email", model: User })
-      .lean();
-
-    const normalized = items.map((t: any) => {
-      const user = t.userId; // (your schema uses userId)
-      return { ...t, user };
-    });
-
-    return NextResponse.json({ items: normalized, total, page, pageSize });
-  } catch (err: any) {
-    console.error("Admin list transactions error:", err);
+    return NextResponse.json({ transactions });
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
     return NextResponse.json(
-      { error: err?.message || "Failed to list transactions" },
+      { error: "Failed to fetch transactions" },
       { status: 500 }
     );
   }

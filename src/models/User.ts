@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 
 // ── Transaction sub‐document interface ───────────────────────────────────────
 export interface ITransaction {
-  type: 'deposit' | 'withdrawal' | 'transfer' | 'debit' | 'credit';
+  type: 'deposit' | 'withdraw' | 'transfer-in' | 'transfer-out' | 'fee' | 'interest' | 'adjustment-credit' | 'adjustment-debit';
   amount: number;
   description: string;
   date: Date;
@@ -27,12 +27,9 @@ export interface IUser extends Document {
   savingsBalance: number;
   investmentBalance: number;
 
-  /** Crypto balance remains */
-  btcBalance: number;
-
-  accountNumber: string;
-  routingNumber: string;
-  bitcoinAddress: string;
+  /** Optional account details - removed bitcoin */
+  accountNumber?: string;
+  routingNumber?: string;
 
   transactions: ITransaction[];
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -40,7 +37,7 @@ export interface IUser extends Document {
 
 // ── Transaction schema ─────────────────────────────────────────────────────
 const TransactionSchema = new Schema<ITransaction>({
-  type:        { type: String, enum: ['deposit','withdrawal','transfer','debit','credit'], required: true },
+  type:        { type: String, enum: ['deposit','withdraw','transfer-in','transfer-out','fee','interest','adjustment-credit','adjustment-debit'], required: true },
   amount:      { type: Number, required: true },
   description: { type: String, required: true },
   date:        { type: Date,   default: Date.now },
@@ -60,17 +57,14 @@ const UserSchema = new Schema<IUser>({
   role:           { type: String, enum: ['user','admin'], default: 'user' },
   verified:       { type: Boolean, default: false },
 
-  // ── Replaced single balance with three separate balances ────────────────
+  // ── Three separate balances ────────────────────────────────────────────
   checkingBalance:   { type: Number, default: 0, min: 0 },
   savingsBalance:    { type: Number, default: 0, min: 0 },
   investmentBalance: { type: Number, default: 0, min: 0 },
 
-  // ── Crypto balance unchanged ────────────────────────────────────────────
-  btcBalance:     { type: Number, default: 0, min: 0 },
-
-  accountNumber:  { type: String, required: true, unique: true },
-  routingNumber:  { type: String, required: true },
-  bitcoinAddress: { type: String, required: true, unique: true },
+  // ── Optional account details (removed bitcoin) ─────────────────────────
+  accountNumber:  { type: String, required: false },
+  routingNumber:  { type: String, required: false },
 
   transactions:   [TransactionSchema]
 }, {
@@ -99,11 +93,10 @@ UserSchema.pre<IUser>('save', async function(next) {
   }
 });
 
-// ── Auto‐generate account, routing & BTC address ───────────────────────────
+// ── Auto‐generate account & routing numbers ────────────────────────────────
 UserSchema.pre<IUser>('save', function(next) {
   if (!this.accountNumber)  this.accountNumber  = 'AC' + Math.floor(1e8 + Math.random()*9e8);
   if (!this.routingNumber)  this.routingNumber  = 'RT' + Math.floor(1e8 + Math.random()*9e8);
-  if (!this.bitcoinAddress) this.bitcoinAddress = 'bc1' + Math.random().toString(36).slice(2);
   next();
 });
 
