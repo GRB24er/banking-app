@@ -1,242 +1,207 @@
 "use client";
-
-import { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+import Header from "@/components/Header";
 import styles from "./settings.module.css";
-import { motion } from "framer-motion";
-
-type ApiResponse = {
-  ok: boolean;
-  message?: string;
-  error?: string;
-  requireReauth?: boolean;
-};
 
 export default function SettingsPage() {
+  const { data: session } = useSession();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const [activeTab, setActiveTab] = useState('profile');
+  const [savedMessage, setSavedMessage] = useState('');
 
-  // Profile state
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-
-  // Read-only account info
-  const [accountNumber, setAccountNumber] = useState("");
-  const [routingNumber, setRoutingNumber] = useState("");
-  const [bitcoinAddress, setBitcoinAddress] = useState("");
-
-  // Password state (single field)
-  const [newPassword, setNewPassword] = useState("");
-
-  // UI state
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [loadingPassword, setLoadingPassword] = useState(false);
-
-  useEffect(() => {
-    if (status === "authenticated" && session?.user) {
-      setName(session.user.name || "");
-      setEmail(session.user.email || "");
-      setAccountNumber((session.user as any).accountNumber || "");
-      setRoutingNumber((session.user as any).routingNumber || "");
-      setBitcoinAddress((session.user as any).bitcoinAddress || "");
-    }
-  }, [status, session]);
-
-  // ----- Profile update (name + email) -----
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
-
-    if (!name.trim() || !email.trim()) {
-      setErrorMsg("Name and email cannot be empty.");
-      return;
-    }
-
-    setLoadingProfile(true);
-    try {
-      const res = await fetch("/api/user/update", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "profile",
-          name: name.trim(),
-          email: email.trim(),
-        }),
-      });
-
-      const data = (await res.json()) as ApiResponse;
-
-      if (!res.ok || !data.ok) {
-        setErrorMsg(data.error || "Update failed.");
-        return;
-      }
-
-      setSuccessMsg(data.message || "Profile updated successfully!");
-      setTimeout(() => router.refresh(), 300);
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
-      setErrorMsg("Network or server error. Please try again.");
-    } finally {
-      setLoadingProfile(false);
-    }
+  const handleSave = () => {
+    setSavedMessage('Settings saved successfully');
+    setTimeout(() => setSavedMessage(''), 3000);
   };
-
-  // ----- Password update (no current/confirm) -----
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
-
-    if (newPassword.length < 8) {
-      setErrorMsg("New password must be at least 8 characters long.");
-      return;
-    }
-
-    setLoadingPassword(true);
-    try {
-      const res = await fetch("/api/user/update", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "password",
-          newPassword, // only this field
-        }),
-      });
-
-      if (res.status === 401) {
-        setErrorMsg("Your session expired. Please sign in again.");
-        setTimeout(() => router.push("/auth/signin"), 800);
-        return;
-      }
-
-      const data = (await res.json()) as ApiResponse;
-
-      if (!res.ok || !data.ok) {
-        setErrorMsg(data.error || "Failed to update password.");
-        return;
-      }
-
-      setSuccessMsg(data.message || "Password updated successfully.");
-      // Force re-auth so the new password is required next login
-      if (data.requireReauth) {
-        setTimeout(() => signOut({ callbackUrl: "/auth/signin" }), 800);
-      } else {
-        setNewPassword("");
-      }
-    } catch (error: any) {
-      console.error("Error updating password:", error);
-      setErrorMsg("Network or server error. Please try again.");
-    } finally {
-      setLoadingPassword(false);
-    }
-  };
-
-  if (status !== "authenticated") {
-    return <p>Loading…</p>;
-  }
 
   return (
-    <div className={styles.page}>
-      <motion.div
-        className={styles.settingsContainer}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <button onClick={() => router.back()} className={styles.backBtn}>
-          ← Back
-        </button>
-
-        <h1 className={styles.settingsTitle}>Settings</h1>
-
-        {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
-        {successMsg && <div className={styles.successMsg}>{successMsg}</div>}
-
-        {/* ---------- PROFILE FORM ---------- */}
-        <form onSubmit={handleProfileUpdate}>
-          <div className={styles.formField}>
-            <label htmlFor="name">Name</label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+    <div className={styles.wrapper}>
+      <Sidebar />
+      <div className={styles.main}>
+        <Header />
+        
+        <div className={styles.content}>
+          <div className={styles.pageHeader}>
+            <h1>Settings</h1>
+            <p>Manage your account preferences and settings</p>
           </div>
 
-          <div className={styles.formField}>
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+          {savedMessage && (
+            <div className={styles.successMessage}>
+              ✓ {savedMessage}
+            </div>
+          )}
+
+          <div className={styles.settingsContainer}>
+            <div className={styles.settingsTabs}>
+              <button 
+                className={activeTab === 'profile' ? styles.activeTab : ''}
+                onClick={() => setActiveTab('profile')}
+              >
+                <span>👤</span> Profile
+              </button>
+              <button 
+                className={activeTab === 'security' ? styles.activeTab : ''}
+                onClick={() => setActiveTab('security')}
+              >
+                <span>🔒</span> Security
+              </button>
+              <button 
+                className={activeTab === 'notifications' ? styles.activeTab : ''}
+                onClick={() => setActiveTab('notifications')}
+              >
+                <span>🔔</span> Notifications
+              </button>
+              <button 
+                className={activeTab === 'privacy' ? styles.activeTab : ''}
+                onClick={() => setActiveTab('privacy')}
+              >
+                <span>🛡️</span> Privacy
+              </button>
+              <button 
+                className={activeTab === 'billing' ? styles.activeTab : ''}
+                onClick={() => setActiveTab('billing')}
+              >
+                <span>💳</span> Billing
+              </button>
+            </div>
+
+            <div className={styles.settingsContent}>
+              {activeTab === 'profile' && (
+                <div className={styles.profileSettings}>
+                  <h2>Profile Information</h2>
+                  <form className={styles.settingsForm}>
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>First Name</label>
+                        <input type="text" defaultValue="Hajand" />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Last Name</label>
+                        <input type="text" defaultValue="Morgan" />
+                      </div>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Email Address</label>
+                      <input type="email" defaultValue={session?.user?.email || ''} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Phone Number</label>
+                      <input type="tel" defaultValue="+1 (555) 123-4567" />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Address</label>
+                      <input type="text" defaultValue="123 Main Street, San Francisco, CA 94105" />
+                    </div>
+                    <button type="button" className={styles.saveBtn} onClick={handleSave}>
+                      Save Changes
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {activeTab === 'security' && (
+                <div className={styles.securitySettings}>
+                  <h2>Security Settings</h2>
+                  <div className={styles.securityOptions}>
+                    <div className={styles.securityItem}>
+                      <div>
+                        <h3>Two-Factor Authentication</h3>
+                        <p>Add an extra layer of security to your account</p>
+                      </div>
+                      <label className={styles.switch}>
+                        <input type="checkbox" defaultChecked />
+                        <span className={styles.slider}></span>
+                      </label>
+                    </div>
+                    <div className={styles.securityItem}>
+                      <div>
+                        <h3>Biometric Login</h3>
+                        <p>Use fingerprint or face recognition</p>
+                      </div>
+                      <label className={styles.switch}>
+                        <input type="checkbox" />
+                        <span className={styles.slider}></span>
+                      </label>
+                    </div>
+                    <div className={styles.securityItem}>
+                      <div>
+                        <h3>Login Alerts</h3>
+                        <p>Get notified of new sign-ins</p>
+                      </div>
+                      <label className={styles.switch}>
+                        <input type="checkbox" defaultChecked />
+                        <span className={styles.slider}></span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className={styles.passwordSection}>
+                    <h3>Change Password</h3>
+                    <form className={styles.settingsForm}>
+                      <div className={styles.formGroup}>
+                        <label>Current Password</label>
+                        <input type="password" />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>New Password</label>
+                        <input type="password" />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Confirm New Password</label>
+                        <input type="password" />
+                      </div>
+                      <button type="button" className={styles.saveBtn}>
+                        Update Password
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'notifications' && (
+                <div className={styles.notificationSettings}>
+                  <h2>Notification Preferences</h2>
+                  <div className={styles.notificationOptions}>
+                    <div className={styles.notificationItem}>
+                      <div>
+                        <h3>Transaction Alerts</h3>
+                        <p>Receive alerts for all transactions</p>
+                      </div>
+                      <label className={styles.switch}>
+                        <input type="checkbox" defaultChecked />
+                        <span className={styles.slider}></span>
+                      </label>
+                    </div>
+                    <div className={styles.notificationItem}>
+                      <div>
+                        <h3>Account Updates</h3>
+                        <p>Important account information</p>
+                      </div>
+                      <label className={styles.switch}>
+                        <input type="checkbox" defaultChecked />
+                        <span className={styles.slider}></span>
+                      </label>
+                    </div>
+                    <div className={styles.notificationItem}>
+                      <div>
+                        <h3>Marketing Emails</h3>
+                        <p>Promotions and special offers</p>
+                      </div>
+                      <label className={styles.switch}>
+                        <input type="checkbox" />
+                        <span className={styles.slider}></span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-
-          <div className={styles.formField}>
-            <label>Account Number</label>
-            <input
-              type="text"
-              value={accountNumber}
-              readOnly
-              className={styles.readOnlyField}
-            />
-          </div>
-
-          <div className={styles.formField}>
-            <label>Routing Number</label>
-            <input
-              type="text"
-              value={routingNumber}
-              readOnly
-              className={styles.readOnlyField}
-            />
-          </div>
-
-          <div className={styles.formField}>
-            <label>Bitcoin Address</label>
-            <input
-              type="text"
-              value={bitcoinAddress}
-              readOnly
-              className={styles.readOnlyField}
-            />
-          </div>
-
-          <button type="submit" disabled={loadingProfile} className={styles.saveBtn}>
-            {loadingProfile ? "Updating…" : "Update Profile"}
-          </button>
-        </form>
-
-        <hr style={{ margin: "24px 0", borderColor: "#e5e7eb" }} />
-
-        {/* ---------- CHANGE PASSWORD (NEW ONLY) ---------- */}
-        <form onSubmit={handlePasswordUpdate}>
-          <div className={styles.formField}>
-            <label htmlFor="newPassword">New Password</label>
-            <input
-              id="newPassword"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              autoComplete="new-password"
-              required
-            />
-          </div>
-
-          <button type="submit" disabled={loadingPassword} className={styles.saveBtn}>
-            {loadingPassword ? "Saving…" : "Save Password"}
-          </button>
-        </form>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

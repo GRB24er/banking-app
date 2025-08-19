@@ -41,7 +41,6 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showPendingAlert, setShowPendingAlert] = useState(true);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -166,21 +165,13 @@ export default function DashboardPage() {
   const liquidTotal = checkingBalance + savingsBalance; // $5,000
   const totalNetWorth = checkingBalance + savingsBalance + investmentBalance; // $45,463,575.89
   
-  console.log("Dashboard Display Values:");
-  console.log("  Checking:", checkingBalance);
-  console.log("  Savings:", savingsBalance);
-  console.log("  Investment:", investmentBalance);
-  console.log("  Net Worth:", totalNetWorth);
-  console.log("  Should display as: $45.46M");
-
   const previousBalance = totalNetWorth * 0.95;
   const balanceChange = totalNetWorth > 0 ? ((totalNetWorth - previousBalance) / previousBalance) * 100 : 0;
 
-  // Count pending transactions
-  const pendingCount = recent.filter(t => 
+  // Count processing transactions (but don't show admin messages)
+  const processingCount = recent.filter(t => 
     t.rawStatus === "pending" || 
-    t.status === "Pending" || 
-    t.status === "pending_verification"
+    t.status === "Processing"
   ).length;
 
   // Generate spark data for charts
@@ -251,12 +242,15 @@ export default function DashboardPage() {
     { icon: "📊", title: "Analytics", subtitle: "View insights", bgColor: "#fee2e2", link: "/analytics" },
   ];
 
-  // Convert transactions for table
+  // Convert transactions for table - with professional status display
   const transactions: Transaction[] = recent.slice(0, 10).map((t) => ({
     id: t.reference,
     description: t.description || "Transaction",
     amount: t.amount,
-    status: (t.status || "Completed") as Transaction["status"],
+    // Professional status display - no admin messages
+    status: (t.status === "Pending" || t.rawStatus === "pending") ? "Processing" : 
+            (t.status === "Completed" ? "Completed" : 
+            (t.status === "Rejected" ? "Declined" : "Processing")) as Transaction["status"],
     date: new Date(t.date).toISOString(),
     category: t.accountType ? 
       t.accountType.charAt(0).toUpperCase() + t.accountType.slice(1) : 
@@ -339,34 +333,6 @@ export default function DashboardPage() {
                   — a remarkable 373.53% return over 20 years!
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Pending Transactions Alert */}
-          {pendingCount > 0 && showPendingAlert && (
-            <div className={styles.pendingAlert}>
-              <div className={styles.pendingAlertIcon}>⚠️</div>
-              <div className={styles.pendingAlertContent}>
-                <div className={styles.pendingAlertTitle}>
-                  {pendingCount} Pending Transaction{pendingCount > 1 ? 's' : ''}
-                </div>
-                <div className={styles.pendingAlertText}>
-                  Transactions are awaiting approval. Review them in the admin panel.
-                </div>
-              </div>
-              <button 
-                className={styles.pendingAlertAction}
-                onClick={() => router.push('/admin/transactions')}
-              >
-                Review Now
-              </button>
-              <button 
-                className={styles.pendingAlertAction}
-                onClick={() => setShowPendingAlert(false)}
-                style={{ marginLeft: '0.5rem', background: 'transparent', color: '#92400e' }}
-              >
-                Dismiss
-              </button>
             </div>
           )}
 
@@ -478,23 +444,69 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Recent Transactions */}
-          {transactions.length > 0 && (
-            <div className={styles.transactionsSection}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>
-                  <span>Recent Transactions</span>
-                </h2>
-                <a href="/transactions" className={styles.viewAllLink}>
-                  View all →
-                </a>
-              </div>
+          {/* Recent Activity Section - Professional Display */}
+          <div className={styles.transactionsSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>
+                <span>Recent Activity</span>
+                {processingCount > 0 && (
+                  <span style={{
+                    marginLeft: '0.75rem',
+                    padding: '0.25rem 0.75rem',
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                    borderRadius: '20px',
+                    fontSize: '0.75rem',
+                    fontWeight: '500',
+                    color: '#64748b'
+                  }}>
+                    {processingCount} Processing
+                  </span>
+                )}
+              </h2>
+              <a href="/transactions" className={styles.viewAllLink}>
+                View all →
+              </a>
+            </div>
 
+            {transactions.length > 0 ? (
               <div className={styles.transactionsTableContainer}>
                 <TransactionTable transactions={transactions} />
               </div>
-            </div>
-          )}
+            ) : (
+              <div style={{
+                background: 'white',
+                borderRadius: '12px',
+                padding: '3rem',
+                textAlign: 'center',
+                color: '#64748b'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                <p>No recent transactions</p>
+                <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                  Your transaction history will appear here
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Security Footer */}
+          <div style={{
+            marginTop: '3rem',
+            padding: '1rem',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            color: '#64748b',
+            fontSize: '0.875rem'
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L4 7v6c0 4.52 3.13 8.75 8 9.88 4.87-1.13 8-5.36 8-9.88V7l-8-5z"/>
+            </svg>
+            <span>Your account is protected by bank-grade 256-bit encryption</span>
+          </div>
         </div>
 
         <footer className={styles.footer}>

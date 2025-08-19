@@ -1,0 +1,257 @@
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.main {
+  flex: 1;
+}
+
+.content {
+  padding: 2rem;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.pageHeader h1 {
+  font-size: 2rem;
+  color: #0f172a;
+}
+
+.requestCardBtn {
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cardsDisplay {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.cardShowcase {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.cardVisual {
+  aspect-ratio: 1.586;
+  border-radius: 16px;
+  padding: 2rem;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.cardChip {
+  width: 50px;
+  height: 40px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 8px;
+}
+
+.cardLogo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.cardNumber {
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  margin: 2rem 0;
+}
+
+.cardBottom {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cardLabel {
+  font-size: 0.625rem;
+  opacity: 0.8;
+  margin-bottom: 0.25rem;
+}
+
+.cardValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cardSelector {
+  display: flex;
+  gap: 1rem;
+}
+
+.cardSelector button {
+  flex: 1;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cardSelector button.selected {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.cardInfo {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.cardInfo h3 {
+  margin-bottom: 1.5rem;
+  color: #0f172a;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.infoItem span {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.infoItem strong {
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.active {
+  color: #10b981 !important;
+}
+
+.cardActions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.actionBtn:hover {
+  background: #f8fafc;
+  border-color: #667eea;
+}
+
+.recentActivity {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.recentActivity h3 {
+  margin-bottom: 1.5rem;
+  color: #0f172a;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.activityItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.activityItem:hover {
+  background: #f8fafc;
+}
+
+.activityIcon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.activityDetails {
+  flex: 1;
+}
+
+.activityName {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.activityDate {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.activityAmount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+@media (max-width: 1024px) {
+  .cardsDisplay {
+    grid-template-columns: 1fr;
+  }
+  
+  .cardActions {
+    grid-template-columns: 1fr;
+  }
+}

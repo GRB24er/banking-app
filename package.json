@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-"scripts": {
-  "dev": "next dev --turbopack",
-  "build": "next build",
-  "start": "next start",
-  "lint": "next lint",
-  "seed:admin": "ts-node-esm --project scripts/tsconfig.json scripts/seedAdmin.ts",
-  "seed": "tsx src/scripts/seedDatabase.ts",
-  "seed:prod": "NODE_ENV=production tsx src/scripts/seedDatabase.ts",
-  "fix-balances": "tsx src/scripts/fixBalances.ts",
-  "create-admin": "tsx src/scripts/createAdmin.ts"
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed:admin": "ts-node-esm --project scripts/tsconfig.json scripts/seedAdmin.ts",
+    "seed": "tsx src/scripts/seedDatabase.ts",
+    "seed:prod": "NODE_ENV=production tsx src/scripts/seedDatabase.ts",
+    "fix-balances": "tsx src/scripts/fixBalances.ts",
+    "create-admin": "tsx src/scripts/createAdmin.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -25,6 +25,7 @@
     "next-auth": "^4.24.11",
     "nodemailer": "^6.10.1",
     "react": "^19.1.0",
+    "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.0",
     "react-firebase-hooks": "^5.1.1",
     "recharts": "^3.1.2",
