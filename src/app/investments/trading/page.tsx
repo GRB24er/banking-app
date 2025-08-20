@@ -21,14 +21,11 @@ export default function TradingPage() {
   const recentTrades = [
     { id: 1, type: "BUY", symbol: "NVDA", shares: 500, price: 485.50, total: 242750, time: "10:45 AM", status: "Executed" },
     { id: 2, type: "SELL", symbol: "TSLA", shares: 200, price: 248.50, total: 49700, time: "10:30 AM", status: "Executed" },
-    { id: 3, type: "BUY", symbol: "META", shares: 300, price: 505.33, total: 151599, time: "9:45 AM", status: "Executed" },
-    { id: 4, type: "SELL", symbol: "AMD", shares: 1000, price: 125.75, total: 125750, time: "9:30 AM", status: "Executed" }
+    { id: 3, type: "BUY", symbol: "META", shares: 300, price: 505.33, total: 151599, time: "9:45 AM", status: "Executed" }
   ];
 
   const marketData = {
-    AAPL: { price: 189.25, change: 2.34, changePercent: 1.24, bid: 189.24, ask: 189.26, volume: "52.3M" },
-    MSFT: { price: 378.85, change: 5.67, changePercent: 1.52, bid: 378.84, ask: 378.86, volume: "22.8M" },
-    GOOGL: { price: 142.65, change: -1.23, changePercent: -0.86, bid: 142.64, ask: 142.66, volume: "28.1M" }
+    AAPL: { price: 189.25, change: 2.34, changePercent: 1.24, bid: 189.24, ask: 189.26, volume: "52.3M", high: 191.50, low: 187.25 }
   };
 
   const calculateOrderTotal = () => {
@@ -46,224 +43,261 @@ export default function TradingPage() {
         <Header />
         
         <div className={styles.content}>
+          {/* Page Header */}
           <div className={styles.pageHeader}>
-            <h1>Trading Platform</h1>
+            <div className={styles.headerInfo}>
+              <h1>Trading Platform</h1>
+              <p>Execute trades with real-time market data</p>
+            </div>
             <div className={styles.accountInfo}>
-              <span>Buying Power: <strong>$2,500,000</strong></span>
-              <span>Portfolio Value: <strong>$45.46M</strong></span>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Buying Power</span>
+                <span className={styles.infoValue}>$2,500,000</span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Portfolio Value</span>
+                <span className={styles.infoValue}>$45.46M</span>
+              </div>
             </div>
           </div>
 
-          <div className={styles.tradingLayout}>
-            {/* Order Form */}
-            <div className={styles.orderSection}>
-              <div className={styles.orderCard}>
-                <h2>Place Order</h2>
+          <div className={styles.tradingGrid}>
+            {/* Left Column - Order Form */}
+            <div className={styles.leftColumn}>
+              {/* Order Card */}
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2>Place Order</h2>
+                </div>
                 
-                {/* Buy/Sell Toggle */}
-                <div className={styles.orderTypeToggle}>
-                  <button 
-                    className={orderType === 'buy' ? styles.buyActive : ''}
-                    onClick={() => setOrderType('buy')}
-                  >
-                    BUY
-                  </button>
-                  <button 
-                    className={orderType === 'sell' ? styles.sellActive : ''}
-                    onClick={() => setOrderType('sell')}
-                  >
-                    SELL
-                  </button>
-                </div>
-
-                {/* Symbol Selection */}
-                <div className={styles.formGroup}>
-                  <label>Symbol</label>
-                  <select 
-                    value={selectedSymbol} 
-                    onChange={(e) => setSelectedSymbol(e.target.value)}
-                    className={styles.symbolSelect}
-                  >
-                    <option value="AAPL">AAPL - Apple Inc.</option>
-                    <option value="MSFT">MSFT - Microsoft</option>
-                    <option value="GOOGL">GOOGL - Alphabet</option>
-                    <option value="AMZN">AMZN - Amazon</option>
-                  </select>
-                </div>
-
-                {/* Order Type */}
-                <div className={styles.formGroup}>
-                  <label>Order Type</label>
-                  <div className={styles.radioGroup}>
-                    <label>
-                      <input 
-                        type="radio" 
-                        value="market" 
-                        checked={tradeType === 'market'}
-                        onChange={(e) => setTradeType(e.target.value)}
-                      />
-                      Market Order
-                    </label>
-                    <label>
-                      <input 
-                        type="radio" 
-                        value="limit" 
-                        checked={tradeType === 'limit'}
-                        onChange={(e) => setTradeType(e.target.value)}
-                      />
-                      Limit Order
-                    </label>
+                <div className={styles.cardBody}>
+                  {/* Buy/Sell Toggle */}
+                  <div className={styles.orderTypeToggle}>
+                    <button 
+                      className={`${styles.toggleBtn} ${orderType === 'buy' ? styles.buyActive : ''}`}
+                      onClick={() => setOrderType('buy')}
+                    >
+                      BUY
+                    </button>
+                    <button 
+                      className={`${styles.toggleBtn} ${orderType === 'sell' ? styles.sellActive : ''}`}
+                      onClick={() => setOrderType('sell')}
+                    >
+                      SELL
+                    </button>
                   </div>
-                </div>
 
-                {/* Quantity */}
-                <div className={styles.formGroup}>
-                  <label>Quantity</label>
-                  <input 
-                    type="number" 
-                    placeholder="Number of shares"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className={styles.input}
-                  />
-                </div>
-
-                {/* Price (for limit orders) */}
-                {tradeType === 'limit' && (
+                  {/* Symbol Selection */}
                   <div className={styles.formGroup}>
-                    <label>Limit Price</label>
+                    <label>Symbol</label>
+                    <select 
+                      value={selectedSymbol} 
+                      onChange={(e) => setSelectedSymbol(e.target.value)}
+                      className={styles.select}
+                    >
+                      <option value="AAPL">AAPL - Apple Inc.</option>
+                      <option value="MSFT">MSFT - Microsoft</option>
+                      <option value="GOOGL">GOOGL - Alphabet</option>
+                      <option value="AMZN">AMZN - Amazon</option>
+                    </select>
+                  </div>
+
+                  {/* Order Type */}
+                  <div className={styles.formGroup}>
+                    <label>Order Type</label>
+                    <div className={styles.radioGroup}>
+                      <label className={styles.radioLabel}>
+                        <input 
+                          type="radio" 
+                          value="market" 
+                          checked={tradeType === 'market'}
+                          onChange={(e) => setTradeType(e.target.value)}
+                        />
+                        <span>Market Order</span>
+                      </label>
+                      <label className={styles.radioLabel}>
+                        <input 
+                          type="radio" 
+                          value="limit" 
+                          checked={tradeType === 'limit'}
+                          onChange={(e) => setTradeType(e.target.value)}
+                        />
+                        <span>Limit Order</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Quantity */}
+                  <div className={styles.formGroup}>
+                    <label>Quantity</label>
                     <input 
                       type="number" 
-                      placeholder="0.00"
-                      step="0.01"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="0"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
                       className={styles.input}
                     />
                   </div>
-                )}
 
-                {/* Order Summary */}
-                <div className={styles.orderSummary}>
-                  <div className={styles.summaryRow}>
-                    <span>Market Price:</span>
-                    <span>${marketData[selectedSymbol as keyof typeof marketData]?.price.toFixed(2)}</span>
+                  {/* Price (for limit orders) */}
+                  {tradeType === 'limit' && (
+                    <div className={styles.formGroup}>
+                      <label>Limit Price</label>
+                      <input 
+                        type="number" 
+                        placeholder="0.00"
+                        step="0.01"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        className={styles.input}
+                      />
+                    </div>
+                  )}
+
+                  {/* Order Summary */}
+                  <div className={styles.orderSummary}>
+                    <div className={styles.summaryRow}>
+                      <span>Shares</span>
+                      <span>{quantity || '0'}</span>
+                    </div>
+                    <div className={styles.summaryRow}>
+                      <span>Price</span>
+                      <span>${marketData.AAPL.price.toFixed(2)}</span>
+                    </div>
+                    <div className={styles.summaryTotal}>
+                      <span>Estimated Total</span>
+                      <span className={styles.totalAmount}>${calculateOrderTotal()}</span>
+                    </div>
                   </div>
-                  <div className={styles.summaryRow}>
-                    <span>Shares:</span>
-                    <span>{quantity || '0'}</span>
-                  </div>
-                  <div className={styles.summaryTotal}>
-                    <span>Estimated Total:</span>
-                    <span>${calculateOrderTotal()}</span>
-                  </div>
+
+                  {/* Submit Button */}
+                  <button 
+                    className={`${styles.submitBtn} ${orderType === 'buy' ? styles.buyBtn : styles.sellBtn}`}
+                  >
+                    {orderType === 'buy' ? 'Place Buy Order' : 'Place Sell Order'}
+                  </button>
                 </div>
-
-                {/* Submit Button */}
-                <button 
-                  className={`${styles.submitOrder} ${orderType === 'buy' ? styles.buyBtn : styles.sellBtn}`}
-                >
-                  {orderType === 'buy' ? 'Place Buy Order' : 'Place Sell Order'}
-                </button>
               </div>
 
-              {/* Market Data */}
-              <div className={styles.marketDataCard}>
-                <h3>Market Data - {selectedSymbol}</h3>
-                <div className={styles.marketStats}>
-                  <div className={styles.statRow}>
-                    <span>Current Price:</span>
-                    <span className={styles.price}>
-                      ${marketData[selectedSymbol as keyof typeof marketData]?.price.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className={styles.statRow}>
-                    <span>Change:</span>
-                    <span className={
-                      marketData[selectedSymbol as keyof typeof marketData]?.change >= 0 
-                        ? styles.positive 
-                        : styles.negative
-                    }>
-                      {marketData[selectedSymbol as keyof typeof marketData]?.change >= 0 ? '+' : ''}
-                      {marketData[selectedSymbol as keyof typeof marketData]?.changePercent}%
-                    </span>
-                  </div>
-                  <div className={styles.statRow}>
-                    <span>Bid/Ask:</span>
-                    <span>
-                      ${marketData[selectedSymbol as keyof typeof marketData]?.bid} / 
-                      ${marketData[selectedSymbol as keyof typeof marketData]?.ask}
-                    </span>
-                  </div>
-                  <div className={styles.statRow}>
-                    <span>Volume:</span>
-                    <span>{marketData[selectedSymbol as keyof typeof marketData]?.volume}</span>
+              {/* Market Data Card */}
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h3>Market Data - {selectedSymbol}</h3>
+                </div>
+                <div className={styles.cardBody}>
+                  <div className={styles.marketDataGrid}>
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>Price</span>
+                      <span className={styles.dataValue}>${marketData.AAPL.price}</span>
+                    </div>
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>Change</span>
+                      <span className={`${styles.dataValue} ${styles.positive}`}>
+                        +{marketData.AAPL.changePercent}%
+                      </span>
+                    </div>
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>Volume</span>
+                      <span className={styles.dataValue}>{marketData.AAPL.volume}</span>
+                    </div>
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>Bid/Ask</span>
+                      <span className={styles.dataValue}>
+                        ${marketData.AAPL.bid} / ${marketData.AAPL.ask}
+                      </span>
+                    </div>
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>Day High</span>
+                      <span className={styles.dataValue}>${marketData.AAPL.high}</span>
+                    </div>
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>Day Low</span>
+                      <span className={styles.dataValue}>${marketData.AAPL.low}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Portfolio & Recent Trades */}
-            <div className={styles.dataSection}>
+            {/* Right Column - Holdings & Trades */}
+            <div className={styles.rightColumn}>
               {/* Current Holdings */}
-              <div className={styles.holdingsCard}>
-                <h2>Current Holdings</h2>
-                <div className={styles.holdingsTable}>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Symbol</th>
-                        <th>Shares</th>
-                        <th>Avg Cost</th>
-                        <th>Current</th>
-                        <th>Value</th>
-                        <th>Gain/Loss</th>
-                        <th>%</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {portfolio.map((holding, idx) => (
-                        <tr key={idx}>
-                          <td className={styles.symbol}>{holding.symbol}</td>
-                          <td>{holding.shares.toLocaleString()}</td>
-                          <td>${holding.avgCost.toFixed(2)}</td>
-                          <td>${holding.currentPrice.toFixed(2)}</td>
-                          <td className={styles.value}>${holding.value.toLocaleString()}</td>
-                          <td className={styles.positive}>+${holding.gain.toLocaleString()}</td>
-                          <td className={styles.positive}>+{holding.gainPercent}%</td>
-                          <td>
-                            <button className={styles.tradeBtn}>Trade</button>
-                          </td>
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2>Current Holdings</h2>
+                  <button className={styles.viewAllBtn}>View All</button>
+                </div>
+                <div className={styles.cardBody}>
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>SYMBOL</th>
+                          <th>SHARES</th>
+                          <th>AVG COST</th>
+                          <th>CURRENT</th>
+                          <th>VALUE</th>
+                          <th>GAIN/LOSS</th>
+                          <th>%</th>
+                          <th>ACTION</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {portfolio.map((holding, idx) => (
+                          <tr key={idx}>
+                            <td className={styles.symbolCol}>{holding.symbol}</td>
+                            <td>{holding.shares.toLocaleString()}</td>
+                            <td>${holding.avgCost.toFixed(2)}</td>
+                            <td>${holding.currentPrice.toFixed(2)}</td>
+                            <td className={styles.valueCol}>${holding.value.toLocaleString()}</td>
+                            <td className={styles.gainCol}>
+                              <span className={styles.gainAmount}>+${holding.gain.toLocaleString()}</span>
+                            </td>
+                            <td className={styles.gainCol}>
+                              <span className={styles.gainPercent}>+{holding.gainPercent.toFixed(2)}%</span>
+                            </td>
+                            <td>
+                              <button className={styles.tradeBtn}>Trade</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
 
               {/* Recent Trades */}
-              <div className={styles.tradesCard}>
-                <h2>Recent Trades</h2>
-                <div className={styles.tradesList}>
-                  {recentTrades.map(trade => (
-                    <div key={trade.id} className={styles.tradeItem}>
-                      <div className={styles.tradeHeader}>
-                        <span className={`${styles.tradeType} ${trade.type === 'BUY' ? styles.buy : styles.sell}`}>
-                          {trade.type}
-                        </span>
-                        <span className={styles.tradeSymbol}>{trade.symbol}</span>
-                        <span className={styles.tradeTime}>{trade.time}</span>
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2>Recent Trades</h2>
+                  <button className={styles.viewAllBtn}>View All</button>
+                </div>
+                <div className={styles.cardBody}>
+                  <div className={styles.tradesList}>
+                    {recentTrades.map(trade => (
+                      <div key={trade.id} className={styles.tradeItem}>
+                        <div className={styles.tradeLeft}>
+                          <div className={styles.tradeHeader}>
+                            <span className={`${styles.tradeType} ${trade.type === 'BUY' ? styles.buy : styles.sell}`}>
+                              {trade.type}
+                            </span>
+                            <span className={styles.tradeSymbol}>{trade.symbol}</span>
+                          </div>
+                          <div className={styles.tradeDetails}>
+                            {trade.shares} shares @ ${trade.price}
+                          </div>
+                        </div>
+                        <div className={styles.tradeRight}>
+                          <div className={styles.tradeTotal}>${trade.total.toLocaleString()}</div>
+                          <div className={styles.tradeTime}>{trade.time}</div>
+                          <div className={styles.tradeStatus}>
+                            <span className={styles.statusBadge}>{trade.status}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className={styles.tradeDetails}>
-                        <span>{trade.shares} shares @ ${trade.price}</span>
-                        <span className={styles.tradeTotal}>${trade.total.toLocaleString()}</span>
-                      </div>
-                      <div className={styles.tradeStatus}>
-                        <span className={styles.executed}>{trade.status}</span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

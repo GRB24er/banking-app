@@ -1,17 +1,22 @@
 .wrapper {
   display: flex;
   min-height: 100vh;
-  background: #f9fafb;
+  background: #f7f8fa;
 }
 
 .main {
   flex: 1;
+  margin-left: 230px;
+  display: flex;
+  flex-direction: column;
 }
 
 .content {
+  flex: 1;
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .pageHeader {
@@ -21,12 +26,14 @@
 .pageHeader h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 0.5rem;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
 }
 
 .pageHeader p {
-  color: #6b7280;
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
 .successMessage {
@@ -49,7 +56,7 @@
   border-radius: 12px;
   padding: 1rem;
   height: fit-content;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
 }
 
 .settingsTabs button {
@@ -60,7 +67,7 @@
   padding: 0.875rem 1rem;
   background: transparent;
   border: none;
-  color: #6b7280;
+  color: #64748b;
   font-weight: 500;
   text-align: left;
   border-radius: 8px;
@@ -70,7 +77,7 @@
 }
 
 .settingsTabs button:hover {
-  background: #f9fafb;
+  background: #f8fafc;
 }
 
 .settingsTabs button.activeTab {
@@ -82,14 +89,14 @@
   background: white;
   border-radius: 12px;
   padding: 2rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
 }
 
 .settingsContent h2 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 2rem;
+  color: #0f172a;
+  margin: 0 0 2rem 0;
 }
 
 .settingsForm {
@@ -121,11 +128,13 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 0.95rem;
+  transition: all 0.2s;
 }
 
 .formGroup input:focus {
   outline: none;
   border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .saveBtn {
@@ -158,20 +167,21 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  background: #f9fafb;
+  background: #f8fafc;
   border-radius: 10px;
 }
 
 .securityItem h3 {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
-  margin-bottom: 0.25rem;
+  color: #0f172a;
+  margin: 0 0 0.25rem 0;
 }
 
 .securityItem p {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #64748b;
+  margin: 0;
 }
 
 .passwordSection {
@@ -182,8 +192,8 @@
 .passwordSection h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
-  margin-bottom: 1.5rem;
+  color: #0f172a;
+  margin: 0 0 1.5rem 0;
 }
 
 /* Toggle Switch */
@@ -208,7 +218,7 @@
   right: 0;
   bottom: 0;
   background-color: #cbd5e1;
-  transition: .4s;
+  transition: 0.4s;
   border-radius: 34px;
 }
 
@@ -220,62 +230,84 @@
   left: 3px;
   bottom: 3px;
   background-color: white;
-  transition: .4s;
+  transition: 0.4s;
   border-radius: 50%;
 }
 
-input:checked + .slider {
- background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+.switch input:checked + .slider {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 }
 
-input:checked + .slider:before {
- transform: translateX(24px);
+.switch input:checked + .slider:before {
+  transform: translateX(24px);
 }
 
 /* Notification Settings */
 .notificationOptions {
- display: flex;
- flex-direction: column;
- gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .notificationItem {
- display: flex;
- justify-content: space-between;
- align-items: center;
- padding: 1.5rem;
- background: #f9fafb;
- border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 10px;
 }
 
 .notificationItem h3 {
- font-size: 1rem;
- font-weight: 600;
- color: #111827;
- margin-bottom: 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 0.25rem 0;
 }
 
 .notificationItem p {
- font-size: 0.875rem;
- color: #6b7280;
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
 }
 
+/* Profile Settings */
+.profileSettings {
+  display: flex;
+  flex-direction: column;
+}
+
+.securitySettings {
+  display: flex;
+  flex-direction: column;
+}
+
+.notificationSettings {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
- .settingsContainer {
-   grid-template-columns: 1fr;
- }
- 
- .settingsTabs {
-   display: flex;
-   overflow-x: auto;
-   padding: 0.5rem;
- }
- 
- .settingsTabs button {
-   min-width: 120px;
- }
- 
- .formRow {
-   grid-template-columns: 1fr;
- }
+  .main {
+    margin-left: 0;
+  }
+  
+  .settingsContainer {
+    grid-template-columns: 1fr;
+  }
+  
+  .settingsTabs {
+    display: flex;
+    overflow-x: auto;
+    padding: 0.5rem;
+  }
+  
+  .settingsTabs button {
+    min-width: 120px;
+  }
+  
+  .formRow {
+    grid-template-columns: 1fr;
+  }
 }
