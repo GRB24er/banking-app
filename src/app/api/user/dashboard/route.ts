@@ -14,59 +14,19 @@ function displayStatus(status: string) {
   return status ?? "Pending";
 }
 
-// Mock historical transactions (from investment history)
-const mockHistoricalTransactions = [
-  {
-    reference: "INV-2023-001",
-    type: "interest",
-    currency: "USD",
-    amount: 2500000,
-    date: new Date("2023-12-31"),
-    description: "Annual Investment Return - Year 20",
-    status: "Completed",
-    accountType: "investment"
-  },
-  {
-    reference: "INV-2022-001",
-    type: "interest",
-    currency: "USD",
-    amount: 2100000,
-    date: new Date("2022-12-31"),
-    description: "Annual Investment Return - Year 19",
-    status: "Completed",
-    accountType: "investment"
-  },
-  {
-    reference: "DEP-2025-MAY",
-    type: "deposit",
-    currency: "USD",
-    amount: 4000,
-    date: new Date("2025-05-29"),
-    description: "Wire Transfer Deposit",
-    status: "Completed",
-    accountType: "checking"
-  },
-  {
-    reference: "INT-2024-Q4",
-    type: "interest",
-    currency: "USD",
-    amount: 45.50,
-    date: new Date("2024-12-31"),
-    description: "Quarterly Interest Credit",
-    status: "Completed",
-    accountType: "savings"
-  },
-  {
-    reference: "INV-2021-001",
-    type: "interest",
-    currency: "USD",
-    amount: 1800000,
-    date: new Date("2021-12-31"),
-    description: "Annual Investment Return - Year 18",
-    status: "Completed",
-    accountType: "investment"
-  }
-];
+// Define the transaction type
+interface TransactionData {
+  reference: string;
+  type: string;
+  currency: string;
+  amount: number;
+  date: Date | string;
+  description: string;
+  status: string;
+  rawStatus: string;
+  accountType: string;
+  isReal: boolean;
+}
 
 export async function GET() {
   try {
@@ -78,23 +38,24 @@ export async function GET() {
     
     await connectDB();
     
+    // Get the ACTUAL user's data including all balances and name
     const user = await User.findOne({ email: session.user.email })
-      .select("_id checkingBalance savingsBalance investmentBalance name")
+      .select("_id checkingBalance savingsBalance investmentBalance name email")
       .lean();
     
     if (!user?._id) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     
-    // Get REAL transactions from database
+    // Get REAL transactions from database for THIS specific user
     const realTransactions = await Transaction.find({ userId: user._id })
       .sort({ date: -1, createdAt: -1 })
-      .limit(20)
+      .limit(50)
       .select("_id reference type currency amount date description status accountType createdAt")
       .lean();
     
     // Convert real transactions to the format we need
-    const realTxFormatted = realTransactions.map((t: any) => ({
+    const realTxFormatted: TransactionData[] = realTransactions.map((t: any) => ({
       reference: t.reference ?? String(t._id),
       type: t.type ?? "deposit",
       currency: t.currency ?? "USD",
@@ -104,37 +65,31 @@ export async function GET() {
       status: displayStatus(t.status),
       rawStatus: t.status,
       accountType: t.accountType ?? "checking",
-      isReal: true // Mark as real transaction
+      isReal: true
     }));
     
-    // Combine real and mock transactions
-    const allTransactions = [
-      ...realTxFormatted,
-      ...mockHistoricalTransactions.map(tx => ({
-        ...tx,
-        rawStatus: tx.status.toLowerCase(),
-        isReal: false // Mark as mock transaction
-      }))
-    ];
-    
-    // Sort by date (newest first)
-    allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Sort by date (newest first) - FIX THE TYPESCRIPT ERROR
+    realTxFormatted.sort((a: TransactionData, b: TransactionData) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
     
     // Take the most recent 20 transactions
-    const recent = allTransactions.slice(0, 20);
+    const recent = realTxFormatted.slice(0, 20);
     
-    // Return correct balances
+    // Return the ACTUAL user's balances from database
     const balances = {
-      checking: 4000.00,
-      savings: 1000.00,
-      investment: 45458575.89
+      checking: user.checkingBalance || 0,
+      savings: user.savingsBalance || 0,
+      investment: user.investmentBalance || 0
     };
     
+    // Return the ACTUAL user's name from database
     return NextResponse.json({ 
       balances, 
       recent,
       user: {
-        name: "Hajand Morgan"
+        name: user.name || session.user.name || "User",
+        email: user.email
       }
     }, { status: 200 });
     

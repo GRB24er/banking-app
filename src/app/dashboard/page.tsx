@@ -1,3 +1,4 @@
+// src/app/dashboard/page.tsx
 "use client";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,7 @@ interface DashboardResponse {
   recent: RawTxn[];
   user?: {
     name: string;
+    email?: string;
   };
   error?: string;
 }
@@ -85,22 +87,23 @@ export default function DashboardPage() {
           console.error("Dashboard fetch error:", err);
           setError(err.message || "Failed to load dashboard data");
           
-          // Set correct mock data for development
+          // Set empty data for new users instead of seeded data
           setData({
             balances: {
-              checking: 4000.00,
-              savings: 1000.00,
-              investment: 45458575.89,
+              checking: 0,
+              savings: 0,
+              investment: 0,
             },
             recent: [],
             user: {
-              name: "Hajand Morgan"
+              name: session?.user?.name || "User",
+              email: session?.user?.email || ""
             }
           });
         })
         .finally(() => setLoading(false));
     }
-  }, [status, router]);
+  }, [status, router, session]);
 
   if (status === "loading" || loading) {
     return (
@@ -153,22 +156,23 @@ export default function DashboardPage() {
     return null;
   }
 
-  const userName = data?.user?.name || session?.user?.name || "Hajand Morgan";
+  // Use actual user data from API
+  const userName = data?.user?.name || session?.user?.name || "User";
   const { balances, recent } = data;
   
-  // FORCE CORRECT BALANCES
-  const checkingBalance = 4000.00;
-  const savingsBalance = 1000.00;
-  const investmentBalance = 45458575.89;
+  // USE ACTUAL BALANCES FROM DATABASE - NO HARDCODING!
+  const checkingBalance = balances.checking || 0;
+  const savingsBalance = balances.savings || 0;
+  const investmentBalance = balances.investment || 0;
   
-  // Calculate totals correctly
-  const liquidTotal = checkingBalance + savingsBalance; // $5,000
-  const totalNetWorth = checkingBalance + savingsBalance + investmentBalance; // $45,463,575.89
+  // Calculate totals based on actual balances
+  const liquidTotal = checkingBalance + savingsBalance;
+  const totalNetWorth = checkingBalance + savingsBalance + investmentBalance;
   
   const previousBalance = totalNetWorth * 0.95;
   const balanceChange = totalNetWorth > 0 ? ((totalNetWorth - previousBalance) / previousBalance) * 100 : 0;
 
-  // Count processing transactions (but don't show admin messages)
+  // Count processing transactions
   const processingCount = recent.filter(t => 
     t.rawStatus === "pending" || 
     t.status === "Processing"
@@ -186,7 +190,7 @@ export default function DashboardPage() {
     return data;
   };
 
-  // Account configurations with correct balances
+  // Account configurations with ACTUAL balances
   const accounts = [
     {
       type: "Checking",
@@ -200,7 +204,7 @@ export default function DashboardPage() {
       gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       sparkData: generateSparkData(checkingBalance),
       sparkColor: "#667eea",
-      lastTransaction: "Wire Transfer Deposit - May 29, 2025"
+      lastTransaction: recent.find(t => t.accountType === 'checking')?.description || "No recent activity"
     },
     {
       type: "Savings",
@@ -215,7 +219,7 @@ export default function DashboardPage() {
       sparkData: generateSparkData(savingsBalance),
       sparkColor: "#14b8a6",
       interestRate: "4.50% APY",
-      lastTransaction: "Account Credit - June 15, 2003"
+      lastTransaction: recent.find(t => t.accountType === 'savings')?.description || "No recent activity"
     },
     {
       type: "Investment",
@@ -229,8 +233,8 @@ export default function DashboardPage() {
       gradient: "linear-gradient(135deg, #f59e0b 0%, #dc2626 100%)",
       sparkData: generateSparkData(investmentBalance),
       sparkColor: "#f59e0b",
-      returns: "+373.53%",
-      lastTransaction: "Interest Credit — Year 20"
+      returns: investmentBalance > 0 ? "+12.5%" : "0%",
+      lastTransaction: recent.find(t => t.accountType === 'investment')?.description || "No recent activity"
     },
   ];
 
@@ -242,19 +246,18 @@ export default function DashboardPage() {
     { icon: "📊", title: "Analytics", subtitle: "View insights", bgColor: "#fee2e2", link: "/analytics" },
   ];
 
-  // Convert transactions for table - with professional status display
+  // Convert transactions for table
   const transactions: Transaction[] = recent.slice(0, 10).map((t) => ({
     id: t.reference,
     description: t.description || "Transaction",
     amount: t.amount,
-    // Professional status display - no admin messages
     status: (t.status === "Pending" || t.rawStatus === "pending") ? "Processing" : 
             (t.status === "Completed" ? "Completed" : 
             (t.status === "Rejected" ? "Declined" : "Processing")) as Transaction["status"],
     date: new Date(t.date).toISOString(),
     category: t.accountType ? 
       t.accountType.charAt(0).toUpperCase() + t.accountType.slice(1) : 
-      "Investment",
+      "General",
     type: t.amount > 0 ? "credit" : "debit",
     reference: t.reference,
     method: "Bank Transfer",
@@ -294,13 +297,15 @@ export default function DashboardPage() {
               <div className={styles.userName}>{userName}</div>
               <div className={styles.totalBalanceWrapper}>
                 <div>
-                  <div className={styles.totalBalanceLabel}>Net Worth</div>
+                  <div className={styles.totalBalanceLabel}>Total Balance</div>
                   <div className={styles.totalBalanceAmount}>
-                    ${(totalNetWorth / 1000000).toFixed(2)}M
+                    {formatCurrency(totalNetWorth)}
                   </div>
-                  <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.5rem' }}>
-                    Liquid: ${liquidTotal.toLocaleString()} | Investment: ${(investmentBalance / 1000000).toFixed(2)}M
-                  </div>
+                  {totalNetWorth > 0 && (
+                    <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.5rem' }}>
+                      Liquid: {formatCurrency(liquidTotal)} | Investment: {formatCurrency(investmentBalance)}
+                    </div>
+                  )}
                 </div>
                 {totalNetWorth > 0 && (
                   <div className={`${styles.balanceChange} ${balanceChange >= 0 ? styles.balanceChangePositive : styles.balanceChangeNegative}`}>
@@ -311,8 +316,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Investment Success Banner */}
-          {investmentBalance > 40000000 && (
+          {/* Success Banner - Only show for users with high investment balance */}
+          {investmentBalance > 1000000 && (
             <div style={{
               background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
               color: 'white',
@@ -326,11 +331,10 @@ export default function DashboardPage() {
               <div style={{ fontSize: '2rem' }}>🎉</div>
               <div>
                 <div style={{ fontWeight: 'bold', fontSize: '1.125rem' }}>
-                  Outstanding Investment Performance!
+                  Great Investment Performance!
                 </div>
                 <div style={{ opacity: 0.95, marginTop: '0.25rem' }}>
-                  Your $9.6M investment from 2003 has grown to ${(investmentBalance / 1000000).toFixed(2)}M 
-                  — a remarkable 373.53% return over 20 years!
+                  Your investment portfolio is performing well with {formatCurrency(investmentBalance)} in total value.
                 </div>
               </div>
             </div>
@@ -402,17 +406,11 @@ export default function DashboardPage() {
                       <span className={styles.balanceLabel}>Current Balance</span>
                     </div>
                     <div className={styles.balanceAmount}>
-                      {account.type === "Investment" ? (
-                        <span style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>
-                          {formatCurrency(account.balance)}
-                        </span>
-                      ) : (
-                        formatCurrency(account.balance)
-                      )}
+                      {formatCurrency(account.balance)}
                     </div>
                     <div className={styles.availableBalance}>
-                      {account.type === "Investment" 
-                        ? `20-Year Return: ${account.returns}`
+                      {account.type === "Investment" && account.returns
+                        ? `Returns: ${account.returns}`
                         : `Available: ${formatCurrency(account.available)}`}
                     </div>
                   </div>
@@ -444,7 +442,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Recent Activity Section - Professional Display */}
+          {/* Recent Activity Section */}
           <div className={styles.transactionsSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>

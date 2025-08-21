@@ -13,6 +13,70 @@ export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [userData, setUserData] = useState({
+    name: "User",
+    email: "",
+    totalBalance: 0
+  });
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  // Fetch actual user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (session?.user?.email) {
+        try {
+          const response = await fetch('/api/user/dashboard');
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Use actual user data
+            const total = (data.balances?.checking || 0) + 
+                         (data.balances?.savings || 0) + 
+                         (data.balances?.investment || 0);
+            
+            setUserData({
+              name: data.user?.name || session.user.name || "User",
+              email: session.user.email,
+              totalBalance: total
+            });
+            
+            // Set notifications based on pending transactions
+            const pendingTx = data.recent?.filter((t: any) => 
+              t.rawStatus === "pending" || t.status === "Pending"
+            ) || [];
+            
+            const newNotifications = [];
+            if (pendingTx.length > 0) {
+              newNotifications.push({
+                id: 1,
+                title: `${pendingTx.length} pending transaction${pendingTx.length > 1 ? 's' : ''}`,
+                time: "Now",
+                icon: "⏳"
+              });
+            }
+            
+            // Add other notifications
+            newNotifications.push(
+              { id: 2, title: "Account secured with 2FA", time: "Active", icon: "🔒" },
+              { id: 3, title: "Monthly statement available", time: "View", icon: "📄" }
+            );
+            
+            setNotifications(newNotifications);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          // Use session as fallback
+          setUserData({
+            name: session?.user?.name || "User",
+            email: session?.user?.email || "",
+            totalBalance: 0
+          });
+        }
+      }
+    };
+    
+    fetchUserData();
+  }, [session]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -23,8 +87,9 @@ export default function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement search functionality
-    console.log("Searching for:", searchQuery);
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
   };
 
   const handleSignOut = async () => {
@@ -32,12 +97,17 @@ export default function Header() {
     router.push("/auth/signin");
   };
 
-  // Mock notifications
-  const notifications = [
-    { id: 1, title: "Wire transfer completed", time: "2 hours ago", icon: "✅" },
-    { id: 2, title: "New security update", time: "1 day ago", icon: "🔒" },
-    { id: 3, title: "Monthly statement ready", time: "3 days ago", icon: "📄" },
-  ];
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000000) {
+      return `$${(amount / 1000000).toFixed(2)}M`;
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
 
   return (
     <header className={styles.header}>
@@ -70,33 +140,33 @@ export default function Header() {
 
         {/* Right Section - Actions & Profile */}
         <div className={styles.rightSection}>
-          {/* Market Info */}
+          {/* Market Info (Optional - can be real-time data) */}
           <div className={styles.marketInfo}>
             <div className={styles.marketItem}>
-              <span className={styles.marketLabel}>DOW</span>
-              <span className={styles.marketValue}>38,654.42</span>
-              <span className={styles.marketChange}>+0.23%</span>
-            </div>
-            <div className={styles.marketDivider}></div>
-            <div className={styles.marketItem}>
-              <span className={styles.marketLabel}>NASDAQ</span>
-              <span className={styles.marketValue}>17,862.23</span>
-              <span className={styles.marketChange}>+0.15%</span>
-            </div>
-            <div className={styles.marketDivider}></div>
-            <div className={styles.marketItem}>
-              <span className={styles.marketLabel}>S&P 500</span>
-              <span className={styles.marketValue}>5,488.21</span>
-              <span className={styles.marketChange}>+0.18%</span>
+              <span className={styles.marketLabel}>Balance</span>
+              <span className={styles.marketValue}>
+                {formatCurrency(userData.totalBalance)}
+              </span>
+              <span className={styles.marketChange}>
+                {userData.totalBalance > 0 ? "Active" : "New"}
+              </span>
             </div>
           </div>
 
           {/* Quick Actions */}
           <div className={styles.quickActions}>
-            <button className={styles.actionButton} title="Calculator">
+            <button 
+              className={styles.actionButton} 
+              title="Calculator"
+              onClick={() => router.push('/tools/calculator')}
+            >
               🧮
             </button>
-            <button className={styles.actionButton} title="Support">
+            <button 
+              className={styles.actionButton} 
+              title="Support"
+              onClick={() => router.push('/support')}
+            >
               💬
             </button>
           </div>
@@ -108,7 +178,11 @@ export default function Header() {
               onClick={() => setShowNotifications(!showNotifications)}
             >
               🔔
-              <span className={styles.notificationBadge}>3</span>
+              {notifications.length > 0 && (
+                <span className={styles.notificationBadge}>
+                  {notifications.length}
+                </span>
+              )}
             </button>
 
             {showNotifications && (
@@ -135,20 +209,22 @@ export default function Header() {
             )}
           </div>
 
-          {/* Profile */}
+          {/* Profile - USING ACTUAL USER DATA */}
           <div className={styles.profileWrapper}>
             <button 
               className={styles.profileButton}
               onClick={() => setShowProfile(!showProfile)}
             >
               <div className={styles.profileAvatar}>
-                {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "H"}
+                {userData.name.charAt(0).toUpperCase()}
               </div>
               <div className={styles.profileInfo}>
                 <span className={styles.profileName}>
-                  {session?.user?.name || "Hajand Morgan"}
+                  {userData.name}
                 </span>
-                <span className={styles.profileRole}>Premium Account</span>
+                <span className={styles.profileRole}>
+                  {session?.user?.role === 'admin' ? 'Administrator' : 'Premium Account'}
+                </span>
               </div>
               <span className={styles.profileArrow}>▼</span>
             </button>
@@ -157,15 +233,25 @@ export default function Header() {
               <div className={styles.profileDropdown}>
                 <div className={styles.profileHeader}>
                   <div className={styles.profileLarge}>
-                    {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "H"}
+                    {userData.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <p className={styles.profileFullName}>
-                      {session?.user?.name || "Hajand Morgan"}
+                      {userData.name}
                     </p>
                     <p className={styles.profileEmail}>
-                      {session?.user?.email || "hajand@horizonbank.com"}
+                      {userData.email || session?.user?.email || ""}
                     </p>
+                    {userData.totalBalance > 0 && (
+                      <p style={{ 
+                        marginTop: '0.5rem', 
+                        fontSize: '0.875rem', 
+                        color: '#10b981',
+                        fontWeight: 'bold'
+                      }}>
+                        Balance: {formatCurrency(userData.totalBalance)}
+                      </p>
+                    )}
                   </div>
                 </div>
                 

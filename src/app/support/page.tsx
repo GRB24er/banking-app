@@ -1,37 +1,17 @@
+// src/app/support/page.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import styles from "./support.module.css";
 
 export default function SupportPage() {
-  const [showChat, setShowChat] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([
-    { id: 1, sender: "bot", text: "Hello! How can I help you today?", time: "10:00 AM" }
-  ]);
-
-  const sendMessage = () => {
-    if (message.trim()) {
-      const newMessage = {
-        id: messages.length + 1,
-        sender: "user",
-        text: message,
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages([...messages, newMessage]);
-      
-      setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          id: prev.length + 1,
-          sender: "bot", 
-          text: "Thank you for your message. An agent will respond shortly.",
-          time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-        }]);
-      }, 1000);
-      setMessage("");
-    }
+  
+  // Function to trigger the global chatbox
+  const openGlobalChat = () => {
+    // Dispatch a custom event to open the chatbox
+    window.dispatchEvent(new CustomEvent('openChatbox'));
   };
 
   const faqs = [
@@ -62,10 +42,34 @@ export default function SupportPage() {
   ];
 
   const contactOptions = [
-    { icon: "💬", title: "Live Chat", desc: "Chat with our support team", available: "24/7", action: () => setShowChat(true) },
-    { icon: "📞", title: "Phone Support", desc: "Call us anytime", available: "24/7", action: () => window.location.href = "tel:1800HORIZON" },
-    { icon: "📧", title: "Email Support", desc: "Get help via email", available: "1-2 business days", action: () => window.location.href = "mailto:support@horizonbank.com" },
-    { icon: "📅", title: "Schedule Call", desc: "Book a call with an expert", available: "Mon-Fri 9AM-5PM", action: () => {} }
+    { 
+      icon: "💬", 
+      title: "Live Chat", 
+      desc: "Chat with our AI assistant", 
+      available: "24/7", 
+      action: openGlobalChat // Use the global chat
+    },
+    { 
+      icon: "📞", 
+      title: "Phone Support", 
+      desc: "Call us anytime", 
+      available: "24/7", 
+      action: () => window.location.href = "tel:1800HORIZON" 
+    },
+    { 
+      icon: "📧", 
+      title: "Email Support", 
+      desc: "Get help via email", 
+      available: "1-2 business days", 
+      action: () => window.location.href = "mailto:support@horizonbank.com" 
+    },
+    { 
+      icon: "📅", 
+      title: "Schedule Call", 
+      desc: "Book a call with an expert", 
+      available: "Mon-Fri 9AM-5PM", 
+      action: openGlobalChat // This will open chat with "Schedule a call" intent
+    }
   ];
 
   return (
@@ -148,16 +152,18 @@ export default function SupportPage() {
 
             {/* FAQ Items */}
             <div className={styles.faqGrid}>
-              {faqs.map((category, catIdx) => (
-                <div key={catIdx} className={styles.faqCategory}>
-                  <h3>{category.category}</h3>
-                  {category.questions.map((item, idx) => (
-                    <details key={idx} className={styles.faqItem}>
-                      <summary>{item.q}</summary>
-                      <p>{item.a}</p>
-                    </details>
-                  ))}
-                </div>
+              {faqs
+                .filter(cat => activeCategory === 'all' || cat.category.toLowerCase() === activeCategory)
+                .map((category, catIdx) => (
+                  <div key={catIdx} className={styles.faqCategory}>
+                    <h3>{category.category}</h3>
+                    {category.questions.map((item, idx) => (
+                      <details key={idx} className={styles.faqItem}>
+                        <summary>{item.q}</summary>
+                        <p>{item.a}</p>
+                      </details>
+                    ))}
+                  </div>
               ))}
             </div>
           </div>
@@ -197,36 +203,6 @@ export default function SupportPage() {
             </div>
           </div>
         </div>
-
-        {/* Chat Widget */}
-        {showChat && (
-          <div className={styles.chatWidget}>
-            <div className={styles.chatHeader}>
-              <div className={styles.chatTitle}>
-                <span className={styles.onlineDot}></span>
-                Live Support
-              </div>
-              <button onClick={() => setShowChat(false)} className={styles.closeChat}>×</button>
-            </div>
-            <div className={styles.chatMessages}>
-              {messages.map((msg) => (
-                <div key={msg.id} className={`${styles.message} ${styles[msg.sender]}`}>
-                  <div className={styles.messageText}>{msg.text}</div>
-                  <div className={styles.messageTime}>{msg.time}</div>
-                </div>
-              ))}
-            </div>
-            <div className={styles.chatInput}>
-              <input 
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Type your message..."
-              />
-              <button onClick={sendMessage}>Send</button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -1,27 +1,28 @@
-import "./globals.css";
-import { ReactNode } from "react";
-import { Providers } from "@/components/Providers";
+// src/app/layout.tsx
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Providers } from "@/components/Providers";
+import Chatbox from "@/components/Chatbox"; // Add this import
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Horizon Global Capital",
-  description: "Your premier banking and investment platform",
-  keywords: "banking, investment, finance, portfolio management",
-  authors: [{ name: "Horizon Global Capital" }],
-  viewport: "width=device-width, initial-scale=1",
+  title: "Horizon Bank",
+  description: "Your trusted banking partner",
 };
 
-export default function RootLayout({ 
-  children 
-}: { 
-  children: ReactNode 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head />
-      <body suppressHydrationWarning>
+    <html lang="en">
+      <body className={inter.className}>
         <Providers>
-          <main>{children}</main>
+          {children}
+          <Chatbox /> {/* Add the chatbox here so it appears on all pages */}
         </Providers>
       </body>
     </html>

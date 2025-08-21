@@ -2,19 +2,19 @@
 import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
 
 /** ==============================
- * HARD-CODED SMTP (POOL + RETRIES)
+ * SMTP CONFIGURATION
  * ============================== */
 const SMTP_HOST = "mail.privateemail.com";
 const SMTP_PORT = 465; // SSL/TLS
 const SMTP_SECURE = true;
 const SMTP_USER = "support@horizongroup.it.com";
-// TODO: put your REAL password here:
-const SMTP_PASS = "REPLACE_WITH_REAL_PASSWORD";
+// Get password from environment variable or use a default for development
+const SMTP_PASS = process.env.SMTP_PASSWORD || "Valmont15#";
 
 // Visible From with display name:
 const FROM_DISPLAY = `Horizon Group Support <${SMTP_USER}>`;
 // Envelope MAIL FROM must match auth user to avoid 553
-const ENVELOPE_FROM = SMTP_USER;
+const ENVELOPE_FROM = "support@horizongroup.it.com";
 const REPLY_TO = "support@horizongroup.it.com";
 const LIST_UNSUBSCRIBE = "<mailto:support@horizongroup.it.com?subject=Unsubscribe>";
 
@@ -36,20 +36,24 @@ async function getTransporter(): Promise<Transporter> {
     rateDelta: 1000,
     rateLimit: 5,
 
-    // Timeouts (quiet down pool "Timeout" noise while keeping reliability)
-    logger: true,
-    debug: true,
+    // Timeouts
+    logger: process.env.NODE_ENV === 'development',
+    debug: process.env.NODE_ENV === 'development',
     connectionTimeout: 20_000,
     greetingTimeout: 20_000,
     socketTimeout: 40_000,
   });
 
-  try {
-    await cachedTransporter.verify();
-    console.log("[mail] SMTP verify OK");
-  } catch (err) {
-    console.warn("[mail] SMTP verify failed (continuing):", err);
+  // Only verify in development
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      await cachedTransporter.verify();
+      console.log("[mail] SMTP verify OK");
+    } catch (err) {
+      console.warn("[mail] SMTP verify failed (continuing):", err);
+    }
   }
+  
   return cachedTransporter;
 }
 
@@ -166,6 +170,19 @@ async function sendWithRetry(
   options: Parameters<Transporter["sendMail"]>[0],
   maxAttempts = 3
 ): Promise<SentMessageInfo & { failed?: boolean; error?: string }> {
+  // If SMTP is not configured properly, skip email sending
+  if (SMTP_PASS === "your_actual_password_here" || !SMTP_PASS) {
+    console.warn("[mail] SMTP password not configured, skipping email");
+    return {
+      accepted: [],
+      rejected: [],
+      envelope: { from: options.envelope?.from || ENVELOPE_FROM, to: options.to as any },
+      messageId: "SKIPPED-NO-CONFIG-" + Date.now(),
+      skipped: true,
+      response: "Email skipped - SMTP not configured",
+    } as any;
+  }
+
   const transporter = await getTransporter();
 
   let attempt = 0;
@@ -175,7 +192,7 @@ async function sendWithRetry(
     attempt++;
     try {
       const info = await transporter.sendMail(options);
-      console.log(`[mail] sent attempt ${attempt}/${maxAttempts} -> messageId=${info.messageId}, accepted=${JSON.stringify(info.accepted)}, rejected=${JSON.stringify(info.rejected)}`);
+      console.log(`[mail] sent attempt ${attempt}/${maxAttempts} -> messageId=${info.messageId}`);
       return info;
     } catch (err: any) {
       lastErr = err;
@@ -185,13 +202,13 @@ async function sendWithRetry(
 
       console.warn(`[mail] send attempt ${attempt} failed:`, code, message);
 
-      // Don’t retry on obvious auth/envelope errors
+      // Don't retry on auth/envelope errors
       if (/EAUTH|ENVELOPE|EENVELOPE|EADDR|EHOSTUNREACH/i.test(code) || /auth/i.test(message)) {
         break;
       }
 
       if (attempt < maxAttempts && transient) {
-        const backoff = 500 * Math.pow(2, attempt - 1); // 500ms, 1s, 2s
+        const backoff = 500 * Math.pow(2, attempt - 1);
         await new Promise((r) => setTimeout(r, backoff));
         continue;
       }
@@ -200,6 +217,7 @@ async function sendWithRetry(
   }
 
   console.error("[mail] FINAL FAILURE:", lastErr?.code || "", lastErr?.message || lastErr);
+  // Return a "soft" failure instead of throwing
   return {
     accepted: [],
     rejected: [],
@@ -215,7 +233,7 @@ async function sendWithRetry(
  * PUBLIC APIs
  * ============================== */
 
-// 1) Transaction event email (used by deposits/transfers)
+// 1) Transaction event email
 export async function sendTransactionEmail(
   to: string | string[],
   args: { name?: string; transaction: TxLike }
@@ -285,39 +303,51 @@ export async function sendTransactionEmail(
   );
 }
 
-// 2) Welcome email (register flow) — flexible args to match existing calls
+// 2) Welcome email - more fault tolerant
 export async function sendWelcomeEmail(to: string, opts?: any) {
-  const name = (opts?.name as string) || "Customer";
-  const subject = "Welcome to Horizon Group";
-  const text = [
-    `Hi ${name},`,
-    ``,
-    `Welcome to Horizon Group. Your online banking profile has been created successfully.`,
-    `If you have questions, reply to this email and our team will help.`,
-  ].join("\n");
-  const html = `
-    <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
-      <h2 style="margin:0 0 8px 0;">Welcome, ${name}</h2>
-      <p>Your Horizon Group online banking profile has been created successfully.</p>
-      <p>If you have any questions, just reply to this email and our team will help.</p>
-    </div>
-  `;
-  return sendWithRetry(
-    {
-      from: FROM_DISPLAY,
-      replyTo: REPLY_TO,
-      envelope: { from: ENVELOPE_FROM, to: [to] },
-      to,
-      subject,
-      text,
-      html,
-      headers: { "List-Unsubscribe": LIST_UNSUBSCRIBE },
-    },
-    3
-  );
+  try {
+    const name = (opts?.name as string) || "Customer";
+    const subject = "Welcome to Horizon Group";
+    const text = [
+      `Hi ${name},`,
+      ``,
+      `Welcome to Horizon Group. Your online banking profile has been created successfully.`,
+      `If you have questions, reply to this email and our team will help.`,
+    ].join("\n");
+    const html = `
+      <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
+        <h2 style="margin:0 0 8px 0;">Welcome, ${name}</h2>
+        <p>Your Horizon Group online banking profile has been created successfully.</p>
+        <p>If you have any questions, just reply to this email and our team will help.</p>
+      </div>
+    `;
+    return sendWithRetry(
+      {
+        from: FROM_DISPLAY,
+        replyTo: REPLY_TO,
+        envelope: { from: ENVELOPE_FROM, to: [to] },
+        to,
+        subject,
+        text,
+        html,
+        headers: { "List-Unsubscribe": LIST_UNSUBSCRIBE },
+      },
+      3
+    );
+  } catch (error) {
+    console.error("[mail] sendWelcomeEmail error:", error);
+    // Return a soft failure instead of throwing
+    return {
+      accepted: [],
+      rejected: [],
+      messageId: "FAILED-" + Date.now(),
+      failed: true,
+      error: String(error),
+    } as any;
+  }
 }
 
-// 3) Bank statement email (admin -> user) — accepts either a simple opts object or raw buffer args
+// 3) Bank statement email
 export async function sendBankStatementEmail(
   to: string,
   optsOrBuffer?: any,
@@ -326,19 +356,16 @@ export async function sendBankStatementEmail(
   periodStart?: any,
   periodEnd?: any
 ) {
-  // Normalize inputs
   let attachment: { filename: string; content: any } | undefined;
   let periodText = "";
   let displayName = name || "Customer";
 
   if (optsOrBuffer && (optsOrBuffer instanceof Buffer || typeof (optsOrBuffer as any)?.byteLength === "number")) {
-    // Legacy call signature: (to, pdfBuffer, filename, name, start, end)
     attachment = { filename: filename || "statement.pdf", content: optsOrBuffer };
     if (periodStart && periodEnd) {
       periodText = `for ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`;
     }
   } else if (optsOrBuffer && typeof optsOrBuffer === "object") {
-    // New call signature: (to, { name, periodText, attachmentBuffer, attachmentFilename })
     displayName = optsOrBuffer.name || displayName;
     periodText = optsOrBuffer.periodText || periodText;
     if (optsOrBuffer.attachmentBuffer) {
@@ -406,11 +433,22 @@ export async function sendSimpleEmail(
   );
 }
 
-/** Optional: export a transporter proxy to keep legacy imports working.
- * This exposes a `.sendMail()` that defers to the real transporter. */
+// Export transporter proxy for legacy code
 export const transporter = {
   async sendMail(options: Parameters<Transporter["sendMail"]>[0]) {
-    const t = await getTransporter();
-    return t.sendMail(options);
+    try {
+      const t = await getTransporter();
+      return t.sendMail(options);
+    } catch (error) {
+      console.error("[mail] transporter.sendMail error:", error);
+      // Return soft failure for compatibility
+      return {
+        accepted: [],
+        rejected: [],
+        messageId: "FAILED-" + Date.now(),
+        failed: true,
+        error: String(error),
+      } as any;
+    }
   },
 };

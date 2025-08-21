@@ -1,136 +1,273 @@
 // src/app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect, { db } from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import { generateAccountNumber, generateRoutingNumber, generateBitcoinAddress } from '@/lib/generators';
-import { transporter, sendWelcomeEmail } from '@/lib/mail';
+import { sendWelcomeEmail } from '@/lib/mail';
+
+// Helper functions for generating account details
+function generateAccountNumber() {
+  return 'AC' + Math.floor(1e8 + Math.random() * 9e8);
+}
+
+function generateRoutingNumber() {
+  return 'RT' + Math.floor(1e8 + Math.random() * 9e8);
+}
+
+function generateBitcoinAddress() {
+  const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  let address = '1'; // Bitcoin addresses start with 1 or 3
+  for (let i = 0; i < 33; i++) {
+    address += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return address;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
-    if (!name || !email || !password) {
-      return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+    const body = await request.json();
+    console.log('Registration request body:', body);
+    
+    // Extract fields - handle both simple and enhanced forms
+    const {
+      // Simple form fields
+      name,
+      email,
+      password,
+      // Enhanced form fields
+      firstName,
+      lastName,
+      confirmPassword,
+      dob,
+      nationality,
+      idType,
+      idNumber,
+      address,
+      city,
+      postalCode,
+      country,
+      phone,
+      employmentStatus,
+      monthlyIncome,
+      purpose,
+      terms,
+      privacy,
+      marketing,
+    } = body;
+
+    // Determine form type and construct full name
+    const isEnhancedForm = !!(firstName || lastName);
+    const fullName = isEnhancedForm 
+      ? `${firstName || ''} ${lastName || ''}`.trim()
+      : name;
+
+    // Normalize email
+    const userEmail = email?.toLowerCase().trim();
+    const userPassword = password;
+
+    // Basic validation
+    if (!fullName || !userEmail || !userPassword) {
+      console.log('Missing basic fields:', { fullName, userEmail, hasPassword: !!userPassword });
+      return NextResponse.json({ 
+        message: 'Name, email, and password are required',
+        errors: {
+          name: !fullName ? 'Name is required' : undefined,
+          email: !userEmail ? 'Email is required' : undefined,
+          password: !userPassword ? 'Password is required' : undefined,
+        }
+      }, { status: 400 });
     }
 
-    await dbConnect();
-
-    if (await User.findOne({ email })) {
-      return NextResponse.json({ message: 'Email already registered' }, { status: 409 });
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      return NextResponse.json(
+        { message: 'Invalid email format' },
+        { status: 400 }
+      );
     }
 
-    const accountNumber   = generateAccountNumber();
-    const routingNumber   = generateRoutingNumber();
-    const bitcoinAddress  = generateBitcoinAddress();
+    // Password validation
+    if (userPassword.length < 8) {
+      return NextResponse.json(
+        { message: 'Password must be at least 8 characters long' },
+        { status: 400 }
+      );
+    }
 
-    const newUser = await User.create({
-      name, email, password,
-      role: 'user', verified: false,
-      balance: 0, btcBalance: 0,
-      accountNumber, routingNumber, bitcoinAddress
-    });
+    // Enhanced form specific validations
+    if (isEnhancedForm) {
+      // Check password match if confirmPassword is provided
+      if (confirmPassword && userPassword !== confirmPassword) {
+        return NextResponse.json(
+          { message: 'Passwords do not match' },
+          { status: 400 }
+        );
+      }
 
-    const initTxn = {
-      type:        'deposit' as const,
-      amount:      0,
-      description: 'Account created',
-      date:        new Date(),
-      balanceAfter: 0,
-      status:      'Completed' as const,
-      reference:   generateAccountNumber().replace(/./g, 'txn') + Date.now()
+      // Age validation if DOB is provided
+      if (dob) {
+        const birthDate = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age < 18) {
+          return NextResponse.json(
+            { message: 'You must be at least 18 years old to register' },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Phone validation if provided
+      if (phone && !/^\+?\d{10,15}$/.test(phone.replace(/[\s-]/g, ''))) {
+        return NextResponse.json(
+          { message: 'Please enter a valid phone number' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Connect to database
+    await connectDB();
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: userEmail });
+    if (existingUser) {
+      console.log('User already exists:', userEmail);
+      return NextResponse.json(
+        { message: 'An account with this email already exists' },
+        { status: 409 }
+      );
+    }
+
+    // Generate account details
+    const accountNumber = generateAccountNumber();
+    const routingNumber = generateRoutingNumber();
+
+    // Create user object
+    const userData: any = {
+      name: fullName,
+      email: userEmail,
+      password: userPassword,
+      role: 'user',
+      verified: false,
+      checkingBalance: 0,
+      savingsBalance: 0,
+      investmentBalance: 0,
+      accountNumber,
+      routingNumber,
+      transactions: [],
     };
-    newUser.transactions.push(initTxn);
+
+    // Store enhanced profile data if available
+    if (isEnhancedForm) {
+      // Add any enhanced data as metadata (you can extend your User model to store this)
+      userData.metadata = {
+        firstName,
+        lastName,
+        dateOfBirth: dob ? new Date(dob) : undefined,
+        nationality,
+        identification: {
+          type: idType || 'passport',
+          number: idNumber
+        },
+        address: {
+          street: address,
+          city,
+          postalCode,
+          country
+        },
+        phone,
+        employment: {
+          status: employmentStatus,
+          monthlyIncome
+        },
+        accountPurpose: purpose,
+        consents: {
+          terms: terms || false,
+          privacy: privacy || false,
+          marketing: marketing || false
+        }
+      };
+    }
+
+    // Create the user
+    console.log('Creating user:', userEmail);
+    const newUser = await User.create(userData);
+
+    // Add initial transaction
+    const initTransaction = {
+      type: 'deposit' as const,
+      amount: 0,
+      description: 'Account opened',
+      date: new Date(),
+      balanceAfter: 0,
+    };
+
+    newUser.transactions.push(initTransaction);
     await newUser.save();
 
-    // 1) Raw account-details email with improved professional template
-    await transporter.sendMail({
-      from:    'Horizon Global Capital <admin@horizonglobalcapital.com>',
-      to:      email,
-      subject: 'Your Account Details',
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8" />
-            <title>Welcome to Horizon Global Capital</title>
-          </head>
-          <body style="margin: 0; padding: 0; background: #f5f7fa; font-family: 'Segoe UI', Tahoma, sans-serif;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 0;">
-              <tr>
-                <td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-                    <tr>
-                      <td style="background: #002b5c; padding: 20px; color: white; text-align: center; font-size: 24px; font-weight: bold;">
-                        Horizon Global Capital
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 30px; color: #333333;">
-                        <h2 style="margin-top: 0;">Welcome, ${name}!</h2>
-                        <p style="font-size: 16px;">We’re excited to have you on board. Below are your new account credentials:</p>
+    console.log('User created successfully:', newUser.email);
 
-                        <table cellpadding="12" cellspacing="0" style="width: 100%; background: #f9f9f9; border-radius: 6px; margin: 20px 0;">
-                          <tr>
-                            <td style="font-weight: bold; width: 40%;">Account Number</td>
-                            <td>${accountNumber}</td>
-                          </tr>
-                          <tr style="background: #f1f1f1;">
-                            <td style="font-weight: bold;">Routing Number</td>
-                            <td>${routingNumber}</td>
-                          </tr>
-                          <tr>
-                            <td style="font-weight: bold;">Bitcoin Address</td>
-                            <td style="word-break: break-all;">${bitcoinAddress}</td>
-                          </tr>
-                        </table>
+    // Send welcome email (don't fail registration if email fails)
+    try {
+      console.log('Attempting to send welcome email to:', userEmail);
+      const emailResult = await sendWelcomeEmail(userEmail, { name: fullName });
+      
+      if (emailResult.failed) {
+        console.warn('Welcome email failed but registration continues:', emailResult.error);
+      } else if (emailResult.skipped) {
+        console.log('Welcome email skipped (SMTP not configured)');
+      } else {
+        console.log('Welcome email sent successfully');
+      }
+    } catch (emailError) {
+      console.error('Welcome email error (non-fatal):', emailError);
+      // Continue with registration even if email fails
+    }
 
-                        <p>🔒 <strong>Important:</strong> Never share these details. For full security features, please visit your dashboard.</p>
+    // Return success response
+    return NextResponse.json({ 
+      message: 'Account created successfully! You can now sign in.',
+      success: true,
+      user: {
+        id: newUser._id.toString(),
+        name: newUser.name,
+        email: newUser.email,
+        accountNumber: newUser.accountNumber,
+      }
+    }, { status: 201 });
 
-                        <div style="text-align: center; margin: 30px 0;">
-                          <a href="https://horizonglobalcapital.com/dashboard" style="background: #002b5c; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold;">
-                            Go to Dashboard
-                          </a>
-                        </div>
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { message: 'An account with this email already exists' },
+        { status: 409 }
+      );
+    }
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+      return NextResponse.json(
+        { message: validationErrors.join(', ') },
+        { status: 400 }
+      );
+    }
 
-                        <p style="font-size: 14px; color: #555;">If you didn’t create this account, please contact support immediately.</p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="background: #eeeeee; text-align: center; padding: 15px; font-size: 12px; color: #666;">
-                        &copy; ${new Date().getFullYear()} Horizon Global Capital. All rights reserved.
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </body>
-        </html>
-      `
-    });
-
-    // 2) Branded welcome & summary email
-    await sendWelcomeEmail(email, {
-      name:           newUser.name,
-      balance:        newUser.balance,
-      bitcoinBalance: newUser.btcBalance,
-      accountStatus:  newUser.verified ? 'Verified' : 'Unverified',
-      transactions: [
-        {
-          type:        initTxn.type,
-          date:        initTxn.date.toLocaleString('en-US', { month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'numeric',hour12:true }),
-          description: initTxn.description,
-          amount:      initTxn.amount,
-          balanceAfter:initTxn.balanceAfter,
-          status:      initTxn.status,
-          reference:   initTxn.reference
-        }
-      ],
-      nextSteps: ['Verify your email','Set up mobile banking','Add beneficiary']
-    });
-
-    return NextResponse.json({ message: 'User created', userId: newUser._id }, { status: 201 });
-  } catch (err: any) {
-    console.error('Error in /api/auth/register:', err);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    // Generic error
+    return NextResponse.json(
+      { 
+        message: 'Registration failed. Please try again later.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 500 }
+    );
   }
 }
