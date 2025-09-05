@@ -1,79 +1,150 @@
+// src/app/transfers/internal/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import styles from "./sendMoney.module.css";
 
-export default function SendMoneyPage() {
+interface UserBalances {
+  checking: number;
+  savings: number;
+  investment: number;
+}
+
+export default function TransferPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [fetchingBalance, setFetchingBalance] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [step, setStep] = useState(1);
   
+  // GET ACTUAL USER BALANCES - NOT HARDCODED
+  const [userBalances, setUserBalances] = useState<UserBalances>({
+    checking: 0,
+    savings: 0,
+    investment: 0
+  });
+
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
   const [formData, setFormData] = useState({
+    fromAccount: "checking",
+    toAccount: "", // For internal transfers
     recipientName: "",
     recipientAccount: "",
     recipientBank: "",
+    recipientRoutingNumber: "",
     amount: "",
-    accountType: "checking",
     description: "",
-    transferType: "domestic"
+    transferType: "external", // internal or external
+    transferSpeed: "standard" // standard, express, wire
   });
 
-  // Account balances
-  const accountBalances = {
-    checking: 4000.00,
-    savings: 1000.00,
-    investment: 45458575.89
-  };
-
-  const formatBalance = (type: string) => {
-    const balance = accountBalances[type as keyof typeof accountBalances];
-    if (type === "investment") {
-      return `$${(balance / 1000000).toFixed(2)}M`;
+  // Fetch actual user data on mount
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetchUserData();
     }
-    return `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  }, [session]);
+
+  const fetchUserData = async () => {
+    setFetchingBalance(true);
+    try {
+      const response = await fetch('/api/user/dashboard');
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Set actual user balances
+        setUserBalances({
+          checking: data.balances?.checking || 0,
+          savings: data.balances?.savings || 0,
+          investment: data.balances?.investment || 0
+        });
+        
+        setUserName(data.user?.name || session?.user?.name || "User");
+        setUserEmail(session?.user?.email || "");
+      } else {
+        setError("Failed to load account balances");
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setError("Failed to load account information");
+    } finally {
+      setFetchingBalance(false);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate amount doesn't exceed balance
+  const getAvailableBalance = () => {
+    const account = formData.fromAccount as keyof UserBalances;
+    return userBalances[account] || 0;
+  };
+
+  const formatBalance = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const validateAmount = () => {
     const amount = parseFloat(formData.amount);
-    const balance = accountBalances[formData.accountType as keyof typeof accountBalances];
+    const available = getAvailableBalance();
     
-    if (amount > balance) {
-      setError("Insufficient funds in selected account");
-      return;
+    if (isNaN(amount) || amount <= 0) {
+      setError("Please enter a valid amount");
+      return false;
     }
+    
+    if (amount > available) {
+      setError(`Insufficient funds. Available balance: ${formatBalance(available)}`);
+      return false;
+    }
+    
+    return true;
+  };
 
+  const handleInternalTransfer = async () => {
+    if (!validateAmount()) return;
+    
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      const response = await fetch("/api/transactions/send", {
+      const response = await fetch("/api/transfers/internal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          fromAccount: formData.fromAccount,
+          toAccount: formData.toAccount,
+          amount: parseFloat(formData.amount),
+          description: formData.description || "Internal Transfer"
+        })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Transaction failed");
+        throw new Error(data.error || "Transfer failed");
       }
 
-      setSuccess("✅ Transaction initiated successfully! Pending approval.");
+      setSuccess("✅ Transfer completed successfully!");
       
-      // Show success for 3 seconds then redirect
+      // Refresh balances
+      await fetchUserData();
+      
+      // Reset form after 2 seconds and redirect
       setTimeout(() => {
         router.push("/transactions");
-      }, 3000);
+      }, 2000);
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -81,18 +152,87 @@ export default function SendMoneyPage() {
     }
   };
 
-  const nextStep = () => {
-    if (step === 1 && !formData.accountType) {
-      setError("Please select an account");
-      return;
+  const handleExternalTransfer = async () => {
+    if (!validateAmount()) return;
+    
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch("/api/transfers/external", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromAccount: formData.fromAccount,
+          recipientName: formData.recipientName,
+          recipientAccount: formData.recipientAccount,
+          recipientBank: formData.recipientBank,
+          recipientRoutingNumber: formData.recipientRoutingNumber,
+          amount: parseFloat(formData.amount),
+          description: formData.description || `Transfer to ${formData.recipientName}`,
+          transferSpeed: formData.transferSpeed
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Transfer failed");
+      }
+
+      setSuccess("✅ Transfer initiated! Pending approval. You will receive a confirmation email.");
+      
+      // Refresh balances
+      await fetchUserData();
+      
+      // Redirect after 3 seconds
+      setTimeout(() => {
+        router.push("/transactions");
+      }, 3000);
+      
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    if (step === 2) {
-      if (!formData.recipientName || !formData.recipientAccount || !formData.recipientBank) {
-        setError("Please fill in all recipient details");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.transferType === "internal") {
+      await handleInternalTransfer();
+    } else {
+      await handleExternalTransfer();
+    }
+  };
+
+  const nextStep = () => {
+    setError("");
+    
+    // Validation for each step
+    if (step === 1) {
+      if (!formData.fromAccount) {
+        setError("Please select a source account");
         return;
       }
+    } else if (step === 2) {
+      if (formData.transferType === "internal") {
+        if (!formData.toAccount || formData.toAccount === formData.fromAccount) {
+          setError("Please select a different destination account");
+          return;
+        }
+      } else {
+        if (!formData.recipientName || !formData.recipientAccount || !formData.recipientBank) {
+          setError("Please fill in all recipient details");
+          return;
+        }
+      }
+    } else if (step === 3) {
+      if (!validateAmount()) return;
     }
-    setError("");
+    
     setStep(step + 1);
   };
 
@@ -101,57 +241,90 @@ export default function SendMoneyPage() {
     setStep(step - 1);
   };
 
+  if (fetchingBalance) {
+    return (
+      <div className={styles.wrapper}>
+        <Sidebar />
+        <div className={styles.main}>
+          <Header />
+          <div className={styles.loadingContainer}>
+            <div className={styles.spinner}></div>
+            <p>Loading account information...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.wrapper}>
-      <Sidebar />
+      <aside className={styles.sidebar}>
+        <Sidebar />
+      </aside>
+      
       <div className={styles.main}>
-        <Header />
+        <header className={styles.header}>
+          <Header />
+        </header>
         
         <div className={styles.content}>
           {/* Page Header */}
           <div className={styles.pageHeader}>
-            <div className={styles.headerContent}>
-              <div>
-                <h1>Send Money</h1>
-                <p>Transfer funds securely to any account worldwide</p>
-              </div>
-              <div className={styles.transferTypes}>
-                <button 
-                  className={formData.transferType === "domestic" ? styles.active : ""}
-                  onClick={() => setFormData({...formData, transferType: "domestic"})}
-                >
-                  🏠 Domestic
-                </button>
-                <button 
-                  className={formData.transferType === "international" ? styles.active : ""}
-                  onClick={() => setFormData({...formData, transferType: "international"})}
-                >
-                  🌍 International
-                </button>
-              </div>
+            <div>
+              <h1>Transfer Money</h1>
+              <p>Send money between your accounts or to other banks</p>
             </div>
+            <div className={styles.balanceSummary}>
+              <span>Total Available: {formatBalance(userBalances.checking + userBalances.savings)}</span>
+            </div>
+          </div>
+
+          {/* Transfer Type Selection */}
+          <div className={styles.transferTypeSelector}>
+            <button
+              className={formData.transferType === "internal" ? styles.active : ""}
+              onClick={() => {
+                setFormData({...formData, transferType: "internal"});
+                setStep(1);
+                setError("");
+              }}
+            >
+              🔄 Between My Accounts
+            </button>
+            <button
+              className={formData.transferType === "external" ? styles.active : ""}
+              onClick={() => {
+                setFormData({...formData, transferType: "external"});
+                setStep(1);
+                setError("");
+              }}
+            >
+              🏦 To Another Bank
+            </button>
           </div>
 
           {/* Progress Steps */}
           <div className={styles.progressSteps}>
             <div className={`${styles.step} ${step >= 1 ? styles.active : ''}`}>
               <div className={styles.stepNumber}>1</div>
-              <div className={styles.stepLabel}>Select Account</div>
+              <div className={styles.stepLabel}>From Account</div>
             </div>
             <div className={styles.stepLine}></div>
             <div className={`${styles.step} ${step >= 2 ? styles.active : ''}`}>
               <div className={styles.stepNumber}>2</div>
-              <div className={styles.stepLabel}>Recipient Details</div>
+              <div className={styles.stepLabel}>
+                {formData.transferType === "internal" ? "To Account" : "Recipient"}
+              </div>
             </div>
             <div className={styles.stepLine}></div>
             <div className={`${styles.step} ${step >= 3 ? styles.active : ''}`}>
               <div className={styles.stepNumber}>3</div>
-              <div className={styles.stepLabel}>Transfer Amount</div>
+              <div className={styles.stepLabel}>Amount</div>
             </div>
             <div className={styles.stepLine}></div>
             <div className={`${styles.step} ${step >= 4 ? styles.active : ''}`}>
               <div className={styles.stepNumber}>4</div>
-              <div className={styles.stepLabel}>Review & Confirm</div>
+              <div className={styles.stepLabel}>Review</div>
             </div>
           </div>
 
@@ -159,102 +332,240 @@ export default function SendMoneyPage() {
           <div className={styles.formCard}>
             <form onSubmit={handleSubmit}>
               
-              {/* Step 1: Select Account */}
+              {/* Step 1: Select Source Account */}
               {step === 1 && (
                 <div className={styles.stepContent}>
                   <h3>Select Source Account</h3>
-                  <p className={styles.stepDescription}>Choose which account to send money from</p>
+                  <p className={styles.stepDescription}>Choose which account to transfer from</p>
                   
                   <div className={styles.accountOptions}>
-                    {Object.entries(accountBalances).map(([type, balance]) => (
-                      <div 
-                        key={type}
-                        className={`${styles.accountOption} ${formData.accountType === type ? styles.selected : ''}`}
-                        onClick={() => setFormData({...formData, accountType: type})}
-                      >
-                        <div className={styles.accountIcon}>
-                          {type === "checking" ? "💳" : type === "savings" ? "🏦" : "📈"}
-                        </div>
-                        <div className={styles.accountInfo}>
-                          <div className={styles.accountName}>
-                            {type.charAt(0).toUpperCase() + type.slice(1)} Account
-                          </div>
-                          <div className={styles.accountNumber}>****{type === "checking" ? "1234" : type === "savings" ? "5678" : "9012"}</div>
-                        </div>
-                        <div className={styles.accountBalance}>
-                          <div className={styles.balanceLabel}>Available Balance</div>
-                          <div className={styles.balanceAmount}>{formatBalance(type)}</div>
+                    {/* Checking Account */}
+                    <div 
+                      className={`${styles.accountOption} ${formData.fromAccount === "checking" ? styles.selected : ''}`}
+                      onClick={() => setFormData({...formData, fromAccount: "checking"})}
+                    >
+                      <div className={styles.accountIcon}>💳</div>
+                      <div className={styles.accountInfo}>
+                        <div className={styles.accountName}>Checking Account</div>
+                        <div className={styles.accountNumber}>****1234</div>
+                      </div>
+                      <div className={styles.accountBalance}>
+                        <div className={styles.balanceLabel}>Available</div>
+                        <div className={styles.balanceAmount}>
+                          {formatBalance(userBalances.checking)}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </div>
 
-              {/* Step 2: Recipient Details */}
-              {step === 2 && (
-                <div className={styles.stepContent}>
-                  <h3>Recipient Information</h3>
-                  <p className={styles.stepDescription}>Enter the recipient's banking details</p>
-                  
-                  <div className={styles.inputGrid}>
-                    <div className={styles.inputGroup}>
-                      <label>Recipient Full Name</label>
-                      <input
-                        type="text"
-                        placeholder="John Doe"
-                        value={formData.recipientName}
-                        onChange={(e) => setFormData({...formData, recipientName: e.target.value})}
-                        required
-                        className={styles.input}
-                      />
+                    {/* Savings Account */}
+                    <div 
+                      className={`${styles.accountOption} ${formData.fromAccount === "savings" ? styles.selected : ''}`}
+                      onClick={() => setFormData({...formData, fromAccount: "savings"})}
+                    >
+                      <div className={styles.accountIcon}>🏦</div>
+                      <div className={styles.accountInfo}>
+                        <div className={styles.accountName}>Savings Account</div>
+                        <div className={styles.accountNumber}>****5678</div>
+                      </div>
+                      <div className={styles.accountBalance}>
+                        <div className={styles.balanceLabel}>Available</div>
+                        <div className={styles.balanceAmount}>
+                          {formatBalance(userBalances.savings)}
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className={styles.inputGroup}>
-                      <label>Account Number</label>
-                      <input
-                        type="text"
-                        placeholder="1234567890"
-                        value={formData.recipientAccount}
-                        onChange={(e) => setFormData({...formData, recipientAccount: e.target.value})}
-                        required
-                        className={styles.input}
-                      />
-                    </div>
-                    
-                    <div className={styles.inputGroup}>
-                      <label>Bank Name</label>
-                      <input
-                        type="text"
-                        placeholder="Bank of America"
-                        value={formData.recipientBank}
-                        onChange={(e) => setFormData({...formData, recipientBank: e.target.value})}
-                        required
-                        className={styles.input}
-                      />
-                    </div>
-                    
-                    {formData.transferType === "international" && (
-                      <div className={styles.inputGroup}>
-                        <label>SWIFT/BIC Code</label>
-                        <input
-                          type="text"
-                          placeholder="BOFAUS3N"
-                          className={styles.input}
-                        />
+
+                    {/* Investment Account */}
+                    {userBalances.investment > 0 && (
+                      <div 
+                        className={`${styles.accountOption} ${formData.fromAccount === "investment" ? styles.selected : ''}`}
+                        onClick={() => setFormData({...formData, fromAccount: "investment"})}
+                      >
+                        <div className={styles.accountIcon}>📈</div>
+                        <div className={styles.accountInfo}>
+                          <div className={styles.accountName}>Investment Account</div>
+                          <div className={styles.accountNumber}>****9012</div>
+                        </div>
+                        <div className={styles.accountBalance}>
+                          <div className={styles.balanceLabel}>Available</div>
+                          <div className={styles.balanceAmount}>
+                            {formatBalance(userBalances.investment)}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Step 3: Transfer Amount */}
+              {/* Step 2: Destination (Internal or External) */}
+              {step === 2 && (
+                <div className={styles.stepContent}>
+                  {formData.transferType === "internal" ? (
+                    <>
+                      <h3>Select Destination Account</h3>
+                      <p className={styles.stepDescription}>Choose which account to transfer to</p>
+                      
+                      <div className={styles.accountOptions}>
+                        {formData.fromAccount !== "checking" && (
+                          <div 
+                            className={`${styles.accountOption} ${formData.toAccount === "checking" ? styles.selected : ''}`}
+                            onClick={() => setFormData({...formData, toAccount: "checking"})}
+                          >
+                            <div className={styles.accountIcon}>💳</div>
+                            <div className={styles.accountInfo}>
+                              <div className={styles.accountName}>Checking Account</div>
+                              <div className={styles.accountNumber}>****1234</div>
+                            </div>
+                            <div className={styles.accountBalance}>
+                              <div className={styles.balanceLabel}>Current Balance</div>
+                              <div className={styles.balanceAmount}>
+                                {formatBalance(userBalances.checking)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {formData.fromAccount !== "savings" && (
+                          <div 
+                            className={`${styles.accountOption} ${formData.toAccount === "savings" ? styles.selected : ''}`}
+                            onClick={() => setFormData({...formData, toAccount: "savings"})}
+                          >
+                            <div className={styles.accountIcon}>🏦</div>
+                            <div className={styles.accountInfo}>
+                              <div className={styles.accountName}>Savings Account</div>
+                              <div className={styles.accountNumber}>****5678</div>
+                            </div>
+                            <div className={styles.accountBalance}>
+                              <div className={styles.balanceLabel}>Current Balance</div>
+                              <div className={styles.balanceAmount}>
+                                {formatBalance(userBalances.savings)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {formData.fromAccount !== "investment" && userBalances.investment >= 0 && (
+                          <div 
+                            className={`${styles.accountOption} ${formData.toAccount === "investment" ? styles.selected : ''}`}
+                            onClick={() => setFormData({...formData, toAccount: "investment"})}
+                          >
+                            <div className={styles.accountIcon}>📈</div>
+                            <div className={styles.accountInfo}>
+                              <div className={styles.accountName}>Investment Account</div>
+                              <div className={styles.accountNumber}>****9012</div>
+                            </div>
+                            <div className={styles.accountBalance}>
+                              <div className={styles.balanceLabel}>Current Balance</div>
+                              <div className={styles.balanceAmount}>
+                                {formatBalance(userBalances.investment)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3>Recipient Information</h3>
+                      <p className={styles.stepDescription}>Enter the recipient's banking details</p>
+                      
+                      <div className={styles.inputGrid}>
+                        <div className={styles.inputGroup}>
+                          <label>Recipient Name</label>
+                          <input
+                            type="text"
+                            placeholder="John Doe"
+                            value={formData.recipientName}
+                            onChange={(e) => setFormData({...formData, recipientName: e.target.value})}
+                            required
+                            className={styles.input}
+                          />
+                        </div>
+                        
+                        <div className={styles.inputGroup}>
+                          <label>Account Number</label>
+                          <input
+                            type="text"
+                            placeholder="1234567890"
+                            value={formData.recipientAccount}
+                            onChange={(e) => setFormData({...formData, recipientAccount: e.target.value})}
+                            required
+                            className={styles.input}
+                          />
+                        </div>
+                        
+                        <div className={styles.inputGroup}>
+                          <label>Bank Name</label>
+                          <input
+                            type="text"
+                            placeholder="Chase Bank"
+                            value={formData.recipientBank}
+                            onChange={(e) => setFormData({...formData, recipientBank: e.target.value})}
+                            required
+                            className={styles.input}
+                          />
+                        </div>
+                        
+                        <div className={styles.inputGroup}>
+                          <label>Routing Number</label>
+                          <input
+                            type="text"
+                            placeholder="021000021"
+                            value={formData.recipientRoutingNumber}
+                            onChange={(e) => setFormData({...formData, recipientRoutingNumber: e.target.value})}
+                            required
+                            className={styles.input}
+                          />
+                        </div>
+                      </div>
+
+                      <div className={styles.transferSpeed}>
+                        <label>Transfer Speed</label>
+                        <div className={styles.speedOptions}>
+                          <div 
+                            className={`${styles.speedOption} ${formData.transferSpeed === "standard" ? styles.selected : ''}`}
+                            onClick={() => setFormData({...formData, transferSpeed: "standard"})}
+                          >
+                            <span className={styles.speedIcon}>🐢</span>
+                            <span className={styles.speedName}>Standard</span>
+                            <span className={styles.speedTime}>3-5 days • Free</span>
+                          </div>
+                          <div 
+                            className={`${styles.speedOption} ${formData.transferSpeed === "express" ? styles.selected : ''}`}
+                            onClick={() => setFormData({...formData, transferSpeed: "express"})}
+                          >
+                            <span className={styles.speedIcon}>🚀</span>
+                            <span className={styles.speedName}>Express</span>
+                            <span className={styles.speedTime}>1-2 days • $15</span>
+                          </div>
+                          <div 
+                            className={`${styles.speedOption} ${formData.transferSpeed === "wire" ? styles.selected : ''}`}
+                            onClick={() => setFormData({...formData, transferSpeed: "wire"})}
+                          >
+                            <span className={styles.speedIcon}>⚡</span>
+                            <span className={styles.speedName}>Wire</span>
+                            <span className={styles.speedTime}>Same day • $30</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3: Amount */}
               {step === 3 && (
                 <div className={styles.stepContent}>
-                  <h3>Transfer Details</h3>
-                  <p className={styles.stepDescription}>Enter the amount and description</p>
+                  <h3>Transfer Amount</h3>
+                  <p className={styles.stepDescription}>How much would you like to transfer?</p>
                   
                   <div className={styles.amountSection}>
+                    <div className={styles.availableBalance}>
+                      <span>Available Balance:</span>
+                      <strong>{formatBalance(getAvailableBalance())}</strong>
+                    </div>
+
                     <div className={styles.inputGroup}>
                       <label>Amount</label>
                       <div className={styles.amountInput}>
@@ -267,16 +578,24 @@ export default function SendMoneyPage() {
                           required
                           min="0.01"
                           step="0.01"
+                          max={getAvailableBalance()}
                           className={styles.amountField}
                         />
                       </div>
+                      
+                      {/* Quick amount buttons */}
                       <div className={styles.quickAmounts}>
-                        {[100, 500, 1000, 2000].map(amt => (
+                        {[50, 100, 500, 1000].map(amt => (
                           <button
                             key={amt}
                             type="button"
                             className={styles.quickAmountBtn}
-                            onClick={() => setFormData({...formData, amount: amt.toString()})}
+                            onClick={() => {
+                              if (amt <= getAvailableBalance()) {
+                                setFormData({...formData, amount: amt.toString()});
+                              }
+                            }}
+                            disabled={amt > getAvailableBalance()}
                           >
                             ${amt}
                           </button>
@@ -298,53 +617,82 @@ export default function SendMoneyPage() {
                 </div>
               )}
 
-              {/* Step 4: Review & Confirm */}
+              {/* Step 4: Review */}
               {step === 4 && (
                 <div className={styles.stepContent}>
                   <h3>Review Transfer</h3>
-                  <p className={styles.stepDescription}>Please review your transfer details before confirming</p>
+                  <p className={styles.stepDescription}>Please confirm your transfer details</p>
                   
                   <div className={styles.reviewCard}>
                     <div className={styles.reviewSection}>
-                      <h4>From Account</h4>
-                      <div className={styles.reviewItem}>
-                        <span>{formData.accountType.charAt(0).toUpperCase() + formData.accountType.slice(1)}</span>
-                        <strong>{formatBalance(formData.accountType)}</strong>
-                      </div>
-                    </div>
-                    
-                    <div className={styles.reviewSection}>
-                      <h4>To Recipient</h4>
-                      <div className={styles.reviewItem}>
-                        <span>Name</span>
-                        <strong>{formData.recipientName}</strong>
-                      </div>
+                      <h4>From</h4>
                       <div className={styles.reviewItem}>
                         <span>Account</span>
-                        <strong>{formData.recipientAccount}</strong>
+                        <strong>{formData.fromAccount.charAt(0).toUpperCase() + formData.fromAccount.slice(1)}</strong>
                       </div>
                       <div className={styles.reviewItem}>
-                        <span>Bank</span>
-                        <strong>{formData.recipientBank}</strong>
+                        <span>Current Balance</span>
+                        <strong>{formatBalance(getAvailableBalance())}</strong>
                       </div>
                     </div>
                     
                     <div className={styles.reviewSection}>
-                      <h4>Transfer Amount</h4>
+                      <h4>To</h4>
+                      {formData.transferType === "internal" ? (
+                        <>
+                          <div className={styles.reviewItem}>
+                            <span>Account</span>
+                            <strong>{formData.toAccount.charAt(0).toUpperCase() + formData.toAccount.slice(1)}</strong>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className={styles.reviewItem}>
+                            <span>Recipient</span>
+                            <strong>{formData.recipientName}</strong>
+                          </div>
+                          <div className={styles.reviewItem}>
+                            <span>Account</span>
+                            <strong>****{formData.recipientAccount.slice(-4)}</strong>
+                          </div>
+                          <div className={styles.reviewItem}>
+                            <span>Bank</span>
+                            <strong>{formData.recipientBank}</strong>
+                          </div>
+                          <div className={styles.reviewItem}>
+                            <span>Speed</span>
+                            <strong>{formData.transferSpeed.charAt(0).toUpperCase() + formData.transferSpeed.slice(1)}</strong>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    
+                    <div className={styles.reviewSection}>
+                      <h4>Transfer Details</h4>
                       <div className={styles.reviewAmount}>
-                        ${parseFloat(formData.amount || "0").toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        {formatBalance(parseFloat(formData.amount || "0"))}
                       </div>
                       {formData.description && (
                         <div className={styles.reviewDescription}>
                           "{formData.description}"
                         </div>
                       )}
+                      <div className={styles.reviewItem}>
+                        <span>New Balance ({formData.fromAccount})</span>
+                        <strong>{formatBalance(getAvailableBalance() - parseFloat(formData.amount || "0"))}</strong>
+                      </div>
                     </div>
                     
-                    <div className={styles.warningBox}>
-                      <span className={styles.warningIcon}>⚠️</span>
-                      <p>This transaction will require admin approval before processing.</p>
-                    </div>
+                    {formData.transferType === "external" && (
+                      <div className={styles.warningBox}>
+                        <span className={styles.warningIcon}>⚠️</span>
+                        <p>External transfers require admin approval and may take {
+                          formData.transferSpeed === "wire" ? "same day" :
+                          formData.transferSpeed === "express" ? "1-2 business days" :
+                          "3-5 business days"
+                        } to complete.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -360,6 +708,7 @@ export default function SendMoneyPage() {
                     type="button"
                     onClick={prevStep}
                     className={styles.backButton}
+                    disabled={loading}
                   >
                     ← Back
                   </button>
@@ -393,6 +742,10 @@ export default function SendMoneyPage() {
             </form>
           </div>
         </div>
+
+        <footer className={styles.footer}>
+          <Footer />
+        </footer>
       </div>
     </div>
   );

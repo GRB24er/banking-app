@@ -246,23 +246,38 @@ export default function DashboardPage() {
     { icon: "📊", title: "Analytics", subtitle: "View insights", bgColor: "#fee2e2", link: "/analytics" },
   ];
 
-  // Convert transactions for table
-  const transactions: Transaction[] = recent.slice(0, 10).map((t) => ({
-    id: t.reference,
-    description: t.description || "Transaction",
-    amount: t.amount,
-    status: (t.status === "Pending" || t.rawStatus === "pending") ? "Processing" : 
-            (t.status === "Completed" ? "Completed" : 
-            (t.status === "Rejected" ? "Declined" : "Processing")) as Transaction["status"],
-    date: new Date(t.date).toISOString(),
-    category: t.accountType ? 
-      t.accountType.charAt(0).toUpperCase() + t.accountType.slice(1) : 
-      "General",
-    type: t.amount > 0 ? "credit" : "debit",
-    reference: t.reference,
-    method: "Bank Transfer",
-    balance: 0
-  }));
+   const transactions: Transaction[] = recent.slice(0, 10).map((t) => {
+    // Determine if this is a debit (money going out)
+    const isDebit = [
+      'transfer-out',
+      'withdrawal', 
+      'payment',
+      'fee',
+      'charge',
+      'purchase'
+    ].includes(t.type || '') || 
+    (t.reference?.includes('-OUT'));
+    
+    // Use the actual amount with correct sign
+    const displayAmount = isDebit ? -Math.abs(t.amount) : Math.abs(t.amount);
+    
+    return {
+      id: t.reference,
+      description: t.description || "Transaction",
+      amount: displayAmount,  // <-- This will now be negative for debits
+      status: (t.status === "Pending" || t.rawStatus === "pending") ? "Processing" : 
+              (t.status === "Completed" ? "Completed" : 
+              (t.status === "Rejected" ? "Declined" : "Processing")) as Transaction["status"],
+      date: new Date(t.date).toISOString(),
+      category: t.accountType ? 
+        t.accountType.charAt(0).toUpperCase() + t.accountType.slice(1) : 
+        "General",
+      type: isDebit ? "debit" : "credit",  // <-- Properly set based on transaction type
+      reference: t.reference,
+      method: "Bank Transfer",
+      balance: 0
+    };
+  });
 
   // Format currency helper
   const formatCurrency = (amount: number) => {

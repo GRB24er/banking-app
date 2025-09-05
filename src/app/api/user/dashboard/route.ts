@@ -6,16 +6,31 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 
-function displayStatus(status: string) {
-  if (status === "completed" || status === "approved") return "Completed";
-  if (status === "pending_verification") return "Pending – Verification";
-  if (status === "pending") return "Pending";
-  if (status === "rejected") return "Rejected";
-  return status ?? "Pending";
+// Define TypeScript interfaces
+interface Transaction {
+  _id: string;
+  reference: string;
+  type: string;
+  currency: string;
+  amount: number;
+  date: Date;
+  description: string;
+  status: string;
+  accountType: string;
+  createdAt: Date;
+  userId: string;
 }
 
-// Define the transaction type
-interface TransactionData {
+interface UserData {
+  _id: string;
+  checkingBalance: number;
+  savingsBalance: number;
+  investmentBalance: number;
+  name: string;
+  email: string;
+}
+
+interface FormattedTransaction {
   reference: string;
   type: string;
   currency: string;
@@ -28,76 +43,123 @@ interface TransactionData {
   isReal: boolean;
 }
 
-export async function GET() {
+interface DashboardResponse {
+  balances: {
+    checking: number;
+    savings: number;
+    investment: number;
+  };
+  recent: FormattedTransaction[];
+  user: {
+    name: string;
+    email: string;
+  };
+  error?: string;
+}
+
+function displayStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    completed: "Completed",
+    approved: "Completed",
+    pending_verification: "Pending – Verification",
+    pending: "Pending",
+    rejected: "Rejected"
+  };
+  
+  return statusMap[status] || status || "Pending";
+}
+
+export async function GET(): Promise<NextResponse<DashboardResponse>> {
   try {
+    console.log('🔍 Dashboard API: Starting request...');
+    
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.log('❌ No session found');
+      return NextResponse.json({ 
+        error: "Unauthorized",
+        balances: { checking: 0, savings: 0, investment: 0 },
+        recent: [],
+        user: { name: "", email: "" }
+      }, { status: 401 });
     }
     
+    console.log('🔌 Connecting to database...');
     await connectDB();
+    console.log('✅ Database connected');
     
-    // Get the ACTUAL user's data including all balances and name
+    // Get user data with timeout
     const user = await User.findOne({ email: session.user.email })
       .select("_id checkingBalance savingsBalance investmentBalance name email")
-      .lean();
+      .lean()
+      .maxTimeMS(5000) as UserData | null;
     
-    if (!user?._id) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!user) {
+      console.log('❌ User not found in database');
+      return NextResponse.json({ 
+        error: "User not found",
+        balances: { checking: 0, savings: 0, investment: 0 },
+        recent: [],
+        user: { name: "", email: "" }
+      }, { status: 404 });
     }
     
-    // Get REAL transactions from database for THIS specific user
-    const realTransactions = await Transaction.find({ userId: user._id })
-      .sort({ date: -1, createdAt: -1 })
-      .limit(50)
-      .select("_id reference type currency amount date description status accountType createdAt")
-      .lean();
+    // Get transactions with error handling
+    let realTransactions: Transaction[] = [];
+    try {
+      realTransactions = await Transaction.find({ userId: user._id })
+        .sort({ date: -1, createdAt: -1 })
+        .limit(20) // Reduced from 50 to 20 for performance
+        .select("reference type currency amount date description status accountType createdAt")
+        .lean()
+        .maxTimeMS(10000) as Transaction[];
+      
+      console.log('📊 Transactions found:', realTransactions.length);
+    } catch (txError) {
+      console.error('⚠️ Transaction query error:', txError);
+      realTransactions = [];
+    }
     
-    // Convert real transactions to the format we need
-    const realTxFormatted: TransactionData[] = realTransactions.map((t: any) => ({
-      reference: t.reference ?? String(t._id),
-      type: t.type ?? "deposit",
-      currency: t.currency ?? "USD",
-      amount: typeof t.amount === "number" ? t.amount : Number(t.amount) || 0,
-      date: t.date ?? t.createdAt ?? new Date(),
-      description: t.description ?? "Transaction",
+    // Format transactions
+    const formattedTransactions: FormattedTransaction[] = realTransactions.map(t => ({
+      reference: t.reference || t._id.toString(),
+      type: t.type || "deposit",
+      currency: t.currency || "USD",
+      amount: Math.abs(t.amount) || 0,
+      date: t.date || t.createdAt,
+      description: t.description || "Transaction",
       status: displayStatus(t.status),
-      rawStatus: t.status,
-      accountType: t.accountType ?? "checking",
+      rawStatus: t.status || "pending",
+      accountType: t.accountType || "checking",
       isReal: true
     }));
     
-    // Sort by date (newest first) - FIX THE TYPESCRIPT ERROR
-    realTxFormatted.sort((a: TransactionData, b: TransactionData) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-    
-    // Take the most recent 20 transactions
-    const recent = realTxFormatted.slice(0, 20);
-    
-    // Return the ACTUAL user's balances from database
-    const balances = {
-      checking: user.checkingBalance || 0,
-      savings: user.savingsBalance || 0,
-      investment: user.investmentBalance || 0
-    };
-    
-    // Return the ACTUAL user's name from database
-    return NextResponse.json({ 
-      balances, 
-      recent,
+    // Prepare response
+    const response: DashboardResponse = {
+      balances: {
+        checking: user.checkingBalance || 0,
+        savings: user.savingsBalance || 0,
+        investment: user.investmentBalance || 0
+      },
+      recent: formattedTransactions,
       user: {
         name: user.name || session.user.name || "User",
         email: user.email
       }
-    }, { status: 200 });
+    };
+    
+    console.log('✅ Dashboard API: Sending response');
+    return NextResponse.json(response, { status: 200 });
     
   } catch (error) {
-    console.error("Dashboard API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    console.error("❌ Dashboard API error:", error);
+    
+    return NextResponse.json({
+      balances: { checking: 0, savings: 0, investment: 0 },
+      recent: [],
+      user: { name: "User", email: "unknown" },
+      error: "Partial data loaded due to server error"
+    }, { status: 200 });
   }
 }

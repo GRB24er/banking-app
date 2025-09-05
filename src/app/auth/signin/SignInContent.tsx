@@ -37,11 +37,16 @@ export default function SignInContent() {
     }
   }, [lockoutTime, isLocked]);
 
+  // Redirect on authentication - improved version
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.push('/dashboard');
+    if (status === 'authenticated' && session) {
+      // Small delay to ensure session is fully loaded
+      const timer = setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [status, router]);
+  }, [status, session, router]);
 
   // Show security tip after 3 seconds
   useEffect(() => {
@@ -62,38 +67,51 @@ export default function SignInContent() {
     setErrorMsg('');
     setLoading(true);
 
-    // Simulate network delay for realism
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Simulate network delay for realism
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const res = await signIn('credentials', {
-      redirect: false,
-      email,
-      password,
-    });
+      const res = await signIn("credentials", {
+        redirect: false,
+        email: email.trim(),
+        password: password.trim(),
+      });
 
-    setLoading(false);
-    
-    if (res?.error) {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      
-      if (newAttempts >= 3) {
-        setIsLocked(true);
-        setLockoutTime(30); // 30 second lockout
-        setErrorMsg('Too many failed attempts. Account locked for 30 seconds.');
-      } else {
-        setErrorMsg(`Invalid email or password. ${3 - newAttempts} attempt(s) remaining.`);
+      setLoading(false);
+
+      if (res?.error) {
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+
+        if (newAttempts >= 3) {
+          setIsLocked(true);
+          setLockoutTime(30);
+          setErrorMsg("Too many failed attempts. Account locked for 30 seconds.");
+        } else {
+          setErrorMsg(`Invalid email or password. ${3 - newAttempts} attempt(s) remaining.`);
+        }
+        return;
       }
-      return;
-    }
 
-    if (res?.ok) {
-      // Reset attempts on successful login
-      setAttempts(0);
-      router.refresh();
-      router.push('/dashboard');
+      if (res?.ok) {
+        setAttempts(0);
+        setErrorMsg('');
+        
+        // Force a complete page reload to ensure session is properly established
+        window.location.href = '/dashboard';
+        
+        // Alternative approach with router (uncomment if you prefer):
+        // setTimeout(() => {
+        //   router.push('/dashboard');
+        //   router.refresh();
+        // }, 200);
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Sign-in error:', error);
+      setErrorMsg('An unexpected error occurred. Please try again.');
     }
-  };
+  }
 
   const handleForgotPassword = () => {
     // In real app, this would trigger password reset flow
@@ -391,6 +409,24 @@ export default function SignInContent() {
     animation: 'spin 0.8s linear infinite',
     marginRight: '8px',
   };
+
+  // Don't show the form if already authenticated
+  if (status === 'authenticated') {
+    return (
+      <div style={containerStyle}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          fontSize: '18px',
+          color: '#6B7280'
+        }}>
+          Redirecting to dashboard...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

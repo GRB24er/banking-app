@@ -13,7 +13,7 @@ export default function CardsPage() {
       id: 1,
       type: "Debit",
       name: "Horizon Premier",
-      number: "4532 •••• •••• 1234",
+      number: "4513 •••• •••• 3238",
       expiry: "08/27",
       cvv: "•••",
       balance: 4000.00,

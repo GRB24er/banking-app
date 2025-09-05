@@ -44,8 +44,9 @@ export default function WireTransferPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [submitResponse, setSubmitResponse] = useState<any>(null);
   const [formData, setFormData] = useState<WireFormData>({
-    fromAccount: "",
+    fromAccount: "checking",
     recipientType: "individual",
     recipientName: "",
     recipientAddress: "",
@@ -116,12 +117,58 @@ export default function WireTransferPage() {
   };
 
   const handleSubmit = async () => {
+    if (!validateStep(currentStep)) return;
+    
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      setCurrentStep(5); // Success step
-    }, 3000);
+    setSubmitResponse(null);
+    
+    try {
+      // Prepare data for the wire transfer API
+      const wireTransferData = {
+        fromAccount: formData.fromAccount,
+        recipientName: formData.recipientName,
+        recipientAccount: formData.accountNumber,
+        recipientBank: formData.bankName,
+        recipientRoutingNumber: formData.routingNumber,
+        recipientBankAddress: `${formData.bankName} Main Branch`, // You might want to add this field to your form
+        recipientAddress: `${formData.recipientAddress}, ${formData.recipientCity}${formData.recipientState ? ', ' + formData.recipientState : ''}${formData.recipientZip ? ' ' + formData.recipientZip : ''}, ${formData.recipientCountry}`,
+        amount: parseFloat(formData.amount),
+        description: formData.reference || `Wire transfer to ${formData.recipientName}`,
+        wireType: formData.recipientCountry === 'US' ? 'domestic' : 'international',
+        purposeOfTransfer: formData.purpose,
+        urgentTransfer: formData.urgency === 'expedited'
+      };
+
+      console.log('🔄 Sending wire transfer request:', wireTransferData);
+
+      const response = await fetch('/api/transfers/wire', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(wireTransferData)
+      });
+
+      const data = await response.json();
+      console.log('📥 Wire transfer response:', data);
+
+      setSubmitResponse(data);
+
+      if (data.success) {
+        setCurrentStep(5); // Success step
+      } else {
+        // Handle error - stay on current step and show error
+        console.error('Wire transfer failed:', data.error);
+      }
+    } catch (error) {
+      console.error('Wire transfer request failed:', error);
+      setSubmitResponse({
+        success: false,
+        error: 'Network error occurred. Please try again.'
+      });
+    }
+    
+    setLoading(false);
   };
 
   const estimateFee = () => {
@@ -131,23 +178,21 @@ export default function WireTransferPage() {
     
     let fee = 0;
     if (isInternational) {
-      fee = isExpedited ? 45 : 30;
+      fee = 45; // International wire fee
     } else {
-      fee = isExpedited ? 30 : 15;
+      fee = 30; // Domestic wire fee
+    }
+    
+    if (isExpedited) {
+      fee += 25; // Urgent processing fee
     }
     
     return fee;
   };
 
   const estimateArrival = () => {
-    const isInternational = formData.recipientCountry !== "US";
     const isExpedited = formData.urgency === "expedited";
-    
-    if (isInternational) {
-      return isExpedited ? "1-2 business days" : "3-5 business days";
-    } else {
-      return isExpedited ? "Same business day" : "1-2 business days";
-    }
+    return isExpedited ? "Same business day (urgent)" : "Same business day";
   };
 
   return (
@@ -473,6 +518,21 @@ export default function WireTransferPage() {
                   <div className={styles.formGrid}>
                     <div className={styles.formField}>
                       <label>
+                        From Account
+                        <span className={styles.required}>*</span>
+                      </label>
+                      <select
+                        value={formData.fromAccount}
+                        onChange={(e) => handleInputChange("fromAccount", e.target.value)}
+                      >
+                        <option value="checking">Checking Account</option>
+                        <option value="savings">Savings Account</option>
+                        <option value="investment">Investment Account</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.formField}>
+                      <label>
                         Amount
                         <span className={styles.required}>*</span>
                       </label>
@@ -483,19 +543,15 @@ export default function WireTransferPage() {
                           className={styles.currencySelect}
                         >
                           <option value="USD">USD</option>
-                          <option value="EUR">EUR</option>
-                          <option value="GBP">GBP</option>
-                          <option value="CAD">CAD</option>
-                          <option value="AUD">AUD</option>
                         </select>
                         <input
                           type="number"
                           value={formData.amount}
                           onChange={(e) => handleInputChange("amount", e.target.value)}
                           className={errors.amount ? styles.errorInput : ""}
-                          placeholder="0.00"
+                          placeholder="100.00"
                           step="0.01"
-                          min="0"
+                          min="100"
                         />
                       </div>
                       {errors.amount && (
@@ -509,8 +565,8 @@ export default function WireTransferPage() {
                         value={formData.urgency}
                         onChange={(e) => handleInputChange("urgency", e.target.value)}
                       >
-                        <option value="standard">Standard (${estimateFee() - 15})</option>
-                        <option value="expedited">Expedited (${estimateFee()})</option>
+                        <option value="standard">Standard (${estimateFee() - 25})</option>
+                        <option value="expedited">Urgent (+$25 fee)</option>
                       </select>
                     </div>
 
@@ -525,11 +581,9 @@ export default function WireTransferPage() {
                         className={errors.purpose ? styles.errorInput : ""}
                       >
                         <option value="">Select purpose</option>
-                        <option value="personal">Personal/Family Support</option>
-                        <option value="business">Business Payment</option>
-                        <option value="purchase">Purchase/Investment</option>
-                        <option value="education">Education</option>
-                        <option value="medical">Medical</option>
+                        <option value="personal_transfer">Personal/Family Support</option>
+                        <option value="business_payment">Business Payment</option>
+                        <option value="real_estate">Purchase/Investment</option>
                         <option value="other">Other</option>
                       </select>
                       {errors.purpose && (
@@ -663,6 +717,10 @@ export default function WireTransferPage() {
                    <h3>Transfer Details</h3>
                    <div className={styles.reviewGrid}>
                      <div className={styles.reviewItem}>
+                       <span className={styles.reviewLabel}>From:</span>
+                       <span className={styles.reviewValue}>{formData.fromAccount} Account</span>
+                     </div>
+                     <div className={styles.reviewItem}>
                        <span className={styles.reviewLabel}>Amount:</span>
                        <span className={styles.reviewValue}>
                          {formData.currency} {parseFloat(formData.amount || "0").toFixed(2)}
@@ -683,6 +741,17 @@ export default function WireTransferPage() {
                    </div>
                  </div>
 
+                 {/* Show API Response if there's an error */}
+                 {submitResponse && !submitResponse.success && (
+                   <div className={styles.warningBox}>
+                     <div className={styles.warningIcon}>⚠️</div>
+                     <div className={styles.warningContent}>
+                       <strong>Error</strong>
+                       <p>{submitResponse.error}</p>
+                     </div>
+                   </div>
+                 )}
+
                  <div className={styles.warningBox}>
                    <div className={styles.warningIcon}>⚠️</div>
                    <div className={styles.warningContent}>
@@ -694,8 +763,7 @@ export default function WireTransferPage() {
                  <div className={styles.agreementBox}>
                    <input type="checkbox" id="agreement" required />
                    <label htmlFor="agreement">
-                     I confirm that all information is correct and authorize Horizon Global Capital 
-                     to execute this wire transfer. I understand that wire transfers are irreversible.
+                     I confirm that all information is correct and authorize this wire transfer. I understand that wire transfers are irreversible.
                    </label>
                  </div>
                </div>
@@ -726,28 +794,50 @@ export default function WireTransferPage() {
                animate={{ opacity: 1, scale: 1 }}
                className={styles.successContainer}
              >
-               <div className={styles.successIcon}>✓</div>
-               <h2 className={styles.successTitle}>Wire Transfer Initiated!</h2>
+               <div className={styles.successIcon}>✅</div>
+               <h2 className={styles.successTitle}>
+                 {submitResponse?.success ? 'Wire Transfer Completed!' : 'Wire Transfer Failed'}
+               </h2>
                <p className={styles.successMessage}>
-                 Your wire transfer of {formData.currency} {parseFloat(formData.amount || "0").toFixed(2)} 
-                 to {formData.recipientName} has been successfully initiated.
+                 {submitResponse?.success ? (
+                   <>
+                     Your wire transfer of {formData.currency} {parseFloat(formData.amount || "0").toFixed(2)} 
+                     to {formData.recipientName} has been successfully completed and the funds have been debited from your account.
+                   </>
+                 ) : (
+                   <>
+                     There was an error processing your wire transfer. Please try again or contact support.
+                     <br />
+                     Error: {submitResponse?.error}
+                   </>
+                 )}
                </p>
                
-               <div className={styles.confirmationBox}>
-                 <h3>Confirmation Details</h3>
-                 <div className={styles.confirmationItem}>
-                   <span>Reference Number:</span>
-                   <strong>WR{Date.now()}</strong>
+               {submitResponse?.success && (
+                 <div className={styles.confirmationBox}>
+                   <h3>Confirmation Details</h3>
+                   <div className={styles.confirmationItem}>
+                     <span>Reference Number:</span>
+                     <strong>{submitResponse.wireReference}</strong>
+                   </div>
+                   <div className={styles.confirmationItem}>
+                     <span>Status:</span>
+                     <strong>Completed</strong>
+                   </div>
+                   <div className={styles.confirmationItem}>
+                     <span>Amount Debited:</span>
+                     <strong>${submitResponse.transfer?.total?.toFixed(2) || '0.00'}</strong>
+                   </div>
+                   <div className={styles.confirmationItem}>
+                     <span>New Balance:</span>
+                     <strong>${submitResponse.newBalance?.toFixed(2) || '0.00'}</strong>
+                   </div>
+                   <div className={styles.confirmationItem}>
+                     <span>Expected Delivery:</span>
+                     <strong>{estimateArrival()}</strong>
+                   </div>
                  </div>
-                 <div className={styles.confirmationItem}>
-                   <span>Status:</span>
-                   <strong>Processing</strong>
-                 </div>
-                 <div className={styles.confirmationItem}>
-                   <span>Expected Delivery:</span>
-                   <strong>{estimateArrival()}</strong>
-                 </div>
-               </div>
+               )}
 
                <div className={styles.successActions}>
                  <button 

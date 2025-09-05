@@ -1,8 +1,15 @@
-/* sendMoney.module.css */
+/* src/app/transfers/internal/sendMoney.module.css */
+
 .wrapper {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: #f5f6fa;
+}
+
+.sidebar {
+  width: 250px;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
 }
 
 .main {
@@ -11,63 +18,108 @@
   flex-direction: column;
 }
 
+.header {
+  background: white;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
 .content {
-  padding: 2rem;
-  max-width: 900px;
+  flex: 1;
+  padding: 30px;
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* Page Header */
-.pageHeader {
-  margin-bottom: 2rem;
+.footer {
+  background: white;
+  padding: 20px;
+  margin-top: auto;
 }
 
-.headerContent {
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Page Header */
+.pageHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+  margin-bottom: 30px;
 }
 
 .pageHeader h1 {
-  font-size: 2.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.5rem;
+  margin: 0;
+  font-size: 28px;
+  color: #333;
 }
 
 .pageHeader p {
-  color: #64748b;
-  font-size: 1.125rem;
+  margin: 5px 0 0;
+  color: #666;
+  font-size: 14px;
 }
 
-.transferTypes {
+.balanceSummary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-weight: 600;
+}
+
+/* Transfer Type Selector */
+.transferTypeSelector {
   display: flex;
-  gap: 0.5rem;
+  gap: 10px;
+  margin-bottom: 30px;
   background: white;
-  padding: 0.25rem;
+  padding: 10px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-.transferTypes button {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  background: transparent;
-  color: #64748b;
+.transferTypeSelector button {
+  flex: 1;
+  padding: 15px;
+  border: 2px solid transparent;
+  background: #f8f9fa;
   border-radius: 8px;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
 }
 
-.transferTypes button.active {
+.transferTypeSelector button.active {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  border-color: #667eea;
+}
+
+.transferTypeSelector button:hover:not(.active) {
+  background: #e9ecef;
 }
 
 /* Progress Steps */
@@ -75,10 +127,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
+  margin-bottom: 30px;
+  padding: 20px;
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
@@ -86,25 +138,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  opacity: 0.5;
-  transition: opacity 0.3s;
-}
-
-.step.active {
-  opacity: 1;
+  gap: 8px;
 }
 
 .stepNumber {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: #e9ecef;
+  color: #6c757d;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: #64748b;
   transition: all 0.3s;
 }
 
@@ -114,60 +160,53 @@
 }
 
 .stepLabel {
-  font-size: 0.875rem;
-  color: #64748b;
+  font-size: 12px;
+  color: #6c757d;
   font-weight: 500;
+}
+
+.step.active .stepLabel {
+  color: #333;
 }
 
 .stepLine {
   flex: 1;
   height: 2px;
-  background: #e2e8f0;
-  margin: 0 1rem;
-  max-width: 100px;
+  background: #e9ecef;
+  margin: 0 20px;
 }
 
 /* Form Card */
 .formCard {
   background: white;
-  border-radius: 20px;
-  padding: 2.5rem;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-}
-
-.stepContent {
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
 .stepContent h3 {
-  font-size: 1.5rem;
-  color: #0f172a;
-  margin-bottom: 0.5rem;
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  color: #333;
 }
 
 .stepDescription {
-  color: #64748b;
-  margin-bottom: 2rem;
+  color: #666;
+  margin-bottom: 30px;
 }
 
 /* Account Options */
 .accountOptions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  display: grid;
+  gap: 15px;
 }
 
 .accountOption {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  border: 2px solid #e2e8f0;
+  gap: 20px;
+  padding: 20px;
+  border: 2px solid #e9ecef;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s;
@@ -175,23 +214,16 @@
 
 .accountOption:hover {
   border-color: #667eea;
-  background: #f8fafc;
+  background: #f8f9fa;
 }
 
 .accountOption.selected {
   border-color: #667eea;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
 }
 
 .accountIcon {
-  font-size: 2.5rem;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f1f5f9;
-  border-radius: 12px;
+  font-size: 32px;
 }
 
 .accountInfo {
@@ -200,13 +232,13 @@
 
 .accountName {
   font-weight: 600;
-  color: #0f172a;
-  margin-bottom: 0.25rem;
+  color: #333;
+  margin-bottom: 5px;
 }
 
 .accountNumber {
-  color: #64748b;
-  font-size: 0.875rem;
+  font-size: 14px;
+  color: #666;
 }
 
 .accountBalance {
@@ -214,129 +246,588 @@
 }
 
 .balanceLabel {
-  font-size: 0.75rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.25rem;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 5px;
 }
 
 .balanceAmount {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
 }
 
 /* Input Styles */
 .inputGrid {
   display: grid;
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .inputGroup label {
-  font-weight: 600;
-  color: #334155;
-  font-size: 0.875rem;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
 }
 
 .input,
 .textarea {
-  padding: 0.875rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 1rem;
+  padding: 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 16px;
   transition: all 0.3s;
-  background: #f8fafc;
 }
 
 .input:focus,
 .textarea:focus {
   outline: none;
   border-color: #667eea;
-  background: white;
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
 
 .textarea {
   resize: vertical;
-  font-family: inherit;
+  min-height: 100px;
+}
+
+/* Transfer Speed */
+.transferSpeed {
+  margin-top: 30px;
+}
+
+.transferSpeed label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.speedOptions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.speedOption {
+  padding: 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.speedOption:hover {
+  border-color: #667eea;
+}
+
+.speedOption.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+}
+
+.speedIcon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.speedName {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.speedTime {
+  display: block;
+  font-size: 12px;
+  color: #666;
 }
 
 /* Amount Section */
 .amountSection {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 20px;
+}
+
+.availableBalance {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.availableBalance span {
+  color: #666;
+}
+
+.availableBalance strong {
+  font-size: 20px;
+  color: #333;
 }
 
 .amountInput {
   position: relative;
-  display: flex;
-  align-items: center;
 }
 
 .currencySymbol {
   position: absolute;
-  left: 1rem;
-  font-size: 1.5rem;
-  color: #64748b;
-  font-weight: 600;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #666;
 }
+/* src/app/transfers/internal/sendMoney.module.css */
 
-.amountField {
-  width: 100%;
-  padding: 1rem 1rem 1rem 2.5rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 1.5rem;
-  font-weight: 600;
-  transition: all 0.3s;
-  background: #f8fafc;
-}
-
-.amountField:focus {
-  outline: none;
-  border-color: #667eea;
-  background: white;
-}
-
-.quickAmounts {
+.wrapper {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  min-height: 100vh;
+  background: #f5f6fa;
 }
 
-.quickAmountBtn {
-  padding: 0.5rem 1rem;
-  background: #f1f5f9;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  color: #334155;
+.sidebar {
+  width: 250px;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: white;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.content {
+  flex: 1;
+  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.footer {
+  background: white;
+  padding: 20px;
+  margin-top: auto;
+}
+
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Page Header */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.pageHeader h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #333;
+}
+
+.pageHeader p {
+  margin: 5px 0 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.balanceSummary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 25px;
   font-weight: 600;
+}
+
+/* Transfer Type Selector */
+.transferTypeSelector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  background: white;
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.transferTypeSelector button {
+  flex: 1;
+  padding: 15px;
+  border: 2px solid transparent;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
 }
 
-.quickAmountBtn:hover {
+.transferTypeSelector button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   border-color: #667eea;
-  background: white;
 }
 
-/* Review Card */
-.reviewCard {
-  background: #f8fafc;
+.transferTypeSelector button:hover:not(.active) {
+  background: #e9ecef;
+}
+
+/* Progress Steps */
+.progressSteps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: white;
   border-radius: 12px;
-  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepNumber {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e9ecef;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.step.active .stepNumber {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.stepLabel {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.step.active .stepLabel {
+  color: #333;
+}
+
+.stepLine {
+  flex: 1;
+  height: 2px;
+  background: #e9ecef;
+  margin: 0 20px;
+}
+
+/* Form Card */
+.formCard {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stepContent h3 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.stepDescription {
+  color: #666;
+  margin-bottom: 30px;
+}
+
+/* Account Options */
+.accountOptions {
+  display: grid;
+  gap: 15px;
+}
+
+.accountOption {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.accountOption:hover {
+  border-color: #667eea;
+  background: #f8f9fa;
+}
+
+.accountOption.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+}
+
+.accountIcon {
+  font-size: 32px;
+}
+
+.accountInfo {
+  flex: 1;
+}
+
+.accountName {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.accountNumber {
+  font-size: 14px;
+  color: #666;
+}
+
+.accountBalance {
+  text-align: right;
+}
+
+.balanceLabel {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.balanceAmount {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Input Styles */
+.inputGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.input,
+.textarea {
+  padding: 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Transfer Speed */
+.transferSpeed {
+  margin-top: 30px;
+}
+
+.transferSpeed label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.speedOptions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.speedOption {
+  padding: 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.speedOption:hover {
+  border-color: #667eea;
+}
+
+.speedOption.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+}
+
+.speedIcon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.speedName {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.speedTime {
+  display: block;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Amount Section */
+.amountSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.availableBalance {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.availableBalance span {
+  color: #666;
+}
+
+.availableBalance strong {
+  font-size: 20px;
+  color: #333;
+}
+
+.amountInput {
+  position: relative;
+}
+
+.currencySymbol {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #666;
+}
+
+.amountField {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.quickAmounts {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.quickAmountBtn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  background: white;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.quickAmountBtn:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.quickAmountBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Review Section */
+.reviewCard {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
 }
 
 .reviewSection {
-  padding: 1rem 0;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 20px 0;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .reviewSection:last-child {
@@ -344,182 +835,197 @@
 }
 
 .reviewSection h4 {
-  font-size: 0.875rem;
-  color: #64748b;
+  margin: 0 0 15px 0;
+  color: #666;
+  font-size: 14px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.75rem;
+  letter-spacing: 1px;
 }
 
 .reviewItem {
   display: flex;
   justify-content: space-between;
-  padding: 0.5rem 0;
-  color: #334155;
+  margin-bottom: 10px;
+}
+
+.reviewItem span {
+  color: #666;
+  font-size: 14px;
 }
 
 .reviewItem strong {
-  color: #0f172a;
-  font-weight: 600;
+  color: #333;
+  font-size: 14px;
 }
 
 .reviewAmount {
-  font-size: 2.5rem;
+  font-size: 32px;
   font-weight: 700;
-  color: #0f172a;
-  margin: 1rem 0;
+  color: #333;
+  margin: 20px 0;
+  text-align: center;
 }
 
 .reviewDescription {
-  color: #64748b;
-  font-style: italic;
-  padding: 0.75rem;
+  padding: 10px;
   background: white;
   border-radius: 8px;
-  margin-top: 0.5rem;
+  font-style: italic;
+  color: #666;
+  margin: 15px 0;
 }
 
 .warningBox {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #fef3c7;
+  gap: 15px;
+  padding: 15px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
   border-radius: 8px;
-  margin-top: 1rem;
+  margin-top: 20px;
 }
 
 .warningIcon {
-  font-size: 1.25rem;
+  font-size: 20px;
 }
 
 .warningBox p {
-  color: #92400e;
-  font-size: 0.875rem;
   margin: 0;
+  color: #856404;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* Navigation Buttons */
 .navigationButtons {
   display: flex;
   justify-content: space-between;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e2e8f0;
+  margin-top: 30px;
+  padding-top: 30px;
+  border-top: 1px solid #dee2e6;
 }
 
-.backButton {
-  padding: 0.875rem 1.5rem;
-  background: white;
-  color: #64748b;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 1rem;
+.backButton,
+.continueButton,
+.submitButton {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.backButton:hover {
-  border-color: #cbd5e1;
-  background: #f8fafc;
+.backButton {
+  background: white;
+  color: #666;
+  border: 2px solid #dee2e6;
+}
+
+.backButton:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #adb5bd;
 }
 
 .continueButton,
 .submitButton {
-  padding: 0.875rem 2rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
   margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
-.continueButton:hover,
+.continueButton:hover:not(:disabled),
 .submitButton:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 5px 20px rgba(102,126,234,0.4);
 }
 
+.backButton:disabled,
+.continueButton:disabled,
 .submitButton:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-}
-
-/* Spinner */
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* Messages */
+.error,
+.success {
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .error {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #dc2626;
-  padding: 1rem 1.25rem;
-  border-radius: 10px;
-  margin: 1rem 0;
-  border-left: 4px solid #dc2626;
-  animation: slideIn 0.3s ease;
+  background: #fee;
+  color: #c00;
+  border: 1px solid #fcc;
 }
 
 .success {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-  color: #16a34a;
-  padding: 1rem 1.25rem;
-  border-radius: 10px;
-  margin: 1rem 0;
-  border-left: 4px solid #16a34a;
-  animation: slideIn 0.3s ease;
+  background: #e7f5e7;
+  color: #2d7a2d;
+  border: 1px solid #c3e6c3;
 }
 
-@keyframes slideIn {
-  from { 
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Responsive */
+/* Responsive Design */
 @media (max-width: 768px) {
-  .content {
-    padding: 1rem;
-  }
-  
-  .formCard {
-    padding: 1.5rem;
-  }
-  
-  .progressSteps {
-    padding: 1rem;
-  }
-  
-  .stepLabel {
-    display: none;
-  }
-  
-  .accountOption {
+  .wrapper {
     flex-direction: column;
-    text-align: center;
+  }
+
+  .sidebar {
+    width: 100%;
+    position: relative;
+  }
+
+  .content {
+    padding: 20px;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .transferTypeSelector {
+    flex-direction: column;
+  }
+
+  .progressSteps {
+    overflow-x: auto;
+    padding: 20px 10px;
+  }
+
+  .speedOptions {
+    grid-template-columns: 1fr;
+  }
+
+  .inputGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .quickAmounts {
+    flex-wrap: wrap;
+  }
+
+  .navigationButtons {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .backButton,
+  .continueButton,
+  .submitButton {
+    width: 100%;
+    justify-content: center;
   }
 }

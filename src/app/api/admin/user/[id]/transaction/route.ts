@@ -1,165 +1,231 @@
-// src/app/api/admin/user/[id]/transaction/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
-import Transaction from "@/models/Transaction";
+// src/app/api/admin/users/[id]/transaction/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
+import Transaction from '@/models/Transaction';
+import { sendTransactionEmail } from '@/lib/mail';
+import { generateCreditEmail, generateDebitEmail } from '@/lib/bankingEmailTemplates';
 
-// In Next.js 15, route context params are async
-type Context = { params: Promise<{ id: string }> };
+// Helper function to generate reference numbers
+function generateReference(type: string): string {
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  
+  const prefixMap: { [key: string]: string } = {
+    'deposit': 'DEP',
+    'withdraw': 'WTH',
+    'transfer-in': 'TRI',
+    'transfer-out': 'TRO',
+    'interest': 'INT',
+    'fee': 'FEE',
+    'adjustment-credit': 'ADC',
+    'adjustment-debit': 'ADD'
+  };
+  
+  const prefix = prefixMap[type] || 'TRX';
+  return `${prefix}-${timestamp}-${random}`;
+}
 
-type AccountType = "checking" | "savings" | "investment";
-type InputType = "credit" | "debit" | "deposit" | "withdraw";
-
-const isAccountType = (x: unknown): x is AccountType =>
-  x === "checking" || x === "savings" || x === "investment";
-
-const toNumber = (v: unknown): number => {
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    // allow "45,458,575.89" and spaces
-    const n = Number(v.replace(/[, ]+/g, ""));
-    return n;
-  }
-  return NaN;
-};
-
-const toCanonical = (t: string): "credit" | "debit" => {
-  const s = String(t).toLowerCase();
-  if (s === "credit" || s === "deposit") return "credit";
-  if (s === "debit" || s === "withdraw") return "debit";
-  return "debit";
-};
-
-export async function POST(req: NextRequest, ctx: Context) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await ctx.params; // ✅ await async params
+    // Await params before accessing id
+    const resolvedParams = await params;
+    console.log('Transaction API called for user:', resolvedParams.id);
+    
+    // Connect to database
+    await connectDB();
+    
+    const userId = resolvedParams.id;
+    const body = await req.json();
+    
+    const { 
+      type, 
+      amount, 
+      accountType, 
+      description, 
+      status = 'completed',
+      sendEmail = true 
+    } = body;
 
-    const session = await getServerSession(authOptions);
-    // Keep your strict admin gate
-    if (!session?.user?.email || session.user.email !== "admin@horizonbank.com") {
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 401 }
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-    }
+    // Determine the balance field
+    const balanceField = accountType === 'savings' 
+      ? 'savingsBalance' 
+      : accountType === 'investment' 
+      ? 'investmentBalance' 
+      : 'checkingBalance';
 
-    const {
-      type,
-      amount,
-      accountType,
-      description,
-      currency = "USD",
-      reference,
-    } = body as {
-      type: InputType;
-      amount: number | string;
-      accountType: AccountType;
-      description?: string;
-      currency?: string;
-      reference?: string;
-    };
+    // Get current balance
+    const currentBalance = user[balanceField] || 0;
 
-    if (!type || amount == null || !accountType) {
+    // Calculate new balance
+    const isCredit = ['deposit', 'transfer-in', 'interest', 'adjustment-credit'].includes(type);
+    const balanceChange = isCredit ? amount : -amount;
+    const newBalance = currentBalance + balanceChange;
+
+    // Check for insufficient funds on debit
+    if (!isCredit && newBalance < 0) {
       return NextResponse.json(
-        { error: "Missing required fields: type, amount, accountType" },
+        { error: 'Insufficient funds' },
         { status: 400 }
       );
     }
-    if (!isAccountType(accountType)) {
-      return NextResponse.json({ error: "Invalid accountType" }, { status: 400 });
-    }
 
-    const amt = toNumber(amount);
-    if (!Number.isFinite(amt) || amt <= 0) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-    }
+    // Create reference number
+    const reference = generateReference(type);
 
-    const canonical = toCanonical(type);
-
-    await connectDB();
-
-    const user = await User.findById(id);
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Apply balance immediately (instant completed posting)
-    let newBalance: number;
-    if (accountType === "checking") {
-      if (canonical === "debit" && (user.checkingBalance ?? 0) < amt) {
-        return NextResponse.json(
-          { error: "Insufficient funds in checking account" },
-          { status: 400 }
-        );
-      }
-      user.checkingBalance = (user.checkingBalance ?? 0) + (canonical === "credit" ? amt : -amt);
-      newBalance = user.checkingBalance;
-    } else if (accountType === "savings") {
-      if (canonical === "debit" && (user.savingsBalance ?? 0) < amt) {
-        return NextResponse.json(
-          { error: "Insufficient funds in savings account" },
-          { status: 400 }
-        );
-      }
-      user.savingsBalance = (user.savingsBalance ?? 0) + (canonical === "credit" ? amt : -amt);
-      newBalance = user.savingsBalance;
-    } else {
-      if (canonical === "debit" && (user.investmentBalance ?? 0) < amt) {
-        return NextResponse.json(
-          { error: "Insufficient funds in investment account" },
-          { status: 400 }
-        );
-      }
-      user.investmentBalance = (user.investmentBalance ?? 0) + (canonical === "credit" ? amt : -amt);
-      newBalance = user.investmentBalance;
-    }
-
-    await user.save();
-
-    // Record transaction as completed + posted
-    const now = new Date();
-    const tx = await Transaction.create({
+    // Create the transaction
+    const transaction = await Transaction.create({
       userId: user._id,
-      // keep your original mapping for storage
-      type: canonical === "credit" ? "deposit" : "withdraw",
-      currency,
-      amount: amt,
-      description:
-        description ?? `Admin ${canonical === "credit" ? "Credit" : "Debit"} - ${now.toLocaleDateString()}`,
-      status: "completed",
-      date: now,
+      type,
+      amount,
+      description: description || `Admin ${type}`,
+      status,
       accountType,
-      posted: true,
-      postedAt: now,
-      reference: reference ?? `ADM-${canonical.toUpperCase()}-${now.getTime()}`,
-      category: "Admin Transaction",
-      channel: "admin",
-      origin: "admin_panel",
+      reference,
+      currency: 'USD',
+      posted: status === 'completed',
+      postedAt: status === 'completed' ? new Date() : null,
+      date: new Date(),
+      channel: 'admin',
+      origin: 'admin_panel'
     });
 
+    // Update user balance if transaction is completed
+    if (status === 'completed') {
+      user[balanceField] = newBalance;
+      await user.save();
+    }
+
+    // Send email notification if requested
+    let emailSent = false;
+    if (sendEmail && user.email) {
+      try {
+        const emailData = {
+          recipientName: user.name,
+          recipientEmail: user.email,
+          transactionReference: reference,
+          transactionType: type as any,
+          amount: amount,
+          currency: 'USD',
+          description: description || `Admin ${type}`,
+          date: new Date(),
+          accountType: accountType as any,
+          balanceBefore: currentBalance,
+          balanceAfter: newBalance,
+          status: 'completed' as any
+        };
+
+        // Generate appropriate email template
+        let emailHtml = '';
+        if (isCredit) {
+          emailHtml = generateCreditEmail(emailData);
+        } else {
+          emailHtml = generateDebitEmail(emailData);
+        }
+
+        // Send the email
+        await sendTransactionEmail(user.email, {
+          name: user.name,
+          transaction: transaction
+        });
+
+        emailSent = true;
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+      }
+    }
+
+    // Return success response
     return NextResponse.json({
       success: true,
-      message: `Successfully ${canonical === "credit" ? "credited" : "debited"} ${amt} ${currency} to ${user.name}'s ${accountType} account`,
+      message: `Transaction processed successfully`,
       transaction: {
-        id: tx._id.toString(),
-        reference: tx.reference,
-        type: tx.type,
-        status: tx.status,
-        amount: amt,
-        currency,
-        accountType,
-        newBalance,
+        _id: transaction._id.toString(),
+        reference: transaction.reference,
+        type: transaction.type,
+        amount: transaction.amount,
+        description: transaction.description,
+        status: transaction.status,
+        accountType: transaction.accountType,
+        date: transaction.date
       },
+      user: {
+        _id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        [balanceField]: newBalance
+      },
+      previousBalance: currentBalance,
+      newBalance: newBalance,
+      emailSent
     });
-  } catch (error) {
-    console.error("Admin transaction error:", error);
-    return NextResponse.json({ error: "Transaction failed" }, { status: 500 });
+
+  } catch (error: any) {
+    console.error('Transaction error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process transaction', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// GET - Get all transactions for a user
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Await params before accessing id
+    const resolvedParams = await params;
+    
+    await connectDB();
+    
+    const userId = resolvedParams.id;
+    
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Get all transactions for this user
+    const transactions = await Transaction.find({ userId })
+      .sort({ date: -1, createdAt: -1 })
+      .limit(100);
+    
+    return NextResponse.json({
+      success: true,
+      transactions,
+      user: {
+        _id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        checkingBalance: user.checkingBalance || 0,
+        savingsBalance: user.savingsBalance || 0,
+        investmentBalance: user.investmentBalance || 0
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('Error fetching user transactions:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch transactions', details: error.message },
+      { status: 500 }
+    );
   }
 }
