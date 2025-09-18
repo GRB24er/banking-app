@@ -5,6 +5,14 @@ import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
+import { sendTransactionEmail } from "@/lib/mail";
+import { 
+  generateCreditEmail, 
+  generateDebitEmail, 
+  generateTransactionStatusEmail,
+  type BankingEmailData 
+} from "@/lib/bankingEmailTemplates";
+import { sendSimpleEmail } from "@/lib/mail";
 
 // Define types for better TypeScript support
 interface FormattedTransaction {
@@ -27,6 +35,87 @@ interface FormattedTransaction {
   updatedAt: Date;
 }
 
+// Helper function to send transaction email with enhanced templates
+async function sendEnhancedTransactionNotification(
+  user: any,
+  transaction: any,
+  balanceBefore: number,
+  balanceAfter: number
+) {
+  try {
+    console.log('[Email] Preparing to send transaction email to:', user.email);
+    
+    // Determine transaction type
+    const debitTypes = ['transfer-out', 'withdrawal', 'payment', 'fee', 'charge', 'purchase'];
+    const isDebit = debitTypes.includes(transaction.type);
+    const isCredit = !isDebit;
+
+    // Prepare email data for banking templates
+    const emailData: BankingEmailData = {
+      recipientName: user.name || user.firstName || 'Valued Customer',
+      recipientEmail: user.email,
+      transactionReference: transaction.reference || transaction._id.toString(),
+      transactionType: transaction.type as any,
+      amount: Math.abs(transaction.amount),
+      currency: transaction.currency || 'USD',
+      description: transaction.description || 'Bank Transaction',
+      date: transaction.date || transaction.createdAt || new Date(),
+      accountType: transaction.accountType || 'checking',
+      balanceBefore: balanceBefore,
+      balanceAfter: balanceAfter,
+      status: transaction.status || 'completed',
+      customMessage: transaction.customMessage,
+      declineReason: transaction.declineReason
+    };
+
+    // Generate appropriate HTML template
+    let html: string;
+    if (transaction.status === 'pending' || transaction.status === 'pending_verification') {
+      html = generateTransactionStatusEmail(emailData, 'pending');
+    } else if (transaction.status === 'rejected' || transaction.status === 'declined') {
+      html = generateTransactionStatusEmail(emailData, 'declined');
+    } else if (isCredit) {
+      html = generateCreditEmail(emailData);
+    } else {
+      html = generateDebitEmail(emailData);
+    }
+
+    // Format amount for subject
+    const formattedAmount = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: emailData.currency
+    }).format(emailData.amount);
+    
+    const subject = transaction.status === 'pending' 
+      ? `Transaction Pending: ${formattedAmount} - ${emailData.description}`
+      : isCredit 
+      ? `Account Credited: ${formattedAmount} - ${emailData.description}`
+      : `Account Debited: ${formattedAmount} - ${emailData.description}`;
+
+    // Send email using your enhanced templates
+    const emailResult = await sendSimpleEmail(
+      user.email,
+      subject,
+      '', // Text version is generated in the template
+      html
+    );
+
+    console.log('[Email] Transaction email sent:', {
+      to: user.email,
+      subject: subject,
+      messageId: emailResult.messageId,
+      success: !emailResult.failed && !emailResult.skipped
+    });
+
+    return emailResult;
+  } catch (error) {
+    console.error('[Email] Failed to send transaction notification:', error);
+    // Don't throw - we don't want to fail the transaction if email fails
+    return { failed: true, error: error };
+  }
+}
+
+// GET - Fetch transactions (unchanged)
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -112,14 +201,14 @@ export async function GET(request: NextRequest) {
       let adjustedAmount = tx.amount;
       if (tx.origin === 'internal_transfer') {
         if (tx.reference?.includes('-OUT')) {
-          adjustedAmount = -Math.abs(tx.amount); // Negative for outgoing
+          adjustedAmount = -Math.abs(tx.amount);
         } else if (tx.reference?.includes('-IN')) {
-          adjustedAmount = Math.abs(tx.amount); // Positive for incoming
+          adjustedAmount = Math.abs(tx.amount);
         }
       } else if (isDebit) {
-        adjustedAmount = -Math.abs(tx.amount); // Negative for debits
+        adjustedAmount = -Math.abs(tx.amount);
       } else {
-        adjustedAmount = Math.abs(tx.amount); // Positive for credits
+        adjustedAmount = Math.abs(tx.amount);
       }
       
       // Track balance if available
@@ -136,8 +225,8 @@ export async function GET(request: NextRequest) {
       return {
         _id: tx._id,
         type: tx.type,
-        amount: Math.abs(tx.amount), // Store absolute value
-        adjustedAmount: adjustedAmount, // Store adjusted amount for display
+        amount: Math.abs(tx.amount),
+        adjustedAmount: adjustedAmount,
         description: tx.description,
         date: tx.date || tx.createdAt,
         status: tx.status,
@@ -213,7 +302,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create a new transaction (for admin use or other services)
+// POST - Create a new transaction WITH EMAIL NOTIFICATION
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -280,8 +369,9 @@ export async function POST(request: NextRequest) {
       currentBalance - Math.abs(amount) : 
       currentBalance + Math.abs(amount);
 
-    // Start transaction
+    // Start database transaction
     const mongoSession = await User.startSession();
+    let savedTransaction: any = null;
     
     try {
       await mongoSession.withTransaction(async () => {
@@ -301,7 +391,7 @@ export async function POST(request: NextRequest) {
           balanceAfter: newBalance
         });
 
-        await transaction.save({ session: mongoSession });
+        savedTransaction = await transaction.save({ session: mongoSession });
 
         // Update user balance
         await User.findByIdAndUpdate(
@@ -313,10 +403,38 @@ export async function POST(request: NextRequest) {
 
       await mongoSession.endSession();
 
+      // SEND EMAIL NOTIFICATION AFTER SUCCESSFUL TRANSACTION
+      console.log('[Transaction] Sending email notification for transaction:', savedTransaction.reference);
+      
+      try {
+        const emailResult = await sendEnhancedTransactionNotification(
+          user,
+          savedTransaction,
+          currentBalance, // balance before
+          newBalance      // balance after
+        );
+
+        if (emailResult.failed) {
+          console.error('[Transaction] Email failed but transaction succeeded:', emailResult.error);
+        } else {
+          console.log('[Transaction] Email sent successfully');
+        }
+      } catch (emailError) {
+        console.error('[Transaction] Email error (transaction still successful):', emailError);
+      }
+
       return NextResponse.json({
         success: true,
         message: "Transaction created successfully",
-        newBalance
+        transaction: {
+          id: savedTransaction._id,
+          reference: savedTransaction.reference,
+          type: savedTransaction.type,
+          amount: savedTransaction.amount,
+          status: savedTransaction.status
+        },
+        newBalance,
+        emailSent: true
       });
 
     } catch (dbError) {

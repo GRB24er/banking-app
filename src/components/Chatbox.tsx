@@ -1,9 +1,9 @@
-// src/components/Chatbox.tsx
+// src/components/Chatbox.tsx - Professional Version with Authentication
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { MessageCircle, X, Send, User, CheckCircle, Loader2, Phone, Calendar, Minimize2, Maximize2, Shield, Clock, ChevronDown, Paperclip, Camera, Download, FileText } from "lucide-react";
+import { MessageCircle, X, Send, User, CheckCircle, Loader2, Phone, Calendar, Minimize2, Maximize2, Shield, Clock, ChevronDown, Paperclip, Camera, Download, FileText, LogIn } from "lucide-react";
 import styles from "./Chatbox.module.css";
 
 // Type definitions
@@ -47,7 +47,7 @@ interface AttachmentPreview {
   type: string;
 }
 
-interface ChatContext {
+interface AuthenticatedContext {
   userName: string;
   userEmail: string;
   accountBalance: number;
@@ -66,13 +66,13 @@ interface ChatContext {
 }
 
 export default function Chatbox() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [context, setContext] = useState<ChatContext | null>(null);
+  const [authenticatedContext, setAuthenticatedContext] = useState<AuthenticatedContext | null>(null);
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [hasInitiated, setHasInitiated] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -80,7 +80,6 @@ export default function Chatbox() {
   const [conversationStatus, setConversationStatus] = useState("active");
   const [attachmentPreview, setAttachmentPreview] = useState<AttachmentPreview | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authMethod, setAuthMethod] = useState<string | null>(null);
   const [satisfactionRating, setSatisfactionRating] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,52 +94,48 @@ export default function Chatbox() {
     satisfactionScore: "4.9/5.0"
   });
 
-  const bankingActions = {
-    main: [
-      { icon: "💳", label: "Card Services", action: "card_services" },
-      { icon: "🔒", label: "Report Fraud", action: "fraud_report" },
-      { icon: "📊", label: "Account Statement", action: "statement" },
-      { icon: "🏦", label: "Branch Locator", action: "branch" }
-    ],
-    authenticated: [
-      { icon: "💸", label: "Quick Transfer", action: "transfer" },
-      { icon: "📱", label: "Mobile Banking", action: "mobile" },
-      { icon: "🔔", label: "Alerts Settings", action: "alerts" },
-      { icon: "📈", label: "Investment Options", action: "invest" }
-    ]
-  };
+  // General banking actions for unauthenticated users
+  const generalBankingActions = [
+    { icon: "🏦", label: "Branch Locator", action: "branch" },
+    { icon: "📞", label: "Contact Us", action: "contact" },
+    { icon: "💡", label: "Learn Banking", action: "learn" },
+    { icon: "🔒", label: "Security Info", action: "security" }
+  ];
 
-  // Fetch user context with account details
-  const fetchContext = useCallback(async () => {
+  // Authenticated user actions
+  const authenticatedActions = [
+    { icon: "💸", label: "Quick Transfer", action: "transfer" },
+    { icon: "📱", label: "Mobile Banking", action: "mobile" },
+    { icon: "🔔", label: "Alerts Settings", action: "alerts" },
+    { icon: "📈", label: "Investment Options", action: "invest" }
+  ];
+
+  // Fetch user context ONLY for authenticated users
+  const fetchAuthenticatedContext = useCallback(async () => {
     if (session?.user?.email) {
       try {
         const response = await fetch('/api/user/dashboard');
         if (response.ok) {
           const data = await response.json();
           
-          // Calculate balances
           const checkingBalance = data.balances?.checking || 0;
           const savingsBalance = data.balances?.savings || 0;
           const investmentBalance = data.balances?.investment || 0;
           const totalBalance = checkingBalance + savingsBalance + investmentBalance;
           
-          // Get recent transactions
           const recentTransactions = data.recent || [];
           const hasPending = recentTransactions.some((t: any) => 
             t.rawStatus === "pending" || t.status === "Pending"
           );
           
-          // Get account details
           const accountNumber = data.accountNumber || `****${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-          
-          // Get card details
           const cardDetails = data.cards || [
             { type: "Debit Card", lastFour: "4321", status: "Active" },
             { type: "Credit Card", lastFour: "8765", status: "Active" }
           ];
           
-          setContext({
-            userName: data.user?.name || session.user.name || "Guest",
+          setAuthenticatedContext({
+            userName: data.user?.name || session.user.name || "Valued Customer",
             userEmail: session.user.email,
             accountBalance: totalBalance,
             checkingBalance,
@@ -152,94 +147,58 @@ export default function Chatbox() {
             accountNumber,
             cardDetails
           });
+          setIsAuthenticated(true);
         }
       } catch (error) {
-        console.error('Error fetching context:', error);
+        console.error('Error fetching authenticated context:', error);
+        setIsAuthenticated(false);
+        setAuthenticatedContext(null);
       }
+    } else {
+      setIsAuthenticated(false);
+      setAuthenticatedContext(null);
     }
   }, [session]);
 
   useEffect(() => {
-    fetchContext();
-  }, [fetchContext]);
-
-  useEffect(() => {
-    if (!hasInitiated && context && !open) {
-      const timer = setTimeout(() => {
-        setOpen(true);
-        setTimeout(() => {
-          sendAgentMessage(
-            `Hello ${context.userName}! 👋 I noticed you're online. I'm ${currentAgent.name}, your personal banking assistant. I can see you have an account with us (ending in ${context.accountNumber.slice(-4)}). How may I assist you today?`,
-            ['Check Balance', 'Recent Transactions', 'Transfer Money', 'Card Services']
-          );
-          setHasInitiated(true);
-        }, 1000);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
+    if (status !== 'loading') {
+      fetchAuthenticatedContext();
     }
-  }, [context, hasInitiated, open, currentAgent.name]);
+  }, [fetchAuthenticatedContext, status]);
 
+  // Initialize chat based on authentication status
   useEffect(() => {
-    const handleOpenChat = (event: CustomEvent) => {
-      setOpen(true);
-      setMinimized(false);
-      if (event.detail?.message) {
-        setTimeout(() => {
-          setInputText(event.detail.message);
-        }, 500);
-      }
-    };
-
-    window.addEventListener('openChatbox', handleOpenChat as EventListener);
-    
-    return () => {
-      window.removeEventListener('openChatbox', handleOpenChat as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    const isOnSupportPage = window.location.pathname === '/support';
-    if (isOnSupportPage) {
-      setHasInitiated(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (minimized && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.type === 'agent') {
-        setUnreadCount(prev => prev + 1);
-      }
-    } else {
-      setUnreadCount(0);
-    }
-  }, [messages, minimized]);
-
-  useEffect(() => {
-    if (open && messages.length === 0 && context) {
+    if (open && messages.length === 0 && status !== 'loading') {
       const initialMessage: Message = {
         id: `msg_${Date.now()}`,
         type: "system",
         content: {
-          header: "Secure Chat Connected",
-          body: "End-to-end encrypted conversation",
+          header: isAuthenticated ? "Secure Chat Connected" : "Welcome to Horizon Banking Support",
+          body: isAuthenticated ? "End-to-end encrypted conversation" : "How can we assist you today?",
           timestamp: new Date().toISOString()
         },
         timestamp: new Date().toISOString()
       };
       
       setMessages([initialMessage]);
-      setIsAuthenticated(true);
       
       setTimeout(() => {
-        sendAgentMessage(
-          `Good ${getTimeOfDay()}, ${context.userName}! I'm ${currentAgent.name}, your banking specialist. I can see you're logged in to your account ending in ${context.accountNumber.slice(-4)}. How may I assist you today?`,
-          ["Check Balance", "Recent Transactions", "Transfer Money", "Card Services", "Get Statement"]
-        );
+        if (isAuthenticated && authenticatedContext) {
+          // Personalized greeting for authenticated users
+          sendAgentMessage(
+            `Good ${getTimeOfDay()}, ${authenticatedContext.userName}! I'm ${currentAgent.name}, your banking specialist. I can see you're logged in to your account ending in ${authenticatedContext.accountNumber.slice(-4)}. How may I assist you today?`,
+            ["Check Balance", "Recent Transactions", "Transfer Money", "Card Services", "Get Statement"]
+          );
+        } else {
+          // Generic greeting for unauthenticated users
+          sendAgentMessage(
+            `Good ${getTimeOfDay()}! I'm ${currentAgent.name} from Horizon Banking. I'm here to help with general banking inquiries, account information, or assist you with logging in. How may I help you today?`,
+            ["General Information", "Account Access Help", "Branch Locations", "Contact Support", "Login Help"]
+          );
+        }
       }, 1000);
     }
-  }, [open, messages.length, currentAgent.name, context]);
+  }, [open, messages.length, isAuthenticated, authenticatedContext, status, currentAgent.name]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -299,7 +258,35 @@ export default function Chatbox() {
     const userInput = inputText.toLowerCase();
     setInputText("");
     
-    // Handle user queries based on context
+    // Handle authentication-dependent responses
+    if (!isAuthenticated) {
+      await handleUnauthenticatedQueries(userInput);
+    } else {
+      await handleAuthenticatedQueries(userInput);
+    }
+  };
+
+  // Handle queries for unauthenticated users
+  const handleUnauthenticatedQueries = async (userInput: string) => {
+    if (userInput.includes("login") || userInput.includes("sign in") || userInput.includes("log in")) {
+      await handleLoginHelp();
+    } else if (userInput.includes("balance") || userInput.includes("account")) {
+      await handleAccountAccessRequired();
+    } else if (userInput.includes("branch") || userInput.includes("location") || userInput.includes("atm")) {
+      await handleBranchLocator();
+    } else if (userInput.includes("contact") || userInput.includes("phone") || userInput.includes("email")) {
+      await handleContactInformation();
+    } else if (userInput.includes("rate") || userInput.includes("interest") || userInput.includes("loan")) {
+      await handleGeneralBankingInfo();
+    } else if (userInput.includes("help") || userInput.includes("support")) {
+      await handleGeneralSupport();
+    } else {
+      await handleGeneralUnauthenticatedQuery();
+    }
+  };
+
+  // Handle queries for authenticated users
+  const handleAuthenticatedQueries = async (userInput: string) => {
     if (userInput.includes("balance") || userInput.includes("how much")) {
       await handleBalanceRequest();
     } else if (userInput.includes("transfer") || userInput.includes("send money")) {
@@ -314,28 +301,80 @@ export default function Chatbox() {
       await handleCardRequest();
     } else if (userInput.includes("loan") || userInput.includes("mortgage")) {
       await handleLoanRequest();
-    } else if (userInput.includes("account") || userInput.includes("details")) {
-      await handleAccountDetails();
     } else {
-      await handleGeneralQuery(userInput);
+      await handleGeneralAuthenticatedQuery(userInput);
     }
   };
 
+  // Unauthenticated user handlers
+  const handleLoginHelp = async () => {
+    await simulateTyping();
+    sendAgentMessage(
+      "I can help you access your account. Here are the ways to log in:\n\n• **Online Banking** - Visit our website and click 'Login'\n• **Mobile App** - Download the Horizon Banking app\n• **Phone Banking** - Call us at 1-800-HORIZON\n• **In-Person** - Visit any branch with valid ID\n\nDo you need help with a specific login issue?",
+      ["Forgot Password", "Account Locked", "Download App", "Call Support", "Visit Branch"]
+    );
+  };
+
+  const handleAccountAccessRequired = async () => {
+    await simulateTyping();
+    sendAgentMessage(
+      "To access your account information, you'll need to log in first. This ensures your financial data remains secure and private.\n\nWould you like help logging in, or do you have general banking questions I can answer?",
+      ["Help Me Login", "Forgot Password", "General Questions", "Contact Support"]
+    );
+  };
+
+  const handleBranchLocator = async () => {
+    await simulateTyping();
+    sendAgentMessage(
+      "I can help you find our branches and ATMs!\n\n**Main Branch Locations:**\n• Downtown Financial District - 123 Main St\n• Shopping Mall Branch - Westfield Center\n• University Campus - Student Union Building\n• Airport Terminal - International Departures\n\n**ATM Network:** 50,000+ fee-free ATMs nationwide\n\nWould you like directions to a specific location?",
+      ["Get Directions", "ATM Locations", "Branch Hours", "Services Available"]
+    );
+  };
+
+  const handleContactInformation = async () => {
+    await simulateTyping();
+    sendAgentMessage(
+      "Here's how to reach us:\n\n**Phone Support:**\n• General: 1-800-HORIZON (24/7)\n• Fraud Hotline: 1-800-FRAUD-HELP\n• Credit Cards: 1-800-CARD-HELP\n\n**Digital Support:**\n• Live Chat: Available 24/7 (you're here now!)\n• Email: support@horizonbank.com\n• Social Media: @HorizonBank\n\n**In-Person:**\n• 200+ branches nationwide\n• Extended hours at select locations\n\nWhat type of support do you need?",
+      ["Phone Support", "Email Support", "Visit Branch", "Social Media"]
+    );
+  };
+
+  const handleGeneralBankingInfo = async () => {
+    await simulateTyping();
+    sendAgentMessage(
+      "I can provide general banking information:\n\n**Current Rates (as of today):**\n• Savings Account: 2.1% APY\n• 12-Month CD: 4.5% APY\n• Personal Loans: Starting at 5.9% APR\n• Mortgages: Starting at 6.8% APR\n\n**Account Types:**\n• Free Checking with no minimum balance\n• High-yield savings accounts\n• Investment accounts with advisory services\n\nWould you like details about any specific product?",
+      ["Savings Accounts", "Checking Accounts", "Loans", "Investments", "Open Account"]
+    );
+  };
+
+  const handleGeneralSupport = async () => {
+    await simulateTyping();
+    sendAgentMessage(
+      "I'm here to help! As a general support agent, I can assist with:\n\n• Account login help\n• General banking information\n• Product and service details\n• Branch and ATM locations\n• Contact information\n• Basic troubleshooting\n\nFor account-specific questions, you'll need to log in first. What can I help you with today?",
+      ["Login Help", "Product Information", "Branch Locations", "Technical Issues"]
+    );
+  };
+
+  const handleGeneralUnauthenticatedQuery = async () => {
+    await simulateTyping();
+    sendAgentMessage(
+      "I'd be happy to help! As you're not logged in, I can assist with:\n\n• General banking information and rates\n• Account types and features\n• Branch and ATM locations\n• Login assistance\n• Contact information\n• Setting up new accounts\n\nFor specific account details, you'll need to log in first. What would you like to know?",
+      ["Login Help", "Account Info", "Branch Locations", "New Account", "Contact Us"]
+    );
+  };
+
+  // Authenticated user handlers (simplified versions of previous methods)
   const handleBalanceRequest = async () => {
     await simulateTyping();
     
-    if (!context) {
-      sendAgentMessage(
-        "I'm unable to access your account information at the moment. Please try again later or contact our support team for assistance.",
-        ["Try Again", "Contact Support", "Main Menu"]
-      );
+    if (!authenticatedContext) {
+      sendAgentMessage("Unable to access your account information. Please try logging in again.");
       return;
     }
     
     const currency = "€";
-    
     sendAgentMessage(
-      `Here are your current account balances:\n\n💳 Current Account: ${currency}${context.checkingBalance.toFixed(2)}\n💰 Savings Account: ${currency}${context.savingsBalance.toFixed(2)}\n📈 Investment Account: ${currency}${context.investmentBalance.toFixed(2)}\n\nTotal Balance: ${currency}${context.accountBalance.toFixed(2)}\n\nWould you like to see recent transactions or make a transfer?`,
+      `Here are your current account balances:\n\n💳 Current Account: ${currency}${authenticatedContext.checkingBalance.toFixed(2)}\n💰 Savings Account: ${currency}${authenticatedContext.savingsBalance.toFixed(2)}\n📈 Investment Account: ${currency}${authenticatedContext.investmentBalance.toFixed(2)}\n\nTotal Balance: ${currency}${authenticatedContext.accountBalance.toFixed(2)}`,
       ["Recent Transactions", "Transfer Money", "Download Statement", "Main Menu"]
     );
   };
@@ -343,89 +382,38 @@ export default function Chatbox() {
   const handleTransactionRequest = async () => {
     await simulateTyping();
     
-    if (!context || !context.recentTransactions || context.recentTransactions.length === 0) {
+    if (!authenticatedContext?.recentTransactions?.length) {
       sendAgentMessage(
-        "I couldn't find any recent transactions in your account. This might be because your account is new or there's a temporary issue accessing your transaction history.",
-        ["Check Balance", "Try Again", "Contact Support"]
+        "I couldn't find any recent transactions in your account.",
+        ["Check Balance", "Contact Support"]
       );
       return;
     }
     
-    const recentTransactions = context.recentTransactions.slice(0, 5);
+    const recentTransactions = authenticatedContext.recentTransactions.slice(0, 5);
     let transactionsText = "Here are your recent transactions:\n\n";
     
     recentTransactions.forEach((transaction: any, index: number) => {
       const date = new Date(transaction.date).toLocaleDateString();
-      const amount = transaction.amount;
-      const description = transaction.description || "Transaction";
-      const status = transaction.status || "Completed";
-      
-      transactionsText += `${index + 1}. ${date} - ${description} - ${amount} - ${status}\n`;
+      transactionsText += `${index + 1}. ${date} - ${transaction.description} - ${transaction.amount}\n`;
     });
     
-    transactionsText += `\nYou have ${context.hasPendingTransactions ? 'pending' : 'no pending'} transactions.`;
-    
-    sendAgentMessage(
-      transactionsText,
-      ["View More Transactions", "Check Balance", "Download Statement", "Main Menu"]
-    );
+    sendAgentMessage(transactionsText, ["View More", "Check Balance", "Main Menu"]);
   };
 
   const handleTransferRequest = async () => {
     await simulateTyping();
     sendAgentMessage(
-      "I can help you transfer money between your accounts or to other beneficiaries. Please select the type of transfer:\n\n• **Internal Transfer** - Between your accounts (Instant & Free)\n• **Local Transfer** - To another bank account (1-2 business days)\n• **International Transfer** - To foreign banks (2-3 business days)\n• **Mobile Transfer** - Send money using phone number (Instant)",
-      ["Internal Transfer", "Local Transfer", "International Transfer", "Mobile Transfer", "Main Menu"]
+      "I can help you transfer money. Please select the type of transfer:",
+      ["Internal Transfer", "Local Transfer", "International Transfer", "Mobile Transfer"]
     );
   };
 
   const handleCardRequest = async () => {
     await simulateTyping();
-    
-    if (!context || !context.cardDetails) {
-      sendAgentMessage(
-        "I can help with card services. What would you like to do?",
-        ["Block Card", "Report Lost Card", "Change PIN", "Increase Limits", "Main Menu"]
-      );
-      return;
-    }
-    
-    let cardsText = "I can see the following cards on your account:\n\n";
-    
-    context.cardDetails.forEach((card, index) => {
-      cardsText += `${index + 1}. ${card.type} ending in ${card.lastFour} - ${card.status}\n`;
-    });
-    
-    cardsText += "\nHow can I assist you with your cards?";
-    
     sendAgentMessage(
-      cardsText,
-      ["Block Card", "Report Lost Card", "Change PIN", "Increase Limits", "View Transactions"]
-    );
-  };
-
-  const handleAccountDetails = async () => {
-    await simulateTyping();
-    
-    if (!context) {
-      sendAgentMessage(
-        "I'm unable to access your account details at the moment. Please try again later.",
-        ["Try Again", "Contact Support", "Main Menu"]
-      );
-      return;
-    }
-    
-    sendAgentMessage(
-      `Here are your account details:\n\n• Account Holder: ${context.userName}\n• Account Number: ${context.accountNumber}\n• Total Balance: €${context.accountBalance.toFixed(2)}\n• Last Activity: ${new Date(context.lastActivity).toLocaleDateString()}\n\nIs there anything specific you'd like to know about your account?`,
-      ["Check Balance", "Recent Transactions", "Card Services", "Statement", "Main Menu"]
-    );
-  };
-
-  const handleFraudReport = async () => {
-    await simulateTyping();
-    sendAgentMessage(
-      "🚨 **Fraud Alert**\n\nI'm sorry to hear about potential fraudulent activity. Your account security is our top priority.\n\n**Immediate Actions:**\n1. I'm temporarily freezing your cards for protection\n2. Our fraud team has been notified\n3. You'll receive new cards within 2-3 business days\n\nPlease review your recent transactions and confirm any unauthorized activity:",
-      ["View Recent Transactions", "Speak to Fraud Specialist", "File Official Report", "Cancel Cards"]
+      "I can help with card services. What do you need?",
+      ["Block Card", "Report Lost Card", "Change PIN", "Increase Limits"]
     );
   };
 
@@ -441,111 +429,42 @@ export default function Chatbox() {
     const message: Message = {
       id: `msg_${Date.now()}`,
       type: "agent",
-      content: "I've prepared your latest account statement. You can download it securely:",
+      content: "Your statement is ready for download:",
       attachment: statement,
       timestamp: new Date().toISOString(),
       agent: currentAgent
     };
     
     setMessages(prev => [...prev, message]);
-    
-    setTimeout(() => {
-      sendAgentMessage(
-        "Your statement is ready for download. For additional statements or specific date ranges, please let me know.",
-        ["Last 3 Months", "Year-to-Date", "Tax Documents", "Done"]
-      );
-    }, 500);
+  };
+
+  const handleFraudReport = async () => {
+    await simulateTyping();
+    sendAgentMessage(
+      "🚨 **Fraud Alert** - I'm taking immediate action to secure your account. Our fraud team has been notified.",
+      ["View Recent Transactions", "Speak to Specialist", "File Report", "Cancel Cards"]
+    );
   };
 
   const handleLoanRequest = async () => {
     await simulateTyping();
     sendAgentMessage(
-      "I can provide information about our loan products:\n\n• **Personal Loan** - Up to €50,000 for any purpose (5.9% APR)\n• **Home Loan** - Competitive rates for property purchase (3.2% APR)\n• **Car Loan** - Finance your vehicle purchase (4.5% APR)\n• **Business Loan** - Grow your business (6.8% APR)\n\nWould you like to know more about any of these options or check your eligibility?",
-      ["Check Eligibility", "Calculate EMI", "Apply Now", "Speak to Loan Officer"]
+      "I can provide information about our loan products. Which type interests you?",
+      ["Personal Loan", "Home Loan", "Car Loan", "Business Loan", "Check Eligibility"]
     );
   };
 
-  const handleGeneralQuery = async (query: string) => {
+  const handleGeneralAuthenticatedQuery = async (query: string) => {
     await simulateTyping();
-    
-    // Check if query is a greeting
-    if (query.includes("hello") || query.includes("hi") || query.includes("hey")) {
-      sendAgentMessage(
-        `Hello again ${context?.userName || "there"}! How can I assist you further with your banking needs today?`,
-        ["Check Balance", "Recent Transactions", "Transfer Money", "Card Services"]
-      );
-      return;
-    }
-    
-    // Check if query is a thank you
-    if (query.includes("thank") || query.includes("thanks")) {
-      sendAgentMessage(
-        "You're very welcome! Is there anything else I can help you with today?",
-        ["Check Balance", "Recent Transactions", "Transfer Money", "No, thank you"]
-      );
-      return;
-    }
-    
     sendAgentMessage(
-      "I'm here to help with all your banking needs. Here are some things I can assist you with:\n\n📱 **Account Services** - Balance, transactions, statements\n💳 **Card Services** - Block cards, change PIN, limits\n💸 **Transfers & Payments** - Send money, pay bills\n📊 **Investments** - View portfolio, market updates\n🏦 **Loans & Credit** - Check eligibility, apply online\n🔔 **Settings** - Notifications, security, profile\n\nWhat would you like help with today?",
-      ["Account Services", "Card Services", "Make Transfer", "View Investments", "Something Else"]
+      `Thanks for your question, ${authenticatedContext?.userName}! I can help with all your banking needs:`,
+      ["Account Services", "Transfer Money", "Card Services", "View Statements", "Something Else"]
     );
-  };
-
-  const handleEndConversation = async () => {
-    setConversationStatus("ending");
-    
-    sendAgentMessage(
-      "Before you go, would you mind rating your experience today? Your feedback helps us improve our service.",
-      ["⭐⭐⭐⭐⭐ Excellent", "⭐⭐⭐⭐ Good", "⭐⭐⭐ Average", "Skip Rating"]
-    );
-  };
-
-  const handleRating = async (rating: string | null) => {
-    setSatisfactionRating(rating);
-    
-    await simulateTyping();
-    
-    const transcriptId = `TRX${Date.now().toString().slice(-8)}`;
-    
-    const message: Message = {
-      id: `msg_${Date.now()}`,
-      type: "system",
-      content: {
-        header: "Conversation Summary",
-        body: `Thank you for banking with us, ${context?.userName || "Valued Customer"}.\n\nTranscript ID: ${transcriptId}\nAgent: ${currentAgent.name}\nDuration: ${Math.floor(Math.random() * 10 + 5)} minutes\nRating: ${rating || 'Not rated'}\n\nA copy of this conversation has been sent to your registered email.`,
-        actions: ["Download Transcript", "Email Transcript", "Close Chat"]
-      },
-      timestamp: new Date().toISOString()
-    };
-    
-    setMessages(prev => [...prev, message]);
-    
-    setConversationStatus("ended");
-  };
-
-  const handleAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAttachmentPreview({
-        name: file.name,
-        size: `${(file.size / 1024).toFixed(1)} KB`,
-        type: file.type
-      });
-    }
   };
 
   const handleQuickReply = (reply: string) => {
-    if (reply.includes("rating") || reply.includes("⭐")) {
-      handleRating(reply);
-    } else if (reply === "Skip Rating") {
-      handleRating(null);
-    } else if (reply === "Main Menu") {
-      handleGeneralQuery("main menu");
-    } else {
-      setInputText(reply);
-      handleSend();
-    }
+    setInputText(reply);
+    setTimeout(handleSend, 100);
   };
 
   const formatTime = (timestamp: string) => {
@@ -562,13 +481,21 @@ export default function Chatbox() {
     }
   };
 
+  const handleEndConversation = async () => {
+    setConversationStatus("ending");
+    sendAgentMessage(
+      "Thank you for using Horizon Banking support. Would you like to rate your experience?",
+      ["⭐⭐⭐⭐⭐ Excellent", "⭐⭐⭐⭐ Good", "⭐⭐⭐ Average", "Skip Rating"]
+    );
+  };
+
   return (
     <>
       {!open && (
         <button
           className={styles.chatTrigger}
           onClick={() => setOpen(true)}
-          aria-label="Open chat"
+          aria-label="Open chat support"
         >
           <MessageCircle size={24} />
           <span className={styles.pulse}></span>
@@ -594,6 +521,15 @@ export default function Chatbox() {
                 </div>
               </div>
               <div className={styles.headerActions}>
+                {!isAuthenticated && (
+                  <button
+                    className={styles.headerBtn}
+                    onClick={() => handleQuickReply("Help me login")}
+                    title="Login Help"
+                  >
+                    <LogIn size={18} />
+                  </button>
+                )}
                 <button
                   className={styles.headerBtn}
                   onClick={() => handleQuickReply("Schedule a call")}
@@ -616,7 +552,6 @@ export default function Chatbox() {
                     } else {
                       setOpen(false);
                       setMessages([]);
-                      setIsAuthenticated(false);
                       setConversationStatus("active");
                     }
                   }}
@@ -632,7 +567,7 @@ export default function Chatbox() {
             
             <div className={styles.securityBadge}>
               <span>
-                <Shield size={12} /> Encrypted Connection
+                <Shield size={12} /> {isAuthenticated ? 'Encrypted Connection' : 'Secure Chat'}
               </span>
               <span>
                 <Clock size={12} /> Session: {sessionId.slice(-8)}
@@ -642,27 +577,25 @@ export default function Chatbox() {
 
           {!minimized && (
             <>
-              {isAuthenticated && (
-                <div className={styles.quickActionsBar}>
-                  {bankingActions.authenticated.map((action, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => sendUserMessage(action.label)}
-                      className={styles.quickActionBtn}
-                    >
-                      <span>{action.icon}</span>
-                      <span>{action.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className={styles.quickActionsBar}>
+                {(isAuthenticated ? authenticatedActions : generalBankingActions).map((action, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => sendUserMessage(action.label)}
+                    className={styles.quickActionBtn}
+                  >
+                    <span>{action.icon}</span>
+                    <span>{action.label}</span>
+                  </button>
+                ))}
+              </div>
 
               <div className={styles.chatBody}>
                 <div className={styles.messages}>
                   {messages.length === 0 && (
                     <div className={styles.welcomeMessage}>
                       <div className={styles.welcomeIcon}>🏦</div>
-                      <h3>Welcome to Horizon Support</h3>
+                      <h3>Welcome to Horizon Banking</h3>
                       <p>How can we assist you today?</p>
                     </div>
                   )}
@@ -673,34 +606,6 @@ export default function Chatbox() {
                         <div className={styles.systemMessage}>
                           <div className={styles.systemMessageHeader}>{msg.content.header}</div>
                           <div className={styles.systemMessageBody}>{msg.content.body}</div>
-                          {msg.content.actions && (
-                            <div className={styles.systemActions}>
-                              {msg.content.actions.map((action: string, idx: number) => (
-                                <button
-                                  key={idx}
-                                  onClick={() => {
-                                    if (action === "Close Chat") {
-                                      setOpen(false);
-                                      setTimeout(() => {
-                                        setMessages([]);
-                                        setIsAuthenticated(false);
-                                        setConversationStatus("active");
-                                      }, 500);
-                                    } else if (action === "Download Transcript") {
-                                      // Handle transcript download
-                                      console.log("Download transcript");
-                                    } else if (action === "Email Transcript") {
-                                      // Handle email transcript
-                                      console.log("Email transcript");
-                                    }
-                                  }}
-                                  className={styles.systemActionBtn}
-                                >
-                                  {action}
-                                </button>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       )}
                       
@@ -713,8 +618,8 @@ export default function Chatbox() {
                       
                       {msg.type === "agent" && (
                         <div className={styles.agentMessageWrapper}>
-                          <div className={styles.agentMessageAvatar}>
-                            {msg.agent?.name.split(' ').map(n => n[0]).join('') || 'SA'}
+                          <div className={styles.agentAvatar}>
+                            {currentAgent.name.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div className={styles.agentMessage}>
                             <div className={styles.agentLabel}>
@@ -801,25 +706,32 @@ export default function Chatbox() {
                       <input
                         type="file"
                         ref={fileInputRef}
-                        onChange={handleAttachment}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setAttachmentPreview({
+                              name: file.name,
+                              size: `${(file.size / 1024).toFixed(1)} KB`,
+                              type: file.type
+                            });
+                          }
+                        }}
                         className={styles.hiddenInput}
                         accept="image/*,.pdf,.doc,.docx"
                       />
                       <button 
                         onClick={() => fileInputRef.current?.click()}
                         className={styles.inputBtn}
+                        title="Attach file"
                       >
                         <Paperclip size={18} />
-                      </button>
-                      <button className={styles.inputBtn}>
-                        <Camera size={18} />
                       </button>
                       <input
                         type="text"
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                        placeholder="Type your message..."
+                        placeholder={isAuthenticated ? "Type your message..." : "Ask about our banking services..."}
                         aria-label="Chat input"
                       />
                       <button
@@ -834,7 +746,11 @@ export default function Chatbox() {
                     
                     <div className={styles.statusBar}>
                       <div className={styles.statusIndicator}>
-                        Secure Chat • <span className={styles.verifiedBadge}>✓ Authenticated</span>
+                        {isAuthenticated ? (
+                          <>Secure Chat • <span className={styles.verifiedBadge}>✓ Authenticated</span></>
+                        ) : (
+                          <>Public Chat • <span className={styles.verifiedBadge}>🔒 Secure</span></>
+                        )}
                       </div>
                       {conversationStatus === "active" && messages.length > 2 && (
                         <button 
