@@ -5,11 +5,8 @@ import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
-import { sendSimpleEmail } from "@/lib/mail";
-import { 
-  generateTransactionStatusEmail,
-  type BankingEmailData 
-} from "@/lib/bankingEmailTemplates";
+// Just use sendTransactionEmail which IS properly exported
+import { sendTransactionEmail } from "@/lib/mail";
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,21 +47,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Insufficient funds" }, { status: 400 });
     }
 
-    // Create PENDING transaction (not posted to balance yet)
+    // Create PENDING transaction
     const transaction = await Transaction.create({
       userId: user._id,
       type: 'transfer-out',
       currency: 'USD',
       amount: parseFloat(amount),
       description: `Transfer to ${recipientName} - ${recipientBank} (${recipientAccount}) - ${description || 'No description'}`,
-      status: 'pending', // REQUIRES ADMIN APPROVAL
+      status: 'pending',
       accountType,
-      posted: false, // NOT POSTED YET
+      posted: false,
       reference: `TRF-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
       channel: 'online',
       origin: 'user_transfer',
       date: new Date(),
-      // Store recipient details in metadata for admin review
       metadata: {
         recipientName,
         recipientAccount,
@@ -73,74 +69,29 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // SEND EMAIL NOTIFICATION FOR PENDING TRANSFER
-    console.log('[Transfer] Sending pending transfer notification to:', user.email);
-    
+    // SEND TRANSACTION EMAIL - using the function that actually exists
     try {
-      // Prepare email data
-      const emailData: BankingEmailData = {
-        recipientName: user.name || user.firstName || 'Valued Customer',
-        recipientEmail: user.email,
-        transactionReference: transaction.reference,
-        transactionType: 'transfer',
-        amount: parseFloat(amount),
-        currency: 'USD',
-        description: `Transfer to ${recipientName} at ${recipientBank}`,
-        date: new Date(),
-        accountType: accountType as any,
-        balanceBefore: currentBalance,
-        balanceAfter: currentBalance, // Balance unchanged until approved
-        status: 'pending',
-        customMessage: `Your transfer to ${recipientName} is pending approval. We'll notify you once it's processed.`
-      };
-
-      // Generate pending status email
-      const html = generateTransactionStatusEmail(emailData, 'pending');
-      
-      const subject = `Transfer Pending: $${parseFloat(amount).toFixed(2)} to ${recipientName}`;
-
-      const emailResult = await sendSimpleEmail(
+      await sendTransactionEmail(
         user.email,
-        subject,
-        `Your transfer of $${parseFloat(amount).toFixed(2)} to ${recipientName} is pending approval.`,
-        html
+        {
+          name: user.name || user.firstName || 'Customer',
+          transaction: transaction
+        }
       );
-
-      console.log('[Transfer] Pending notification email sent:', {
-        to: user.email,
-        messageId: emailResult.messageId,
-        success: !emailResult.failed
-      });
-
-      // Also send notification to admin (optional)
-      if (process.env.ADMIN_EMAIL) {
-        await sendSimpleEmail(
-          process.env.ADMIN_EMAIL,
-          `New Transfer Pending Approval: ${transaction.reference}`,
-          `User ${user.email} has initiated a transfer:\n
-          Amount: $${parseFloat(amount).toFixed(2)}\n
-          To: ${recipientName} at ${recipientBank}\n
-          Account: ${recipientAccount}\n
-          Reference: ${transaction.reference}\n
-          \nPlease review in the admin panel.`
-        );
-      }
-
+      console.log('[Transfer] Email sent to:', user.email);
     } catch (emailError) {
-      console.error('[Transfer] Email notification failed:', emailError);
-      // Don't fail the transfer if email fails
+      console.error('[Transfer] Email failed:', emailError);
     }
 
     return NextResponse.json({
       success: true,
-      message: "Transfer initiated and pending approval. You will receive an email confirmation.",
+      message: "Transfer initiated and pending approval",
       transaction: {
         id: transaction._id,
         reference: transaction.reference,
         status: transaction.status,
         amount: transaction.amount
-      },
-      emailSent: true
+      }
     });
 
   } catch (error) {

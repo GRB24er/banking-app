@@ -12,7 +12,6 @@ import {
   generateTransactionStatusEmail,
   type BankingEmailData 
 } from "@/lib/bankingEmailTemplates";
-import { sendSimpleEmail } from "@/lib/mail";
 
 // Define types for better TypeScript support
 interface FormattedTransaction {
@@ -45,64 +44,35 @@ async function sendEnhancedTransactionNotification(
   try {
     console.log('[Email] Preparing to send transaction email to:', user.email);
     
-    // Determine transaction type
-    const debitTypes = ['transfer-out', 'withdrawal', 'payment', 'fee', 'charge', 'purchase'];
-    const isDebit = debitTypes.includes(transaction.type);
-    const isCredit = !isDebit;
-
-    // Prepare email data for banking templates
-    const emailData: BankingEmailData = {
-      recipientName: user.name || user.firstName || 'Valued Customer',
-      recipientEmail: user.email,
-      transactionReference: transaction.reference || transaction._id.toString(),
-      transactionType: transaction.type as any,
-      amount: Math.abs(transaction.amount),
-      currency: transaction.currency || 'USD',
-      description: transaction.description || 'Bank Transaction',
-      date: transaction.date || transaction.createdAt || new Date(),
-      accountType: transaction.accountType || 'checking',
-      balanceBefore: balanceBefore,
-      balanceAfter: balanceAfter,
-      status: transaction.status || 'completed',
-      customMessage: transaction.customMessage,
-      declineReason: transaction.declineReason
-    };
-
-    // Generate appropriate HTML template
-    let html: string;
-    if (transaction.status === 'pending' || transaction.status === 'pending_verification') {
-      html = generateTransactionStatusEmail(emailData, 'pending');
-    } else if (transaction.status === 'rejected' || transaction.status === 'declined') {
-      html = generateTransactionStatusEmail(emailData, 'declined');
-    } else if (isCredit) {
-      html = generateCreditEmail(emailData);
-    } else {
-      html = generateDebitEmail(emailData);
-    }
-
-    // Format amount for subject
-    const formattedAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: emailData.currency
-    }).format(emailData.amount);
-    
-    const subject = transaction.status === 'pending' 
-      ? `Transaction Pending: ${formattedAmount} - ${emailData.description}`
-      : isCredit 
-      ? `Account Credited: ${formattedAmount} - ${emailData.description}`
-      : `Account Debited: ${formattedAmount} - ${emailData.description}`;
-
-    // Send email using your enhanced templates
-    const emailResult = await sendSimpleEmail(
+    // Just use sendTransactionEmail - it already exists and works
+    const emailResult = await sendTransactionEmail(
       user.email,
-      subject,
-      '', // Text version is generated in the template
-      html
+      {
+        name: user.name || user.firstName || 'Customer',
+        transaction: {
+          _id: transaction._id,
+          userId: transaction.userId,
+          reference: transaction.reference || transaction._id.toString(),
+          type: transaction.type,
+          currency: transaction.currency || 'USD',
+          amount: transaction.amount,
+          description: transaction.description || 'Bank Transaction',
+          status: transaction.status || 'completed',
+          date: transaction.date || transaction.createdAt || new Date(),
+          accountType: transaction.accountType || 'checking',
+          posted: transaction.posted !== undefined ? transaction.posted : true,
+          postedAt: transaction.postedAt || new Date(),
+          createdAt: transaction.createdAt || new Date(),
+          updatedAt: transaction.updatedAt || new Date(),
+          channel: transaction.channel,
+          origin: transaction.origin,
+          editedDateByAdmin: transaction.editedDateByAdmin || false
+        }
+      }
     );
 
     console.log('[Email] Transaction email sent:', {
       to: user.email,
-      subject: subject,
       messageId: emailResult.messageId,
       success: !emailResult.failed && !emailResult.skipped
     });

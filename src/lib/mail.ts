@@ -5,10 +5,9 @@ import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
  * SMTP CONFIGURATION - HOSTINGER
  * ============================== */
 const SMTP_HOST = process.env.SMTP_HOST || "smtp.hostinger.com";
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || "465", 10); // SSL/TLS
-const SMTP_SECURE = process.env.SMTP_SECURE === "false" ? false : true; // default true for port 465
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || "465", 10);
+const SMTP_SECURE = process.env.SMTP_SECURE === "false" ? false : true;
 const SMTP_USER = process.env.SMTP_USER || "support@horizonglobalcapital.com";
-// CRITICAL: Always use environment variable for password in production
 const SMTP_PASS = process.env.SMTP_PASSWORD || "";
 
 // Validate SMTP configuration
@@ -18,7 +17,7 @@ if (!process.env.SMTP_PASSWORD && process.env.NODE_ENV === "production") {
 
 // Email configuration
 const FROM_DISPLAY = `Horizon Group Support <${SMTP_USER}>`;
-const ENVELOPE_FROM = SMTP_USER; // Must match auth user
+const ENVELOPE_FROM = SMTP_USER;
 const REPLY_TO = process.env.REPLY_TO_EMAIL || SMTP_USER;
 const LIST_UNSUBSCRIBE = `<mailto:${SMTP_USER}?subject=Unsubscribe>`;
 
@@ -31,7 +30,7 @@ const POOL_CONFIG = {
   rateLimit: parseInt(process.env.SMTP_RATE_LIMIT || "5", 10),
 };
 
-// Timeout settings (in milliseconds)
+// Timeout settings
 const TIMEOUT_CONFIG = {
   connectionTimeout: parseInt(process.env.SMTP_CONNECTION_TIMEOUT || "20000", 10),
   greetingTimeout: parseInt(process.env.SMTP_GREETING_TIMEOUT || "20000", 10),
@@ -43,7 +42,6 @@ let cachedTransporter: Transporter | null = null;
 async function getTransporter(): Promise<Transporter> {
   if (cachedTransporter) return cachedTransporter;
 
-  // Create transporter with Hostinger configuration
   cachedTransporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
@@ -52,41 +50,31 @@ async function getTransporter(): Promise<Transporter> {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
-    
-    // Connection pooling for better performance
     ...POOL_CONFIG,
-    
-    // Timeouts to prevent hanging connections
     ...TIMEOUT_CONFIG,
-    
-    // Enable logging only in development
     logger: process.env.NODE_ENV === "development",
     debug: process.env.NODE_ENV === "development",
-    
-    // Additional options for better compatibility
     tls: {
-      // Do not fail on invalid certificates in development
       rejectUnauthorized: process.env.NODE_ENV === "production",
-      // Minimum TLS version for security
       minVersion: "TLSv1.2",
     },
   });
 
-  // Verify connection in development or if explicitly requested
   if (process.env.NODE_ENV === "development" || process.env.VERIFY_SMTP === "true") {
     try {
-      await cachedTransporter.verify();
-      console.log("[mail] SMTP connection verified successfully");
+      if (cachedTransporter) {
+        await cachedTransporter.verify();
+        console.log("[mail] SMTP connection verified successfully");
+      }
     } catch (err) {
       console.error("[mail] SMTP verification failed:", err);
-      // In production, we might want to throw here to prevent deployment with bad config
       if (process.env.NODE_ENV === "production" && process.env.VERIFY_SMTP === "true") {
         throw new Error(`SMTP configuration error: ${err}`);
       }
     }
   }
   
-  return cachedTransporter;
+  return cachedTransporter as Transporter;
 }
 
 /** ==============================
@@ -168,7 +156,7 @@ function normalizeTx(input: TxLike): NormalizedTx {
 function statusLabel(status: string) {
   const s = (status || "").toLowerCase();
   if (s === "approved" || s === "completed") return "Completed";
-  if (s === "pending_verification") return "Pending – Verification";
+  if (s === "pending_verification") return "Pending - Verification";
   if (s === "rejected") return "Rejected";
   return "Pending";
 }
@@ -219,18 +207,15 @@ const TRANSIENT_CODES = new Set([
 async function sendWithRetry(
   options: Parameters<Transporter["sendMail"]>[0],
   maxAttempts = 3
-): Promise<SentMessageInfo & { failed?: boolean; error?: string }> {
-  // Check if SMTP is configured
+): Promise<SentMessageInfo & { failed?: boolean; error?: string; skipped?: boolean }> {
   if (!SMTP_PASS) {
     const errorMsg = "[mail] SMTP password not configured. Set SMTP_PASSWORD environment variable.";
     console.error(errorMsg);
     
-    // In production, we should fail loudly
     if (process.env.NODE_ENV === "production") {
       throw new Error(errorMsg);
     }
     
-    // In development, return a mock response
     return {
       accepted: [],
       rejected: [],
@@ -261,11 +246,10 @@ async function sendWithRetry(
 
       console.warn(`[mail] Send attempt ${attempt} failed:`, {
         code,
-        message: message.substring(0, 200), // Truncate long error messages
+        message: message.substring(0, 200),
         transient
       });
 
-      // Don't retry on permanent errors
       if (/EAUTH|ENVELOPE|EENVELOPE|EADDR/i.test(code) || 
           /auth/i.test(message) || 
           /invalid.*recipient/i.test(message) ||
@@ -275,7 +259,7 @@ async function sendWithRetry(
       }
 
       if (attempt < maxAttempts && transient) {
-        const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
+        const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
         console.log(`[mail] Retrying in ${backoff}ms...`);
         await new Promise((r) => setTimeout(r, backoff));
         continue;
@@ -286,7 +270,6 @@ async function sendWithRetry(
 
   console.error("[mail] Final failure after all attempts:", lastErr?.code || "", lastErr?.message || lastErr);
   
-  // Return a soft failure for graceful degradation
   return {
     accepted: [],
     rejected: [options.to].flat(),
@@ -299,7 +282,7 @@ async function sendWithRetry(
 }
 
 /** ==============================
- * PUBLIC APIs
+ * PUBLIC APIs - ALL EXPORTS
  * ============================== */
 
 // 1) Transaction event email
@@ -414,7 +397,7 @@ export async function sendTransactionEmail(
         "X-Transaction-Reference": tx.reference || String(tx._id),
         "X-Transaction-Type": String(tx.type),
         "X-Transaction-Status": label,
-        "X-Priority": "2", // Higher priority for transaction emails
+        "X-Priority": "2",
       },
     },
     3
@@ -439,19 +422,7 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
         <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
           <h1 style="margin:0 0 24px 0; color:#0f172a; font-size:28px;">Welcome to Horizon Group!</h1>
           <p style="font-size:16px; color:#475569;">Hi ${name},</p>
-          <p style="font-size:16px; color:#475569;">Your online banking profile has been created successfully. You now have access to all of our banking services.</p>
-          <p style="font-size:16px; color:#475569;">If you have any questions or need assistance, our support team is here to help. Simply reply to this email and we'll get back to you promptly.</p>
-          
-          <div style="margin-top:32px; padding:20px; background-color:#f1f5f9; border-radius:6px;">
-            <h3 style="margin:0 0 12px 0; color:#0f172a; font-size:18px;">Getting Started</h3>
-            <ul style="margin:0; padding-left:20px; color:#475569;">
-              <li style="margin-bottom:8px;">Log in to your account to view your dashboard</li>
-              <li style="margin-bottom:8px;">Set up your security preferences</li>
-              <li style="margin-bottom:8px;">Explore our banking services</li>
-              <li>Contact support if you need any assistance</li>
-            </ul>
-          </div>
-          
+          <p style="font-size:16px; color:#475569;">Your online banking profile has been created successfully.</p>
           <div style="margin-top:32px; padding-top:24px; border-top:1px solid #e2e8f0;">
             <p style="margin:0; color:#64748b; font-size:14px;">
               Best regards,<br>
@@ -464,24 +435,7 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
     </html>
     `;
     
-    const text = [
-      `Hi ${name},`,
-      ``,
-      `Welcome to Horizon Group!`,
-      ``,
-      `Your online banking profile has been created successfully. You now have access to all of our banking services.`,
-      ``,
-      `Getting Started:`,
-      `- Log in to your account to view your dashboard`,
-      `- Set up your security preferences`,
-      `- Explore our banking services`,
-      `- Contact support if you need any assistance`,
-      ``,
-      `If you have questions, reply to this email and our team will help.`,
-      ``,
-      `Best regards,`,
-      `The Horizon Group Team`,
-    ].join("\n");
+    const text = `Hi ${name},\n\nWelcome to Horizon Group!\n\nYour online banking profile has been created successfully.\n\nBest regards,\nThe Horizon Group Team`;
     
     return sendWithRetry(
       {
@@ -527,7 +481,7 @@ export async function sendBankStatementEmail(
   if (optsOrBuffer && (optsOrBuffer instanceof Buffer || typeof (optsOrBuffer as any)?.byteLength === "number")) {
     attachment = { filename: filename || "statement.pdf", content: optsOrBuffer };
     if (periodStart && periodEnd) {
-      periodText = `for ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`;
+      periodText = `for ${new Date(periodStart).toLocaleDateString()} - ${new Date(periodEnd).toLocaleDateString()}`;
     }
   } else if (optsOrBuffer && typeof optsOrBuffer === "object") {
     displayName = optsOrBuffer.name || displayName;
@@ -541,55 +495,8 @@ export async function sendBankStatementEmail(
   }
 
   const subject = `Your account statement ${periodText || ""}`.trim();
-  
-  const html = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  </head>
-  <body style="margin:0; padding:20px; background-color:#f8fafc;">
-    <div style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-      <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
-        <h2 style="margin:0 0 24px 0; color:#0f172a;">Account Statement</h2>
-        <p style="font-size:16px; color:#475569;">Hi ${displayName},</p>
-        <p style="font-size:16px; color:#475569;">Your account statement ${periodText || ""} is attached to this email.</p>
-        <p style="font-size:16px; color:#475569;">Please review the attached document for details of your account activity.</p>
-        
-        <div style="margin-top:32px; padding:20px; background-color:#f1f5f9; border-radius:6px;">
-          <p style="margin:0; color:#475569; font-size:14px;">
-            <strong>Important:</strong> Please keep this statement for your records. If you notice any discrepancies or have questions about any transactions, please contact us immediately.
-          </p>
-        </div>
-        
-        <div style="margin-top:32px; padding-top:24px; border-top:1px solid #e2e8f0;">
-          <p style="margin:0; color:#64748b; font-size:14px;">
-            If you have any questions, simply reply to this email.<br><br>
-            Best regards,<br>
-            The Horizon Group Team
-          </p>
-        </div>
-      </div>
-    </div>
-  </body>
-  </html>
-  `;
-  
-  const text = [
-    `Hi ${displayName},`,
-    ``,
-    `Your account statement ${periodText || ""} is attached.`,
-    ``,
-    `Please review the attached document for details of your account activity.`,
-    ``,
-    `Important: Please keep this statement for your records. If you notice any discrepancies or have questions about any transactions, please contact us immediately.`,
-    ``,
-    `If you have any questions, reply to this email.`,
-    ``,
-    `Best regards,`,
-    `The Horizon Group Team`,
-  ].join("\n");
+  const html = `<h2>Account Statement</h2><p>Hi ${displayName},</p><p>Your account statement ${periodText || ""} is attached.</p>`;
+  const text = `Hi ${displayName},\n\nYour account statement ${periodText || ""} is attached.\n\nBest regards,\nThe Horizon Group Team`;
 
   return sendWithRetry(
     {
@@ -610,7 +517,7 @@ export async function sendBankStatementEmail(
   );
 }
 
-// 4) Simple utility for ad-hoc messages
+// 4) CRITICAL: Simple utility for ad-hoc messages - THIS IS THE MISSING EXPORT
 export async function sendSimpleEmail(
   to: string | string[],
   subject: string,
@@ -635,22 +542,7 @@ export async function sendSimpleEmail(
       to: recipientList,
       subject,
       text,
-      html: html || `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin:0; padding:20px; background-color:#f8fafc;">
-          <div style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-            <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a; white-space:pre-wrap;">
-              ${text}
-            </div>
-          </div>
-        </body>
-        </html>
-      `,
+      html: html || `<div style="font-family: Arial, sans-serif; padding: 20px;">${text.replace(/\n/g, '<br>')}</div>`,
       headers: { 
         "List-Unsubscribe": LIST_UNSUBSCRIBE,
         "X-Priority": "3",
@@ -660,7 +552,7 @@ export async function sendSimpleEmail(
   );
 }
 
-// Export transporter proxy for legacy code compatibility
+// 5) Export transporter proxy for legacy code
 export const transporter = {
   async sendMail(options: Parameters<Transporter["sendMail"]>[0]) {
     try {
@@ -668,7 +560,6 @@ export const transporter = {
       return await t.sendMail(options);
     } catch (error) {
       console.error("[mail] transporter.sendMail error:", error);
-      // For backward compatibility, return soft failure
       return {
         accepted: [],
         rejected: [options.to].flat(),
@@ -680,7 +571,7 @@ export const transporter = {
   },
 };
 
-// Export utility to test SMTP configuration
+// 6) Export utility to test SMTP configuration
 export async function testSMTPConnection(): Promise<boolean> {
   try {
     const transporter = await getTransporter();
@@ -692,3 +583,13 @@ export async function testSMTPConnection(): Promise<boolean> {
     return false;
   }
 }
+
+// MAKE SURE ALL EXPORTS ARE LISTED
+export default {
+  sendTransactionEmail,
+  sendWelcomeEmail,
+  sendBankStatementEmail,
+  sendSimpleEmail,
+  testSMTPConnection,
+  transporter
+};
