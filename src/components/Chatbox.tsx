@@ -112,7 +112,8 @@ export default function Chatbox() {
 
   // Fetch user context ONLY for authenticated users
   const fetchAuthenticatedContext = useCallback(async () => {
-    if (session?.user?.email) {
+    // IMPORTANT: Check if session exists AND status is authenticated
+    if (status === 'authenticated' && session?.user?.email) {
       try {
         const response = await fetch('/api/user/dashboard');
         if (response.ok) {
@@ -148,6 +149,10 @@ export default function Chatbox() {
             cardDetails
           });
           setIsAuthenticated(true);
+        } else {
+          // If API fails, clear context
+          setIsAuthenticated(false);
+          setAuthenticatedContext(null);
         }
       } catch (error) {
         console.error('Error fetching authenticated context:', error);
@@ -155,13 +160,18 @@ export default function Chatbox() {
         setAuthenticatedContext(null);
       }
     } else {
+      // User is NOT authenticated - clear any existing context
       setIsAuthenticated(false);
       setAuthenticatedContext(null);
     }
-  }, [session]);
+  }, [session, status]);
 
+  // Clear context when session changes
   useEffect(() => {
-    if (status !== 'loading') {
+    if (status === 'unauthenticated') {
+      setIsAuthenticated(false);
+      setAuthenticatedContext(null);
+    } else if (status === 'authenticated') {
       fetchAuthenticatedContext();
     }
   }, [fetchAuthenticatedContext, status]);
@@ -190,7 +200,7 @@ export default function Chatbox() {
             ["Check Balance", "Recent Transactions", "Transfer Money", "Card Services", "Get Statement"]
           );
         } else {
-          // Generic greeting for unauthenticated users
+          // Generic greeting for unauthenticated users - NO NAME MENTIONED
           sendAgentMessage(
             `Good ${getTimeOfDay()}! I'm ${currentAgent.name} from Horizon Banking. I'm here to help with general banking inquiries, account information, or assist you with logging in. How may I help you today?`,
             ["General Information", "Account Access Help", "Branch Locations", "Contact Support", "Login Help"]
@@ -281,6 +291,7 @@ export default function Chatbox() {
     } else if (userInput.includes("help") || userInput.includes("support")) {
       await handleGeneralSupport();
     } else {
+      // Never call authenticated handlers for unauthenticated users
       await handleGeneralUnauthenticatedQuery();
     }
   };
@@ -363,7 +374,7 @@ export default function Chatbox() {
     );
   };
 
-  // Authenticated user handlers (simplified versions of previous methods)
+  // Authenticated user handlers - FIXED CURRENCY TO USD
   const handleBalanceRequest = async () => {
     await simulateTyping();
     
@@ -372,9 +383,10 @@ export default function Chatbox() {
       return;
     }
     
-    const currency = "€";
+    // FIXED: Changed currency to USD ($)
+    const currency = "$";
     sendAgentMessage(
-      `Here are your current account balances:\n\n💳 Current Account: ${currency}${authenticatedContext.checkingBalance.toFixed(2)}\n💰 Savings Account: ${currency}${authenticatedContext.savingsBalance.toFixed(2)}\n📈 Investment Account: ${currency}${authenticatedContext.investmentBalance.toFixed(2)}\n\nTotal Balance: ${currency}${authenticatedContext.accountBalance.toFixed(2)}`,
+      `Here are your current account balances:\n\n💳 Checking Account: ${currency}${authenticatedContext.checkingBalance.toFixed(2)}\n💰 Savings Account: ${currency}${authenticatedContext.savingsBalance.toFixed(2)}\n📈 Investment Account: ${currency}${authenticatedContext.investmentBalance.toFixed(2)}\n\nTotal Balance: ${currency}${authenticatedContext.accountBalance.toFixed(2)}`,
       ["Recent Transactions", "Transfer Money", "Download Statement", "Main Menu"]
     );
   };
@@ -456,10 +468,18 @@ export default function Chatbox() {
 
   const handleGeneralAuthenticatedQuery = async (query: string) => {
     await simulateTyping();
-    sendAgentMessage(
-      `Thanks for your question, ${authenticatedContext?.userName}! I can help with all your banking needs:`,
-      ["Account Services", "Transfer Money", "Card Services", "View Statements", "Something Else"]
-    );
+    // Only use the user's name if they are ACTUALLY authenticated
+    if (isAuthenticated && authenticatedContext?.userName) {
+      sendAgentMessage(
+        `Thanks for your question, ${authenticatedContext.userName}! I can help with all your banking needs:`,
+        ["Account Services", "Transfer Money", "Card Services", "View Statements", "Something Else"]
+      );
+    } else {
+      sendAgentMessage(
+        `Thanks for your question! I can help with all your banking needs:`,
+        ["Account Services", "Transfer Money", "Card Services", "View Statements", "Something Else"]
+      );
+    }
   };
 
   const handleQuickReply = (reply: string) => {
@@ -747,7 +767,7 @@ export default function Chatbox() {
                     <div className={styles.statusBar}>
                       <div className={styles.statusIndicator}>
                         {isAuthenticated ? (
-                          <>Secure Chat • <span className={styles.verifiedBadge}>✓ Authenticated</span></>
+                          <>Secure Chat • <span className={styles.verifiedBadge}>✔ Authenticated</span></>
                         ) : (
                           <>Public Chat • <span className={styles.verifiedBadge}>🔒 Secure</span></>
                         )}
