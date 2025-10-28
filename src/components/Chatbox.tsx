@@ -65,6 +65,13 @@ interface AuthenticatedContext {
   }[];
 }
 
+// Helper function to generate consistent account number based on email
+const generateConsistentAccountNumber = (email: string): string => {
+  const hash = Array.from(email).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const lastFour = (hash % 10000).toString().padStart(4, '0');
+  return `****${lastFour}`;
+};
+
 export default function Chatbox() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
@@ -129,7 +136,9 @@ export default function Chatbox() {
             t.rawStatus === "pending" || t.status === "Pending"
           );
           
-          const accountNumber = data.accountNumber || `****${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+          // FIXED: Generate consistent account number based on user email
+          const accountNumber = data.accountNumber || generateConsistentAccountNumber(session.user.email);
+          
           const cardDetails = data.cards || [
             { type: "Debit Card", lastFour: "4321", status: "Active" },
             { type: "Credit Card", lastFour: "8765", status: "Active" }
