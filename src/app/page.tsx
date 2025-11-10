@@ -89,7 +89,7 @@ export default function LandingPage() {
             
             <div className={styles.modalHeader}>
               <div className={styles.modalIcon}>🎉</div>
-              <h2 className={styles.modalTitle}>Welcome to Horizon Global Capital</h2>
+              <h2 className={styles.modalTitle}>Welcome to ZentriBank</h2>
             </div>
             
             <div className={styles.modalBody}>
@@ -146,7 +146,7 @@ export default function LandingPage() {
               <span className={styles.logoIcon}>🏦</span>
             </div>
             <div className={styles.brandText}>
-              <span className={styles.brandName}>Horizon</span>
+              <span className={styles.brandName}>ZentriBank</span>
               <span className={styles.brandTagline}>Global Capital</span>
             </div>
           </div>
@@ -276,7 +276,7 @@ export default function LandingPage() {
 <section className={styles.features}>
   <div className={styles.container}>
     <div className={styles.sectionHeader}>
-      <h2>Why Choose Horizon Global Capital</h2>
+      <h2>Why Choose ZentriBank</h2>
       <p>Experience banking reimagined with cutting-edge technology and personalized service</p>
     </div>
     
@@ -443,7 +443,7 @@ export default function LandingPage() {
         <div className={styles.container}>
           <div className={styles.ctaContent}>
             <h2>Ready to Start Your Financial Journey?</h2>
-            <p>Join Horizon Global Capital today and experience banking excellence with advanced security and smart notifications</p>
+            <p>Join ZentriBank today and experience banking excellence with advanced security and smart notifications</p>
             <div className={styles.ctaButtons}>
               <Link href="/auth/signup" className={styles.ctaPrimary}>
                 Open Your Account
@@ -463,7 +463,7 @@ export default function LandingPage() {
             <div className={styles.footerSection}>
               <div className={styles.footerBrand}>
                 <div className={styles.footerLogo}>🏦</div>
-                <h4>Horizon Global Capital</h4>
+                <h4>ZentriBank</h4>
               </div>
               <p>Premier digital banking with cutting-edge security, two-factor authentication, and real-time notifications.</p>
               <div className={styles.socialLinks}>
@@ -503,7 +503,7 @@ export default function LandingPage() {
           </div>
           
           <div className={styles.footerBottom}>
-            <p>© 2024 Horizon Global Capital. All rights reserved. Member FDIC. Equal Housing Lender.</p>
+            <p>© 2024 ZentriBank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
             <div className={styles.footerCertifications}>
               <span className={styles.certBadge}>🏛️ FDIC</span>
               <span className={styles.certBadge}>🔒 SSL</span>

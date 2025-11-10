@@ -117,7 +117,7 @@ export default function Header() {
           <div className={styles.logo}>
             <span className={styles.logoIcon}>🏦</span>
             <div className={styles.logoText}>
-              <span className={styles.bankName}>Horizon</span>
+              <span className={styles.bankName}>ZentriBank</span>
               <span className={styles.bankTagline}>Global Capital</span>
             </div>
           </div>

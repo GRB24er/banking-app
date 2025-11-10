@@ -408,7 +408,7 @@ export async function sendTransactionEmail(
 export async function sendWelcomeEmail(to: string, opts?: any) {
   try {
     const name = (opts?.name as string) || "Customer";
-    const subject = "Welcome to Horizon Group";
+    const subject = "Welcome to ZentriBank Group";
     
     const html = `
     <!DOCTYPE html>
@@ -426,7 +426,7 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
           <div style="margin-top:32px; padding-top:24px; border-top:1px solid #e2e8f0;">
             <p style="margin:0; color:#64748b; font-size:14px;">
               Best regards,<br>
-              The Horizon Group Team
+              The ZentriBank Group Team
             </p>
           </div>
         </div>
@@ -435,7 +435,7 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
     </html>
     `;
     
-    const text = `Hi ${name},\n\nWelcome to Horizon Group!\n\nYour online banking profile has been created successfully.\n\nBest regards,\nThe Horizon Group Team`;
+    const text = `Hi ${name},\n\nWelcome to ZentriBank Group!\n\nYour online banking profile has been created successfully.\n\nBest regards,\nThe Horizon Group Team`;
     
     return sendWithRetry(
       {

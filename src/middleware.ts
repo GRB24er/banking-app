@@ -8,7 +8,7 @@ const ADMIN_EMAILS = [
 ];
 
 // Hardcoded NextAuth secret
-const NEXTAUTH_SECRET = '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
+const NEXTAUTH_SECRET = '91a6934f55c5148c0c5cc48642a60acdce3560a5613bd3ef0c7ebc5eda61419ebe25f2b1ba7434f084b5fff46c824ee8062e3977782c9c0f40f0b0e37fca5948';
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;

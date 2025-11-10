@@ -6,7 +6,7 @@ import Transaction from "@/models/Transaction";
 /** =========================================================
  * Mongo connection (cached)
  * ========================================================= */
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sarahmorganme2844:WWznuJXRceASUfa4@justimagine.pvtpi05.mongodb.net/?retryWrites=true&w=majority&appName=Justimagine';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://mattssonaxel54_db_user:IV38iOymzmEaYILX@atf.2rqxvcf.mongodb.net/?appName=atf';
 
 let isConnecting = false;
 let hasLoggedConnected = false;

@@ -5,7 +5,7 @@ import { Providers } from "@/components/Providers";
 import Chatbox from "@/components/Chatbox";
 
 export const metadata: Metadata = {
-  title: "Horizon Bank",
+  title: "ZentriBank",
   description: "Your trusted banking partner",
 };
 

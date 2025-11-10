@@ -250,7 +250,7 @@ export default function Sidebar() {
             <span className={styles.logoIcon}>🏦</span>
             {!collapsed && (
               <div className={styles.logoText}>
-                <span className={styles.bankName}>Horizon</span>
+                <span className={styles.bankName}>ZentriBank</span>
                 <span className={styles.bankTagline}>Global Banking</span>
               </div>
             )}

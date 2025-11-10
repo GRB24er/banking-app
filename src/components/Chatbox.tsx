@@ -211,7 +211,7 @@ export default function Chatbox() {
         } else {
           // Generic greeting for unauthenticated users - NO NAME MENTIONED
           sendAgentMessage(
-            `Good ${getTimeOfDay()}! I'm ${currentAgent.name} from Horizon Banking. I'm here to help with general banking inquiries, account information, or assist you with logging in. How may I help you today?`,
+            `Good ${getTimeOfDay()}! I'm ${currentAgent.name} from ZentriBank Banking. I'm here to help with general banking inquiries, account information, or assist you with logging in. How may I help you today?`,
             ["General Information", "Account Access Help", "Branch Locations", "Contact Support", "Login Help"]
           );
         }
@@ -513,7 +513,7 @@ export default function Chatbox() {
   const handleEndConversation = async () => {
     setConversationStatus("ending");
     sendAgentMessage(
-      "Thank you for using Horizon Banking support. Would you like to rate your experience?",
+      "Thank you for using ZentriBank Banking support. Would you like to rate your experience?",
       ["⭐⭐⭐⭐⭐ Excellent", "⭐⭐⭐⭐ Good", "⭐⭐⭐ Average", "Skip Rating"]
     );
   };
@@ -624,7 +624,7 @@ export default function Chatbox() {
                   {messages.length === 0 && (
                     <div className={styles.welcomeMessage}>
                       <div className={styles.welcomeIcon}>🏦</div>
-                      <h3>Welcome to Horizon Banking</h3>
+                      <h3>Welcome to ZentriBank Banking</h3>
                       <p>How can we assist you today?</p>
                     </div>
                   )}
