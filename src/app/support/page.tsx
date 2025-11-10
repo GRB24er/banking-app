@@ -54,14 +54,14 @@ export default function SupportPage() {
       title: "Phone Support", 
       desc: "Call us anytime", 
       available: "24/7", 
-      action: () => window.location.href = "tel:1800HORIZON" 
+      action: () => window.location.href = "tel:1800ZentriBank" 
     },
     { 
       icon: "📧", 
       title: "Email Support", 
       desc: "Get help via email", 
       available: "1-2 business days", 
-      action: () => window.location.href = "mailto:support@horizonbank.com" 
+      action: () => window.location.href = "mailto:admin@zentribank.capital" 
     },
     { 
       icon: "📅", 
@@ -87,8 +87,8 @@ export default function SupportPage() {
             </div>
             <div className={styles.emergencyContact}>
               <span>Need urgent help?</span>
-              <a href="tel:1800HORIZON" className={styles.phoneNumber}>
-                📞 1-800-HORIZON
+              <a href="tel:1800ZentriBank" className={styles.phoneNumber}>
+                📞 1-800-ZentriBank
               </a>
             </div>
           </div>

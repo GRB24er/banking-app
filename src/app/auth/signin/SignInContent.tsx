@@ -435,7 +435,7 @@ export default function SignInContent() {
           <div style={formWrapperStyle}>
             <div style={logoContainerStyle}>
               <div style={logoIconStyle}>🏦</div>
-              <span style={logoTextStyle}>Horizon</span>
+              <span style={logoTextStyle}>ZentriBank</span>
             </div>
 
             <h1 style={headingStyle}>Welcome Back</h1>

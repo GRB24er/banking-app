@@ -32,7 +32,7 @@ const Footer = () => {
             <div className={styles.brandHeader}>
               <span className={styles.brandIcon}>🏦</span>
               <div className={styles.brandInfo}>
-                <h3 className={styles.brandName}>Horizon Global Capital</h3>
+                <h3 className={styles.brandName}>ZentriBank</h3>
                 <p className={styles.brandTagline}>Your Trust, Our Commitment</p>
               </div>
             </div>
@@ -146,8 +146,8 @@ const Footer = () => {
                 <span className={styles.contactIcon}>📞</span>
                 <div>
                   <p className={styles.contactLabel}>24/7 Support</p>
-                  <a href="tel:1-800-HORIZON" className={styles.contactValue}>
-                    1-800-HORIZON
+                  <a href="tel:1-800-ZentriBank" className={styles.contactValue}>
+                    1-800-ZentriBank
                   </a>
                 </div>
               </div>
@@ -210,9 +210,9 @@ const Footer = () => {
        <div className={styles.container}>
          <div className={styles.bottomContent}>
            <div className={styles.copyright}>
-             <p>© {currentYear} Horizon Global Capital. All rights reserved.</p>
+             <p>© {currentYear} ZentriBank. All rights reserved.</p>
              <p className={styles.legalText}>
-               Horizon Global Capital, N.A. Member FDIC. 
+               ZentriBank, N.A. Member FDIC. 
                <span className={styles.separator}>|</span>
                NMLS #123456
              </p>
