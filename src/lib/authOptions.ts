@@ -5,7 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
-const AUTH_SECRET = '91a6934f55c5148c0c5cc48642a60acdce3560a5613bd3ef0c7ebc5eda61419ebe25f2b1ba7434f084b5fff46c824ee8062e3977782c9c0f40f0b0e37fca5948';
+const AUTH_SECRET = 'b3bc4dcf9055e490cef86fd9647fc8acd61d6bbe07dfb85fb6848bfe7f4f3926';
 
 declare module 'next-auth/jwt' {
   interface JWT {
