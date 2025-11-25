@@ -686,7 +686,7 @@ export default function TransferPage() {
                     {formData.transferType === "external" && (
                       <div className={styles.warningBox}>
                         <span className={styles.warningIcon}>⚠️</span>
-                        <p>External transfers require admin approval and may take {
+                        <p>External transfers require Bank approval and may take {
                           formData.transferSpeed === "wire" ? "same day" :
                           formData.transferSpeed === "express" ? "1-2 business days" :
                           "3-5 business days"

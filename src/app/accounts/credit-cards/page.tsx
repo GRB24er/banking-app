@@ -1,51 +1,182 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import styles from "./cards.module.css";
 
+const CARD_LOGOS = {
+  'Visa': 'https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg',
+  'Mastercard': 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
+  'American Express': 'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg',
+  'Discover': 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg'
+};
+
 export default function CardsPage() {
+  const router = useRouter();
+  const { data: session } = useSession();
   const [selectedCard, setSelectedCard] = useState(0);
-  const [showPinModal, setShowPinModal] = useState(false);
+  const [cards, setCards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const cards = [
-    {
-      id: 1,
-      type: "Debit",
-      name: "Horizon Premier",
-      number: "4532 •••• •••• 1234",
-      expiry: "08/27",
-      cvv: "•••",
-      balance: 4000.00,
-      status: "Active",
-      linked: "Checking Account",
-      color: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      transactions: 142,
-      cashback: 245.50
-    },
-    {
-      id: 2,
-      type: "Debit",
-      name: "Horizon Savings",
-      number: "4532 •••• •••• 5678",
-      expiry: "10/28",
-      cvv: "•••",
-      balance: 1000.00,
-      status: "Active",
-      linked: "Savings Account",
-      color: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-      transactions: 28,
-      cashback: 15.75
+  useEffect(() => {
+    if (session?.user) {
+      fetchUserCards();
     }
-  ];
+  }, [session]);
 
-  const recentActivity = [
-    { id: 1, merchant: "Walmart Supercenter", category: "Shopping", amount: -125.50, date: "Today, 2:45 PM", status: "Completed" },
-    { id: 2, merchant: "Shell Gas Station", category: "Fuel", amount: -65.00, date: "Yesterday, 5:30 PM", status: "Completed" },
-    { id: 3, merchant: "McDonald's", category: "Food", amount: -18.75, date: "Aug 16, 12:15 PM", status: "Completed" },
-    { id: 4, merchant: "Amazon.com", category: "Shopping", amount: -299.99, date: "Aug 15, 8:20 AM", status: "Completed" },
-    { id: 5, merchant: "Netflix", category: "Entertainment", amount: -15.99, date: "Aug 14, 12:00 AM", status: "Completed" }
-  ];
+  const fetchUserCards = async () => {
+    try {
+      const response = await fetch('/api/creditcard/apply');
+      const result = await response.json();
+      
+      const approvedCards: any[] = [];
+      
+      if (result.success && result.data) {
+        result.data.forEach((app: any) => {
+          if (app.status === 'approved' && app.workflow?.approval?.cardDetails) {
+            approvedCards.push({
+              id: app._id,
+              type: "Credit",
+              name: getCardName(app.cardPreferences?.cardType),
+              number: app.workflow.approval.cardDetails.cardNumber,
+              expiry: formatExpiry(app.workflow.approval.cardDetails.expiryDate),
+              cvv: app.workflow.approval.cardDetails.cvv,
+              balance: app.workflow.approval.creditLimit,
+              status: "Active",
+              issuer: app.workflow.approval.issuer,
+              cardHolder: session?.user?.name?.toUpperCase() || 'CARD HOLDER',
+              interestRate: app.workflow.approval.interestRate,
+              annualFee: app.workflow.approval.annualFee,
+              color: getCardColor(app.cardPreferences?.cardType),
+              cardType: app.cardPreferences?.cardType
+            });
+          }
+        });
+      }
+      
+      setCards(approvedCards);
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch cards:', error);
+      setLoading(false);
+    }
+  };
+
+  const getCardName = (type: string) => {
+    const names: any = {
+      basic: 'Premium',
+      silver: 'Silver Elite',
+      gold: 'Gold Executive',
+      platinum: 'Platinum Prestige',
+      student: 'Student Plus',
+      secured: 'Secured Build',
+      business: 'Business Pro'
+    };
+    return names[type] || 'Premium';
+  };
+
+  const getCardColor = (type: string) => {
+    const colors: any = {
+      basic: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+      silver: 'linear-gradient(135deg, #475569 0%, #64748b 100%)',
+      gold: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+      platinum: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)',
+      student: 'linear-gradient(135deg, #065f46 0%, #059669 100%)',
+      secured: 'linear-gradient(135deg, #374151 0%, #4b5563 100%)',
+      business: 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)'
+    };
+    return colors[type] || colors.basic;
+  };
+
+  const formatCardNumber = (num: string) => {
+    if (!num) return '';
+    return num.match(/.{1,4}/g)?.join(' ') || num;
+  };
+
+  const formatCardNumberMasked = (num: string) => {
+    if (!num) return '';
+    const first4 = num.slice(0, 4);
+    const last4 = num.slice(-4);
+    return `${first4} •••• •••• ${last4}`;
+  };
+
+  const formatExpiry = (date: string) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.wrapper}>
+        <Sidebar />
+        <div className={styles.main}>
+          <Header />
+          <div style={{ padding: '100px', textAlign: 'center', color: '#64748b' }}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>💳</div>
+            <p>Loading your cards...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <div className={styles.wrapper}>
+        <Sidebar />
+        <div className={styles.main}>
+          <Header />
+          
+          <div className={styles.content}>
+            <div className={styles.pageHeader}>
+              <div className={styles.headerInfo}>
+                <h1>Card Management</h1>
+                <p>Manage your credit cards</p>
+              </div>
+            </div>
+
+            <div style={{
+              background: '#fff',
+              borderRadius: '24px',
+              padding: '80px 40px',
+              textAlign: 'center',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+              maxWidth: '600px',
+              margin: '60px auto'
+            }}>
+              <div style={{ fontSize: '80px', marginBottom: '24px' }}>💳</div>
+              <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#1e293b', marginBottom: '12px' }}>
+                No Credit Cards Yet
+              </h2>
+              <p style={{ color: '#64748b', fontSize: '16px', marginBottom: '32px' }}>
+                Apply for your first premium credit card and start building your credit
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <button 
+                  className={styles.requestCardBtn}
+                  onClick={() => router.push('/accounts/credit-cards/status')}
+                  style={{ background: '#fff', color: '#D4AF37', border: '2px solid #D4AF37' }}
+                >
+                  📋 My Applications
+                </button>
+                <button 
+                  className={styles.requestCardBtn}
+                  onClick={() => router.push('/accounts/credit-cards/apply')}
+                >
+                  <span>+</span> Apply Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentCard = cards[selectedCard];
 
   return (
     <div className={styles.wrapper}>
@@ -54,43 +185,92 @@ export default function CardsPage() {
         <Header />
         
         <div className={styles.content}>
-          {/* Page Header */}
           <div className={styles.pageHeader}>
             <div className={styles.headerInfo}>
               <h1>Card Management</h1>
-              <p>Manage your debit and credit cards</p>
+              <p>Manage your credit cards</p>
             </div>
-            <button className={styles.requestCardBtn}>
-              <span>+</span> Request New Card
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                className={styles.requestCardBtn}
+                onClick={() => router.push('/accounts/credit-cards/status')}
+                style={{ background: '#fff', color: '#D4AF37', border: '2px solid #D4AF37' }}
+              >
+                📋 My Applications
+              </button>
+              <button 
+                className={styles.requestCardBtn}
+                onClick={() => router.push('/accounts/credit-cards/apply')}
+              >
+                <span>+</span> Apply for New Card
+              </button>
+            </div>
           </div>
 
-          {/* Card Display Section */}
           <div className={styles.cardSection}>
             <div className={styles.cardDisplay}>
-              {/* Card Visual */}
               <div className={styles.cardVisualContainer}>
+                {/* Enterprise Credit Card Design */}
                 <div 
-                  className={styles.cardVisual}
-                  style={{ background: cards[selectedCard].color }}
+                  className={styles.creditCard}
+                  style={{ background: currentCard.color }}
                 >
-                  <div className={styles.cardTop}>
-                    <div className={styles.cardLogo}>HORIZON</div>
-                    <div className={styles.cardType}>{cards[selectedCard].type}</div>
-                  </div>
-                  
-                  <div className={styles.cardChip}></div>
-                  
-                  <div className={styles.cardNumber}>{cards[selectedCard].number}</div>
-                  
-                  <div className={styles.cardBottom}>
-                    <div>
-                      <div className={styles.cardLabel}>CARD HOLDER</div>
-                      <div className={styles.cardValue}>HAJAND MORGAN</div>
+                  {/* Card Front */}
+                  <div className={styles.cardFront}>
+                    {/* Card Logo */}
+                    <div className={styles.cardHeaderRow}>
+                      <div className={styles.bankName}>HORIZON BANK</div>
+                      {currentCard.issuer && CARD_LOGOS[currentCard.issuer as keyof typeof CARD_LOGOS] && (
+                        <img 
+                          src={CARD_LOGOS[currentCard.issuer as keyof typeof CARD_LOGOS]} 
+                          alt={currentCard.issuer}
+                          className={styles.networkLogo}
+                        />
+                      )}
                     </div>
-                    <div>
-                      <div className={styles.cardLabel}>EXPIRES</div>
-                      <div className={styles.cardValue}>{cards[selectedCard].expiry}</div>
+
+                    {/* EMV Chip */}
+                    <div className={styles.cardChipReal}>
+                      <div className={styles.chipLine}></div>
+                      <div className={styles.chipLine}></div>
+                      <div className={styles.chipLine}></div>
+                      <div className={styles.chipLine}></div>
+                    </div>
+
+                    {/* Contactless Symbol */}
+                    <div className={styles.contactless}>
+                      <svg width="30" height="24" viewBox="0 0 30 24" fill="none">
+                        <path d="M8 12C8 8.68629 10.6863 6 14 6" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+                        <path d="M11 12C11 10.3431 12.3431 9 14 9" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+                        <path d="M5 12C5 7.02944 9.02944 3 14 3" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+                        <path d="M2 12C2 5.37258 7.37258 0 14 0" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+                      </svg>
+                    </div>
+
+                    {/* Card Number */}
+                    <div className={styles.cardNumberReal}>
+                      {formatCardNumber(currentCard.number)}
+                    </div>
+
+                    {/* Card Details */}
+                    <div className={styles.cardDetailsRow}>
+                      <div className={styles.cardDetail}>
+                        <div className={styles.cardDetailLabel}>CARD HOLDER</div>
+                        <div className={styles.cardDetailValue}>{currentCard.cardHolder}</div>
+                      </div>
+                      <div className={styles.cardDetail}>
+                        <div className={styles.cardDetailLabel}>VALID THRU</div>
+                        <div className={styles.cardDetailValue}>{currentCard.expiry}</div>
+                      </div>
+                      <div className={styles.cardDetail}>
+                        <div className={styles.cardDetailLabel}>CVV</div>
+                        <div className={styles.cardDetailValue}>{currentCard.cvv}</div>
+                      </div>
+                    </div>
+
+                    {/* Card Type Badge */}
+                    <div className={styles.cardTypeBadge}>
+                      {currentCard.name}
                     </div>
                   </div>
                 </div>
@@ -104,7 +284,12 @@ export default function CardsPage() {
                       onClick={() => setSelectedCard(index)}
                     >
                       <span className={styles.selectorDot}></span>
-                      {card.name}
+                      <div>
+                        <div style={{ fontWeight: '600' }}>{card.issuer} {card.name}</div>
+                        <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                          {formatCardNumberMasked(card.number)}
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -116,33 +301,33 @@ export default function CardsPage() {
                 
                 <div className={styles.infoGrid}>
                   <div className={styles.infoItem}>
+                    <span className={styles.infoLabel}>Card Network</span>
+                    <span className={styles.infoValue}>{currentCard.issuer}</span>
+                  </div>
+                  <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Card Type</span>
-                    <span className={styles.infoValue}>{cards[selectedCard].type}</span>
+                    <span className={styles.infoValue}>{currentCard.name}</span>
                   </div>
                   <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Status</span>
                     <span className={`${styles.infoValue} ${styles.statusActive}`}>
-                      {cards[selectedCard].status}
+                      {currentCard.status}
                     </span>
                   </div>
                   <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Linked Account</span>
-                    <span className={styles.infoValue}>{cards[selectedCard].linked}</span>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Available Balance</span>
+                    <span className={styles.infoLabel}>Credit Limit</span>
                     <span className={styles.infoValue}>
-                      ${cards[selectedCard].balance.toLocaleString()}
+                      ${currentCard.balance.toLocaleString()}
                     </span>
                   </div>
                   <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Total Transactions</span>
-                    <span className={styles.infoValue}>{cards[selectedCard].transactions}</span>
+                    <span className={styles.infoLabel}>APR</span>
+                    <span className={styles.infoValue}>{currentCard.interestRate}%</span>
                   </div>
                   <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Cashback Earned</span>
+                    <span className={styles.infoLabel}>Annual Fee</span>
                     <span className={styles.infoValue}>
-                      ${cards[selectedCard].cashback.toFixed(2)}
+                      ${currentCard.annualFee}
                     </span>
                   </div>
                 </div>
@@ -152,64 +337,17 @@ export default function CardsPage() {
                   <button className={styles.actionBtn}>
                     <span>🔒</span> Lock Card
                   </button>
-                  <button className={styles.actionBtn} onClick={() => setShowPinModal(true)}>
-                    <span>📍</span> Set PIN
+                  <button className={styles.actionBtn}>
+                    <span>🔢</span> Change PIN
                   </button>
                   <button className={styles.actionBtn}>
                     <span>🌍</span> Travel Notice
                   </button>
                   <button className={styles.actionBtn}>
-                    <span>📊</span> Spending Limits
+                    <span>📊</span> View Statement
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className={styles.activitySection}>
-            <div className={styles.sectionHeader}>
-              <h2>Recent Card Activity</h2>
-              <button className={styles.viewAllBtn}>View All</button>
-            </div>
-
-            <div className={styles.activityTable}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Merchant</th>
-                    <th>Category</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentActivity.map(activity => (
-                    <tr key={activity.id}>
-                      <td>
-                        <div className={styles.merchantInfo}>
-                          <span className={styles.merchantIcon}>
-                            {activity.category === 'Shopping' && '🛒'}
-                            {activity.category === 'Fuel' && '⛽'}
-                            {activity.category === 'Food' && '🍔'}
-                            {activity.category === 'Entertainment' && '🎬'}
-                          </span>
-                          <span>{activity.merchant}</span>
-                        </div>
-                      </td>
-                      <td>{activity.category}</td>
-                      <td>{activity.date}</td>
-                      <td className={activity.amount < 0 ? styles.debit : styles.credit}>
-                        ${Math.abs(activity.amount).toFixed(2)}
-                      </td>
-                      <td>
-                        <span className={styles.statusBadge}>{activity.status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         </div>

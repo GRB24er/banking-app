@@ -1,7 +1,7 @@
 // src/components/CreditCardApplication.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface ApplicationData {
@@ -18,9 +18,7 @@ export default function CreditCardApplicationForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [applicationId, setApplicationId] = useState('');
-  const [showOtpModal, setShowOtpModal] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
+  const [applicationNumber, setApplicationNumber] = useState('');
   
   const [formData, setFormData] = useState<ApplicationData>({
     personal: {
@@ -30,6 +28,7 @@ export default function CreditCardApplicationForm() {
       dateOfBirth: '',
       ssn: '',
       mothersMaidenName: '',
+      email: '',
       phone: '',
       alternatePhone: '',
       currentAddress: {
@@ -80,13 +79,7 @@ export default function CreditCardApplicationForm() {
       balanceTransferAmount: 0
     },
     consent: {
-      consentToCreditCheck: false,
-      disclosuresProvided: {
-        schumerBox: false,
-        termsAndConditions: false,
-        privacyPolicy: false,
-        electronicConsent: false
-      }
+      consentToCreditCheck: false
     }
   });
 
@@ -95,52 +88,15 @@ export default function CreditCardApplicationForm() {
     { number: 2, title: 'Employment', key: 'employment' },
     { number: 3, title: 'Financial Information', key: 'financial' },
     { number: 4, title: 'Card Preferences', key: 'preferences' },
-    { number: 5, title: 'Review & Consent', key: 'consent' }
+    { number: 5, title: 'Review & Submit', key: 'consent' }
   ];
 
   const cardTypes = [
-    { 
-      value: 'platinum', 
-      name: 'Platinum Card', 
-      minIncome: 75000,
-      annualFee: 495,
-      benefits: '3% cashback, airport lounge access, travel insurance'
-    },
-    { 
-      value: 'gold', 
-      name: 'Gold Card', 
-      minIncome: 50000,
-      annualFee: 295,
-      benefits: '2% cashback on dining and travel'
-    },
-    { 
-      value: 'silver', 
-      name: 'Silver Card', 
-      minIncome: 35000,
-      annualFee: 95,
-      benefits: '1.5% cashback on all purchases'
-    },
-    { 
-      value: 'basic', 
-      name: 'Basic Card', 
-      minIncome: 20000,
-      annualFee: 0,
-      benefits: '1% cashback, no annual fee'
-    },
-    { 
-      value: 'student', 
-      name: 'Student Card', 
-      minIncome: 0,
-      annualFee: 0,
-      benefits: 'Build credit, 1% cashback, 2% on textbooks'
-    },
-    { 
-      value: 'secured', 
-      name: 'Secured Card', 
-      minIncome: 15000,
-      annualFee: 39,
-      benefits: 'Build/rebuild credit with security deposit'
-    }
+    { value: 'platinum', name: 'Platinum Card', minIncome: 75000, annualFee: 495 },
+    { value: 'gold', name: 'Gold Card', minIncome: 50000, annualFee: 295 },
+    { value: 'silver', name: 'Silver Card', minIncome: 35000, annualFee: 95 },
+    { value: 'basic', name: 'Basic Card', minIncome: 20000, annualFee: 0 },
+    { value: 'student', name: 'Student Card', minIncome: 0, annualFee: 0 }
   ];
 
   const handleInputChange = (step: string, field: string, value: any) => {
@@ -167,24 +123,34 @@ export default function CreditCardApplicationForm() {
   };
 
   const validateStep = (step: number): boolean => {
+    setError('');
+    
     switch(step) {
       case 1:
         if (!formData.personal.firstName || !formData.personal.lastName) {
           setError('Please enter your full name');
           return false;
         }
-        if (!formData.personal.dateOfBirth) {
-          setError('Please enter your date of birth');
+        if (!formData.personal.email) {
+          setError('Please enter your email');
           return false;
         }
-        if (!formData.personal.ssn || formData.personal.ssn.length !== 9) {
-          setError('Please enter a valid SSN');
+        if (!formData.personal.phone) {
+          setError('Please enter your phone number');
           return false;
         }
         break;
       case 2:
-        if (!formData.employment.annualIncome || formData.employment.annualIncome < 10000) {
-          setError('Please enter a valid annual income');
+        if (!formData.employment.status) {
+          setError('Please select employment status');
+          return false;
+        }
+        if (formData.employment.status === 'employed' && !formData.employment.employer) {
+          setError('Please enter employer name');
+          return false;
+        }
+        if (!formData.employment.annualIncome || formData.employment.annualIncome < 0) {
+          setError('Please enter your annual income');
           return false;
         }
         break;
@@ -195,403 +161,361 @@ export default function CreditCardApplicationForm() {
         }
         break;
     }
-    setError('');
+    
     return true;
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
+    if (!validateStep(currentStep)) return;
+    if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      setError('');
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
 
     setLoading(true);
     setError('');
 
     try {
-      // Save current step data
-      const stepKey = steps[currentStep - 1].key;
-      const response = await fetch('/api/credit-card/apply', {
+      const response = await fetch('/api/creditcard/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          step: stepKey,
-          data: formData[stepKey as keyof ApplicationData]
+          personalInfo: formData.personal,
+          employmentInfo: formData.employment,
+          financialInfo: formData.financial,
+          cardPreferences: formData.preferences,
+          consentToCreditCheck: formData.consent.consentToCreditCheck
         })
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to save application');
+        throw new Error(result.error || 'Failed to submit application');
       }
 
-      setApplicationId(result.applicationId);
-
-      if (currentStep === 5) {
-        // Final submission - request OTP
-        setShowOtpModal(true);
-        await requestOtp();
-      } else {
-        setCurrentStep(currentStep + 1);
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const requestOtp = async () => {
-    try {
-      const response = await fetch('/api/auth/otp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'card_application'
-        })
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to send OTP');
-      }
-
-      setSuccess('Verification code sent to your email');
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const submitApplication = async () => {
-    if (!otpCode || otpCode.length !== 6) {
-      setError('Please enter the 6-digit verification code');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      // Verify OTP
-      const verifyResponse = await fetch('/api/auth/otp/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: otpCode,
-          action: 'card_application'
-        })
-      });
-
-      if (!verifyResponse.ok) {
-        const verifyResult = await verifyResponse.json();
-        throw new Error(verifyResult.error || 'Invalid verification code');
-      }
-
-      // Submit application
-      const submitResponse = await fetch('/api/credit-card/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          step: 'submit',
-          data: { applicationId }
-        })
-      });
-
-      const submitResult = await submitResponse.json();
-
-      if (!submitResponse.ok) {
-        throw new Error(submitResult.error || 'Failed to submit application');
-      }
-
-      setSuccess('Application submitted successfully! We will review your application and notify you within 2-3 business days.');
+      setSuccess('Application submitted successfully!');
+      setApplicationNumber(result.data.applicationNumber);
       
       // Redirect after 3 seconds
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/accounts/credit-cards');
       }, 3000);
 
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to submit application');
     } finally {
       setLoading(false);
     }
   };
 
+  if (success) {
+    return (
+      <div style={{ 
+        maxWidth: '600px', 
+        margin: '50px auto', 
+        padding: '40px', 
+        background: '#fff', 
+        borderRadius: '12px',
+        textAlign: 'center',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '20px' }}>✅</div>
+        <h2 style={{ color: '#10b981', marginBottom: '10px' }}>Application Submitted!</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Your application number is: <strong>{applicationNumber}</strong>
+        </p>
+        <p style={{ color: '#666' }}>
+          We'll review your application and get back to you within 1-2 business days.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="credit-card-application">
-      {/* Progress Bar */}
-      <div className="progress-bar">
-        {steps.map((step, index) => (
-          <div 
-            key={step.number}
-            className={`progress-step ${currentStep > step.number ? 'completed' : ''} ${currentStep === step.number ? 'active' : ''}`}
-          >
-            <div className="step-number">{step.number}</div>
-            <div className="step-title">{step.title}</div>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      <h1 style={{ marginBottom: '30px', color: '#1e293b' }}>Credit Card Application</h1>
+
+      {/* Progress Steps */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px' }}>
+        {steps.map((step) => (
+          <div key={step.number} style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: currentStep >= step.number ? '#D4AF37' : '#e5e7eb',
+              color: currentStep >= step.number ? '#fff' : '#9ca3af',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              marginBottom: '8px'
+            }}>
+              {step.number}
+            </div>
+            <div style={{ fontSize: '12px', color: '#6b7280' }}>{step.title}</div>
           </div>
         ))}
       </div>
 
-      {/* Form Content */}
-      <div className="form-content">
-        {error && (
-          <div className="alert alert-error">{error}</div>
-        )}
+      {error && (
+        <div style={{
+          padding: '12px',
+          background: '#fee2e2',
+          color: '#991b1b',
+          borderRadius: '8px',
+          marginBottom: '20px'
+        }}>
+          {error}
+        </div>
+      )}
 
-        {success && (
-          <div className="alert alert-success">{success}</div>
-        )}
-
+      {/* Step Content */}
+      <div style={{ background: '#fff', padding: '30px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        
         {/* Step 1: Personal Information */}
         {currentStep === 1 && (
-          <div className="step-content">
-            <h2>Personal Information</h2>
-            
-            <div className="form-grid">
-              <div className="form-group">
-                <label>First Name *</label>
-                <input
-                  type="text"
-                  value={formData.personal.firstName}
-                  onChange={(e) => handleInputChange('personal', 'firstName', e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Last Name *</label>
-                <input
-                  type="text"
-                  value={formData.personal.lastName}
-                  onChange={(e) => handleInputChange('personal', 'lastName', e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Date of Birth *</label>
-                <input
-                  type="date"
-                  value={formData.personal.dateOfBirth}
-                  onChange={(e) => handleInputChange('personal', 'dateOfBirth', e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Social Security Number *</label>
-                <input
-                  type="text"
-                  value={formData.personal.ssn}
-                  onChange={(e) => handleInputChange('personal', 'ssn', e.target.value.replace(/\D/g, ''))}
-                  maxLength={9}
-                  placeholder="123456789"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Phone Number *</label>
-                <input
-                  type="tel"
-                  value={formData.personal.phone}
-                  onChange={(e) => handleInputChange('personal', 'phone', e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group full-width">
-                <label>Street Address *</label>
-                <input
-                  type="text"
-                  value={formData.personal.currentAddress.street}
-                  onChange={(e) => handleNestedInputChange('personal', 'currentAddress', 'street', e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>City *</label>
-                <input
-                  type="text"
-                  value={formData.personal.currentAddress.city}
-                  onChange={(e) => handleNestedInputChange('personal', 'currentAddress', 'city', e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>State *</label>
-                <input
-                  type="text"
-                  value={formData.personal.currentAddress.state}
-                  onChange={(e) => handleNestedInputChange('personal', 'currentAddress', 'state', e.target.value)}
-                  maxLength={2}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>ZIP Code *</label>
-                <input
-                  type="text"
-                  value={formData.personal.currentAddress.zipCode}
-                  onChange={(e) => handleNestedInputChange('personal', 'currentAddress', 'zipCode', e.target.value)}
-                  maxLength={5}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Residence Type *</label>
-                <select
-                  value={formData.personal.currentAddress.residenceType}
-                  onChange={(e) => handleNestedInputChange('personal', 'currentAddress', 'residenceType', e.target.value)}
-                >
-                  <option value="own">Own</option>
-                  <option value="rent">Rent</option>
-                  <option value="live_with_parents">Live with Parents</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
+          <div>
+            <h2 style={{ marginBottom: '20px' }}>Personal Information</h2>
+            <div style={{ display: 'grid', gap: '15px' }}>
+              <input
+                type="text"
+                placeholder="First Name *"
+                value={formData.personal.firstName}
+                onChange={(e) => handleInputChange('personal', 'firstName', e.target.value)}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
+              <input
+                type="text"
+                placeholder="Last Name *"
+                value={formData.personal.lastName}
+                onChange={(e) => handleInputChange('personal', 'lastName', e.target.value)}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
+              <input
+                type="email"
+                placeholder="Email *"
+                value={formData.personal.email}
+                onChange={(e) => handleInputChange('personal', 'email', e.target.value)}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
+              <input
+                type="tel"
+                placeholder="Phone Number *"
+                value={formData.personal.phone}
+                onChange={(e) => handleInputChange('personal', 'phone', e.target.value)}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
+              <input
+                type="date"
+                placeholder="Date of Birth"
+                value={formData.personal.dateOfBirth}
+                onChange={(e) => handleInputChange('personal', 'dateOfBirth', e.target.value)}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
             </div>
           </div>
         )}
 
         {/* Step 2: Employment */}
         {currentStep === 2 && (
-          <div className="step-content">
-            <h2>Employment Information</h2>
-            
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Employment Status *</label>
-                <select
-                  value={formData.employment.status}
-                  onChange={(e) => handleInputChange('employment', 'status', e.target.value)}
-                >
-                  <option value="employed">Employed</option>
-                  <option value="self_employed">Self Employed</option>
-                  <option value="unemployed">Unemployed</option>
-                  <option value="student">Student</option>
-                  <option value="retired">Retired</option>
-                </select>
-              </div>
-
-              {(formData.employment.status === 'employed' || formData.employment.status === 'self_employed') && (
+          <div>
+            <h2 style={{ marginBottom: '20px' }}>Employment Information</h2>
+            <div style={{ display: 'grid', gap: '15px' }}>
+              <select
+                value={formData.employment.status}
+                onChange={(e) => handleInputChange('employment', 'status', e.target.value)}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              >
+                <option value="employed">Employed</option>
+                <option value="self_employed">Self Employed</option>
+                <option value="unemployed">Unemployed</option>
+                <option value="student">Student</option>
+                <option value="retired">Retired</option>
+              </select>
+              
+              {formData.employment.status === 'employed' && (
                 <>
-                  <div className="form-group">
-                    <label>Employer Name</label>
-                    <input
-                      type="text"
-                      value={formData.employment.employer}
-                      onChange={(e) => handleInputChange('employment', 'employer', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Job Title</label>
-                    <input
-                      type="text"
-                      value={formData.employment.jobTitle}
-                      onChange={(e) => handleInputChange('employment', 'jobTitle', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Years Employed</label>
-                    <input
-                      type="number"
-                      value={formData.employment.yearsEmployed}
-                      onChange={(e) => handleInputChange('employment', 'yearsEmployed', parseInt(e.target.value) || 0)}
-                      min="0"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="form-group">
-                <label>Annual Income *</label>
-                <input
-                  type="number"
-                  value={formData.employment.annualIncome}
-                  onChange={(e) => handleInputChange('employment', 'annualIncome', parseInt(e.target.value) || 0)}
-                  min="0"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Other Income</label>
-                <input
-                  type="number"
-                  value={formData.employment.otherIncome}
-                  onChange={(e) => handleInputChange('employment', 'otherIncome', parseInt(e.target.value) || 0)}
-                  min="0"
-                />
-              </div>
-
-              {formData.employment.otherIncome > 0 && (
-                <div className="form-group">
-                  <label>Source of Other Income</label>
                   <input
                     type="text"
-                    value={formData.employment.otherIncomeSource}
-                    onChange={(e) => handleInputChange('employment', 'otherIncomeSource', e.target.value)}
-                    placeholder="e.g., Investments, Rental Income"
+                    placeholder="Employer Name *"
+                    value={formData.employment.employer}
+                    onChange={(e) => handleInputChange('employment', 'employer', e.target.value)}
+                    style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
                   />
-                </div>
+                  <input
+                    type="text"
+                    placeholder="Job Title"
+                    value={formData.employment.jobTitle}
+                    onChange={(e) => handleInputChange('employment', 'jobTitle', e.target.value)}
+                    style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+                  />
+                </>
               )}
+              
+              <input
+                type="number"
+                placeholder="Annual Income *"
+                value={formData.employment.annualIncome || ''}
+                onChange={(e) => handleInputChange('employment', 'annualIncome', Number(e.target.value))}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
             </div>
           </div>
         )}
 
-        {/* Navigation Buttons */}
-        <div className="form-navigation">
-          {currentStep > 1 && (
-            <button
-              className="btn btn-secondary"
-              onClick={() => setCurrentStep(currentStep - 1)}
-              disabled={loading}
-            >
-              Previous
-            </button>
-          )}
-          
-          <button
-            className="btn btn-primary"
-            onClick={handleNext}
-            disabled={loading}
-          >
-            {loading ? 'Processing...' : currentStep === 5 ? 'Submit Application' : 'Next'}
-          </button>
-        </div>
-      </div>
-
-      {/* OTP Modal */}
-      {showOtpModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Verify Your Application</h3>
-            <p>Please enter the 6-digit verification code sent to your email</p>
-            
-            <input
-              type="text"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-              maxLength={6}
-              placeholder="000000"
-              className="otp-input"
-            />
-            
-            <div className="modal-actions">
-              <button onClick={() => setShowOtpModal(false)}>Cancel</button>
-              <button onClick={submitApplication} disabled={loading}>
-                {loading ? 'Verifying...' : 'Submit'}
-              </button>
+        {/* Step 3: Financial Information */}
+        {currentStep === 3 && (
+          <div>
+            <h2 style={{ marginBottom: '20px' }}>Financial Information</h2>
+            <div style={{ display: 'grid', gap: '15px' }}>
+              <input
+                type="number"
+                placeholder="Monthly Rent/Mortgage"
+                value={formData.financial.monthlyRent || ''}
+                onChange={(e) => handleInputChange('financial', 'monthlyRent', Number(e.target.value))}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
+              <input
+                type="number"
+                placeholder="Total Monthly Debt Payments"
+                value={formData.financial.totalMonthlyDebtPayments || ''}
+                onChange={(e) => handleInputChange('financial', 'totalMonthlyDebtPayments', Number(e.target.value))}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.financial.bankruptcy}
+                  onChange={(e) => handleInputChange('financial', 'bankruptcy', e.target.checked)}
+                />
+                <span>Have you ever filed for bankruptcy?</span>
+              </label>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Step 4: Card Preferences */}
+        {currentStep === 4 && (
+          <div>
+            <h2 style={{ marginBottom: '20px' }}>Card Preferences</h2>
+            <div style={{ display: 'grid', gap: '15px' }}>
+              <select
+                value={formData.preferences.cardType}
+                onChange={(e) => handleInputChange('preferences', 'cardType', e.target.value)}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              >
+                {cardTypes.map(card => (
+                  <option key={card.value} value={card.value}>
+                    {card.name} - Annual Fee: ${card.annualFee}
+                  </option>
+                ))}
+              </select>
+              
+              <input
+                type="number"
+                placeholder="Requested Credit Limit"
+                value={formData.preferences.requestedCreditLimit || ''}
+                onChange={(e) => handleInputChange('preferences', 'requestedCreditLimit', Number(e.target.value))}
+                style={{ padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', width: '100%' }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Review & Consent */}
+        {currentStep === 5 && (
+          <div>
+            <h2 style={{ marginBottom: '20px' }}>Review & Consent</h2>
+            
+            <div style={{ background: '#f9fafb', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+              <h3 style={{ marginBottom: '10px' }}>Application Summary</h3>
+              <p><strong>Name:</strong> {formData.personal.firstName} {formData.personal.lastName}</p>
+              <p><strong>Email:</strong> {formData.personal.email}</p>
+              <p><strong>Employment:</strong> {formData.employment.status}</p>
+              <p><strong>Annual Income:</strong> ${formData.employment.annualIncome?.toLocaleString()}</p>
+              <p><strong>Card Type:</strong> {cardTypes.find(c => c.value === formData.preferences.cardType)?.name}</p>
+              <p><strong>Requested Limit:</strong> ${formData.preferences.requestedCreditLimit?.toLocaleString()}</p>
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '15px', background: '#fef3c7', borderRadius: '8px' }}>
+              <input
+                type="checkbox"
+                checked={formData.consent.consentToCreditCheck}
+                onChange={(e) => handleInputChange('consent', 'consentToCreditCheck', e.target.checked)}
+                style={{ marginTop: '4px' }}
+              />
+              <span>
+                <strong>I consent to a credit check</strong><br/>
+                I authorize Horizon Bank to obtain my credit report and use it to evaluate my application.
+              </span>
+            </label>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+        <button
+          onClick={handleBack}
+          disabled={currentStep === 1}
+          style={{
+            padding: '12px 24px',
+            background: currentStep === 1 ? '#e5e7eb' : '#fff',
+            color: currentStep === 1 ? '#9ca3af' : '#374151',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            cursor: currentStep === 1 ? 'not-allowed' : 'pointer'
+          }}
+        >
+          Back
+        </button>
+
+        {currentStep < 5 ? (
+          <button
+            onClick={handleNext}
+            style={{
+              padding: '12px 24px',
+              background: '#D4AF37',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            style={{
+              padding: '12px 24px',
+              background: loading ? '#9ca3af' : '#10b981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            {loading ? 'Submitting...' : 'Submit Application'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

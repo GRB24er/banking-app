@@ -26,19 +26,28 @@ const NAV_ITEMS: NavItem[] = [
   { 
     label: "Accounts", 
     href: "/accounts", 
-    icon: "💳",
+    icon: "💼",
     subItems: [
       { label: "Checking", href: "/accounts/checking" },
       { label: "Savings", href: "/accounts/savings" },
-      { label: "Investment", href: "/accounts/investment" },
-      { label: "Credit Cards", href: "/accounts/credit-cards" }
+      { label: "Investment", href: "/accounts/investment" }
+    ]
+  },
+  { 
+    label: "Credit Cards", 
+    href: "/accounts/credit-cards", 
+    icon: "💳",
+    subItems: [
+      { label: "My Cards", href: "/accounts/credit-cards" },
+      { label: "Apply for Card", href: "/accounts/credit-cards/apply" },
+      { label: "Application Status", href: "/accounts/credit-cards/status" }
     ]
   },
   { 
     label: "Transactions", 
     href: "/transactions", 
     icon: "📊",
-    badge: 0 // Will be updated dynamically
+    badge: 0
   },
   { 
     label: "Transfers", 
@@ -55,7 +64,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Bill Pay", 
     href: "/bills", 
     icon: "📱",
-    badge: 0 // Will be updated dynamically
+    badge: 0
+  },
+  { 
+    label: "Statements", 
+    href: "/accounts/statements", 
+    icon: "📄"
   },
   { 
     label: "Investments", 
@@ -85,10 +99,14 @@ const NAV_ITEMS: NavItem[] = [
   },
   { 
     label: "Admin Panel", 
-    href: "/admin", 
+    href: "/dashboard/admin", 
     icon: "⚙️",
     requiredRole: ["admin"],
     subItems: [
+      { label: "Dashboard", href: "/dashboard/admin" },
+      { label: "Credit Cards", href: "/dashboard/admin/credit-cards" },
+      { label: "Email Statements", href: "/dashboard/admin/statements" },
+      { label: "Support Chats", href: "/dashboard/admin/chats" },
       { label: "User Management", href: "/admin/users" },
       { label: "Transaction Approval", href: "/admin/transactions" },
       { label: "KYC Verification", href: "/admin/kyc" },
@@ -118,7 +136,6 @@ export default function Sidebar() {
   const [pendingTransactions, setPendingTransactions] = useState(0);
   const [pendingBills, setPendingBills] = useState(0);
   
-  // USE ACTUAL USER BALANCES - NO HARDCODING
   const [quickBalance, setQuickBalance] = useState({
     checking: 0,
     savings: 0,
@@ -126,7 +143,6 @@ export default function Sidebar() {
     total: 0
   });
 
-  // Fetch real balances from API
   useEffect(() => {
     const fetchBalances = async () => {
       if (session?.user?.email) {
@@ -135,7 +151,6 @@ export default function Sidebar() {
           if (response.ok) {
             const data = await response.json();
             
-            // Use ACTUAL balances from the logged-in user
             const checking = data.balances?.checking || 0;
             const savings = data.balances?.savings || 0;
             const investment = data.balances?.investment || 0;
@@ -144,13 +159,11 @@ export default function Sidebar() {
               checking: checking,
               savings: savings,
               investment: investment,
-              total: checking + savings // Liquid total (not including investment)
+              total: checking + savings
             });
             
-            // Set the actual user's name
             setUserName(data.user?.name || session.user.name || "User");
             
-            // Count pending transactions for badges
             const pending = data.recent?.filter((t: any) => 
               t.rawStatus === "pending" || t.status === "Pending"
             ).length || 0;
@@ -158,19 +171,16 @@ export default function Sidebar() {
           }
         } catch (error) {
           console.error('Error fetching balances:', error);
-          // Use session data as fallback
           setUserName(session?.user?.name || "User");
         }
       }
     };
     
     fetchBalances();
-    // Refresh every 30 seconds
     const interval = setInterval(fetchBalances, 30000);
     return () => clearInterval(interval);
   }, [session]);
 
-  // Update nav items with dynamic badges
   const navItemsWithBadges = NAV_ITEMS.map(item => {
     if (item.label === "Transactions") {
       return { ...item, badge: pendingTransactions > 0 ? pendingTransactions : undefined };
@@ -181,11 +191,9 @@ export default function Sidebar() {
     return item;
   });
 
-  // Filter nav items based on user role
   const filteredNavItems = navItemsWithBadges.filter(item => {
     if (!item.requiredRole) return true;
-    // Check if user is admin
-    return session?.user?.role === "admin" || session?.user?.email === "admin@example.com";
+    return session?.user?.role === "admin" || session?.user?.email === "admin@horizonbank.com" || session?.user?.email === "admin@example.com";
   });
 
   const toggleExpand = (label: string) => {
@@ -209,7 +217,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -222,7 +229,6 @@ export default function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Toggle Button */}
       <button
         className={styles.mobileToggle}
         onClick={() => setMobileOpen(!mobileOpen)}
@@ -235,7 +241,6 @@ export default function Sidebar() {
         </span>
       </button>
 
-      {/* Sidebar */}
       <motion.nav
         className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}
         initial={false}
@@ -244,10 +249,9 @@ export default function Sidebar() {
           transition: { duration: 0.3, ease: "easeInOut" }
         }}
       >
-        {/* Logo Section */}
         <div className={styles.logoSection}>
           <div className={styles.logo}>
-            <span className={styles.logoIcon}>🏦</span>
+            <span className={styles.logoIcon}>🦁</span>
             {!collapsed && (
               <div className={styles.logoText}>
                 <span className={styles.bankName}>ZentriBank</span>
@@ -264,7 +268,6 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* Quick Balance Card - ACTUAL USER BALANCES */}
         {!collapsed && (
           <div className={styles.quickBalanceCard}>
             <div className={styles.balanceHeader}>
@@ -297,7 +300,6 @@ export default function Sidebar() {
                   {formatCurrency(quickBalance.total)}
                 </span>
               </div>
-              {/* Investment shown separately if user has investment */}
               {quickBalance.investment > 0 && (
                 <div className={styles.balanceItem} style={{ 
                   marginTop: '0.75rem', 
@@ -315,7 +317,6 @@ export default function Sidebar() {
                 </div>
               )}
             </div>
-            {/* User info */}
             <div style={{
               marginTop: '1rem',
               paddingTop: '1rem',
@@ -329,7 +330,6 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Navigation Items */}
         <div className={styles.navSection}>
           {filteredNavItems.map((item) => {
             const isActive = pathname === item.href || 
@@ -366,7 +366,6 @@ export default function Sidebar() {
                   </div>
                 </div>
 
-                {/* Sub Items */}
                 {!collapsed && item.subItems && (
                   <AnimatePresence>
                     {isExpanded && (
@@ -397,7 +396,6 @@ export default function Sidebar() {
           })}
         </div>
 
-        {/* Bottom Section */}
         {!collapsed && (
           <div className={styles.bottomSection}>
             <div className={styles.securityStatus}>
