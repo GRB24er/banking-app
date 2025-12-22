@@ -45,14 +45,14 @@ const ChatSchema = new Schema<IChat>({
   lastMessageAt: { type: Date, default: Date.now }
 }, {
   timestamps: true,
-  toJSON: {
-    virtuals: true,
-    transform: (_doc, ret) => {
-      ret.id = ret._id.toString();
-      delete ret.__v;
-      return ret;
-    }
+ toJSON: {
+  virtuals: true,
+  transform: (_doc, ret) => {
+    ret.id = ret._id.toString();
+    delete (ret as any).__v;
+    return ret;
   }
+}
 });
 
 const Chat = mongoose.models.Chat || mongoose.model<IChat>('Chat', ChatSchema);

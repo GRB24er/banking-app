@@ -5,22 +5,25 @@ import Transaction from '@/models/Transaction';
 import { sendTransactionEmail } from '@/lib/mail';
 import { generateCreditEmail, generateDebitEmail } from '@/lib/bankingEmailTemplates';
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// NO PARAMS - this is NOT a dynamic route
+export async function POST(req: NextRequest) {
   try {
     await connectDB();
     
-    // Await params for Next.js 15
-    const { id: transactionId } = await params;
-    
     const body = await req.json();
     const { 
+      transactionId, // Get ID from body instead of URL params
       action, // 'approve' or 'reject'
       adminNotes,
       adminId 
     } = body;
+    
+    if (!transactionId) {
+      return NextResponse.json(
+        { error: 'Transaction ID is required' },
+        { status: 400 }
+      );
+    }
     
     // Validate action
     if (!action || !['approve', 'reject'].includes(action)) {
@@ -97,7 +100,6 @@ export async function POST(
       // Send email notification
       try {
         if (user.email) {
-          // FIXED: Added all missing required properties for BankingEmailData
           const emailData = {
             recipientName: user.name,
             recipientEmail: user.email,
@@ -107,12 +109,12 @@ export async function POST(
             transactionReference: transaction.reference || transaction._id.toString(),
             transactionType: transaction.type,
             accountType: transaction.accountType,
-            date: new Date(), // Changed from new Date().toLocaleString() to just new Date()
+            date: new Date(),
             balance: newBalance,
             balanceBefore: currentBalance,
             balanceAfter: newBalance,
             description: transaction.description,
-            status: 'completed' as 'completed' // Added type assertion to match literal type
+            status: 'completed' as const
           };
           
           let emailHtml = '';
@@ -190,15 +192,20 @@ export async function POST(
   }
 }
 
-// GET endpoint to check transaction status
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// GET endpoint - get transaction ID from query params
+export async function GET(req: NextRequest) {
   try {
     await connectDB();
     
-    const { id: transactionId } = await params;
+    const { searchParams } = new URL(req.url);
+    const transactionId = searchParams.get('id');
+    
+    if (!transactionId) {
+      return NextResponse.json(
+        { error: 'Transaction ID is required' },
+        { status: 400 }
+      );
+    }
     
     const transaction = await Transaction.findById(transactionId)
       .populate('userId', 'name email accountNumber');

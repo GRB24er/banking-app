@@ -74,9 +74,9 @@ const UserSchema = new Schema<IUser>({
     transform: (_doc, ret) => {
       // Keep both _id and id for compatibility
       ret.id = ret._id.toString();
-      ret._id = ret._id.toString(); // Keep _id as string
-      delete ret.password;
-      delete ret.__v;
+      ret._id = ret._id.toString() as any; // Keep _id as string
+      delete (ret as any) .password;
+      delete (ret as any). __v;
       return ret;
     },
   },

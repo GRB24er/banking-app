@@ -345,7 +345,7 @@ export default function DashboardPage() {
                           borderRadius: '8px',
                           color: '#fff'
                         }}
-                        formatter={(value: number) => formatCurrency(value)}
+                        formatter={(value: number | undefined) => value ? formatCurrency(value) : '$0.00'}
                       />
                       <Area
                         type="monotone"
