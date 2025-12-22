@@ -9,6 +9,7 @@ import styles from "./landing.module.css";
 export default function LandingPage() {
   const [showModal, setShowModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeNav, setActiveNav] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -25,63 +26,101 @@ export default function LandingPage() {
     };
   }, []);
 
-  const features = [
-  {
-    icon: "🔒",
-    title: "Advanced Security",
-    description: "Two-factor authentication, biometric login, and real-time fraud monitoring protect your accounts 24/7."
-  },
-  {
-    icon: "📧",
-    title: "Smart Notifications",
-    description: "Instant email alerts for every transaction, security event, and account activity to keep you informed."
-  },
-  {
-    icon: "💸",
-    title: "Instant Transfers",
-    description: "Send money instantly to anyone, anywhere with our secure, real-time transfer system."
-  },
-  {
-    icon: "📊",
-    title: "Financial Insights",
-    description: "AI-powered analytics and personalized recommendations to help you achieve your financial goals."
-  }
-];
-
-  const stats = [
-    { value: "100K+", label: "Trusted Customers" },
-    { value: "$45.46M", label: "Assets Under Management" },
-    { value: "99.9%", label: "Uptime Guarantee" },
-    { value: "24/7", label: "Customer Support" }
+  const accountTypes = [
+    {
+      title: "Personal Banking",
+      icon: "👤",
+      items: ["Checking Accounts", "Savings Accounts", "Credit Cards", "Personal Loans"]
+    },
+    {
+      title: "Business Banking", 
+      icon: "💼",
+      items: ["Business Checking", "Business Savings", "Business Loans", "Merchant Services"]
+    },
+    {
+      title: "Wealth Management",
+      icon: "📈", 
+      items: ["Investment Advisory", "Retirement Planning", "Trust Services", "Private Banking"]
+    }
   ];
 
-  const testimonials = [
+  const products = [
     {
-      name: "Sarah Johnson",
-      role: "Business Owner",
-      content: "Horizon Global Capital has transformed how I manage my business finances. The security features give me complete peace of mind.",
-      rating: 5,
-      avatar: "https://i.imgur.com/MqtsC2A_d.webp?maxwidth=760&fidelity=grand"
+      icon: "💳",
+      title: "Checking Accounts",
+      description: "Simple, secure checking with mobile banking and fraud protection"
     },
     {
-      name: "Michael Chen",
-      role: "Investment Manager", 
-      content: "The real-time analytics and instant notifications have made managing my portfolio incredibly efficient.",
-      rating: 5,
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face"
+      icon: "💰",
+      title: "Savings Accounts",
+      description: "Competitive rates with flexible access to your money"
     },
     {
-      name: "Emily Rodriguez",
-      role: "Tech Entrepreneur",
-      content: "Best banking experience I've ever had. The two-factor authentication and email alerts keep me informed at all times.",
-      rating: 5,
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=60&h=60&fit=crop&crop=face"
+      icon: "🏠",
+      title: "Home Loans",
+      description: "Mortgages and home equity solutions for every stage of life"
+    },
+    {
+      icon: "🎓",
+      title: "Student Banking",
+      description: "Financial tools designed specifically for students"
+    }
+  ];
+
+  const features = [
+    {
+      image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=400&fit=crop",
+      title: "Simplified Checking and Payments",
+      description: "Seamlessly switch banks, manage direct deposit, and streamline your payment methods. Open a checking account today.",
+      cta: "Get Started",
+      link: "/auth/signup"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&h=400&fit=crop",
+      title: "Advanced Security Protection",
+      description: "Two-factor authentication, biometric login, and 24/7 fraud monitoring keep your accounts secure.",
+      cta: "Learn More",
+      link: "#security"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop",
+      title: "Smart Financial Insights",
+      description: "AI-powered analytics and personalized recommendations help you achieve your financial goals.",
+      cta: "Explore Tools",
+      link: "#features"
+    }
+  ];
+
+  const services = [
+    {
+      icon: "📱",
+      title: "Mobile & Online Banking",
+      description: "Bank from anywhere with our secure mobile app and online platform",
+      link: "/banking/online"
+    },
+    {
+      icon: "☎️",
+      title: "Contact Us",
+      description: "Connect with our customer service team by phone, chat, or in person",
+      link: "/contact"
+    },
+    {
+      icon: "📍",
+      title: "Find a Branch/ATM",
+      description: "Locate our branches and fee-free ATMs near you",
+      link: "/locations"
+    },
+    {
+      icon: "🤝",
+      title: "Meet with a Banker",
+      description: "Schedule an appointment with a financial advisor",
+      link: "/appointments"
     }
   ];
 
   return (
     <div className={styles.landingPage}>
-      {/* Modal */}
+      {/* Welcome Modal */}
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -90,35 +129,34 @@ export default function LandingPage() {
             <div className={styles.modalHeader}>
               <div className={styles.modalIcon}>🎉</div>
               <h2 className={styles.modalTitle}>Welcome to ZentriBank</h2>
+              <p className={styles.modalSubtitle}>Banking Made Simple</p>
             </div>
             
             <div className={styles.modalBody}>
-              <div className={styles.announcement}>
-                <h3>🌟 Special Launch Offer</h3>
-                <p>Experience premium banking with our exclusive benefits:</p>
-                <ul>
-                  <li>✓ No monthly fees on Premier accounts</li>
-                  <li>✓ Advanced two-factor authentication</li>
-                  <li>✓ Real-time email notifications</li>
-                  <li>✓ 24/7 priority customer support</li>
+              <div className={styles.welcomeMessage}>
+                <h3>Experience Premium Banking</h3>
+                <ul className={styles.benefitsList}>
+                  <li>✓ No monthly maintenance fees</li>
+                  <li>✓ Advanced security with 2FA</li>
+                  <li>✓ Real-time transaction alerts</li>
+                  <li>✓ 24/7 customer support</li>
+                  <li>✓ Mobile check deposit</li>
+                  <li>✓ Fee-free ATM access</li>
                 </ul>
               </div>
 
-              <div className={styles.branchHours}>
-                <h3>🏦 Digital Banking</h3>
-                <div className={styles.hoursGrid}>
-                  <div>
-                    <strong>Online Banking</strong>
-                    <p>Available 24/7</p>
-                  </div>
-                  <div>
-                    <strong>Customer Support</strong>
-                    <p>Mon-Fri 8AM-8PM</p>
-                  </div>
-                  <div>
-                    <strong>Mobile App</strong>
-                    <p>iOS & Android</p>
-                  </div>
+              <div className={styles.modalInfo}>
+                <div className={styles.infoItem}>
+                  <strong>Online Banking</strong>
+                  <p>Available 24/7</p>
+                </div>
+                <div className={styles.infoItem}>
+                  <strong>Customer Support</strong>
+                  <p>Mon-Fri: 8AM-8PM EST</p>
+                </div>
+                <div className={styles.infoItem}>
+                  <strong>Mobile App</strong>
+                  <p>iOS & Android</p>
                 </div>
               </div>
             </div>
@@ -127,10 +165,10 @@ export default function LandingPage() {
               <button onClick={() => {
                 setShowModal(false);
                 router.push('/auth/signup');
-              }} className={styles.modalPrimary}>
-                Open Account
+              }} className={styles.btnModalPrimary}>
+                Open Account Now
               </button>
-              <button onClick={() => setShowModal(false)} className={styles.modalSecondary}>
+              <button onClick={() => setShowModal(false)} className={styles.btnModalSecondary}>
                 Continue Browsing
               </button>
             </div>
@@ -140,298 +178,236 @@ export default function LandingPage() {
 
       {/* Header */}
       <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}>
-        <div className={styles.headerContent}>
-          <div className={styles.brand}>
-            <div className={styles.logoWrapper}>
-              <span className={styles.logoIcon}>🏦</span>
-            </div>
-            <div className={styles.brandText}>
-              <span className={styles.brandName}>ZentriBank</span>
-              <span className={styles.brandTagline}>Global Capital</span>
+        {/* Top Bar */}
+        <div className={styles.topBar}>
+          <div className={styles.container}>
+            <div className={styles.topBarContent}>
+              <nav className={styles.utilityNav}>
+                <Link href="/es">Español</Link>
+                <Link href="/locations">Find a Branch/ATM</Link>
+                <Link href="/contact">Customer Service</Link>
+              </nav>
             </div>
           </div>
+        </div>
 
-          <nav className={styles.nav}>
-            <div className={styles.navItem}>
-              <Link href="#personal">Personal</Link>
-            </div>
-            <div className={styles.navItem}>
-              <Link href="#business">Business</Link>
-            </div>
-            <div className={styles.navItem}>
-              <Link href="#wealth">Wealth</Link>
-            </div>
-            <Link href="#about">About</Link>
-          </nav>
+        {/* Main Header */}
+        <div className={styles.mainHeader}>
+          <div className={styles.container}>
+            <div className={styles.headerContent}>
+              <Link href="/" className={styles.logo}>
+                <Image
+                  src="/images/Logo.png"
+                  alt="ZentriBank Logo"
+                  width={240}
+                  height={65}
+                  className={styles.logoImage}
+                  priority
+                />
+              </Link>
 
-          <div className={styles.authButtons}>
-            <Link href="/auth/signin" className={styles.loginButton}>
-              🔐 Sign In
-            </Link>
-            <Link href="/auth/signup" className={styles.signupButton}>
-              Get Started
-            </Link>
+              <nav className={styles.primaryNav}>
+                <div 
+                  className={styles.navItem}
+                  onMouseEnter={() => setActiveNav('personal')}
+                  onMouseLeave={() => setActiveNav(null)}
+                >
+                  <button className={styles.navLink}>Personal</button>
+                  {activeNav === 'personal' && (
+                    <div className={styles.dropdown}>
+                      <Link href="/checking">Checking Accounts</Link>
+                      <Link href="/savings">Savings Accounts</Link>
+                      <Link href="/credit-cards">Credit Cards</Link>
+                      <Link href="/loans">Personal Loans</Link>
+                      <Link href="/mortgages">Home Loans</Link>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className={styles.navItem}
+                  onMouseEnter={() => setActiveNav('business')}
+                  onMouseLeave={() => setActiveNav(null)}
+                >
+                  <button className={styles.navLink}>Business</button>
+                  {activeNav === 'business' && (
+                    <div className={styles.dropdown}>
+                      <Link href="/business/checking">Business Checking</Link>
+                      <Link href="/business/savings">Business Savings</Link>
+                      <Link href="/business/loans">Business Loans</Link>
+                      <Link href="/business/credit-cards">Business Cards</Link>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className={styles.navItem}
+                  onMouseEnter={() => setActiveNav('wealth')}
+                  onMouseLeave={() => setActiveNav(null)}
+                >
+                  <button className={styles.navLink}>Wealth</button>
+                  {activeNav === 'wealth' && (
+                    <div className={styles.dropdown}>
+                      <Link href="/wealth/advisory">Investment Advisory</Link>
+                      <Link href="/wealth/retirement">Retirement Planning</Link>
+                      <Link href="/wealth/trust">Trust Services</Link>
+                      <Link href="/wealth/private">Private Banking</Link>
+                    </div>
+                  )}
+                </div>
+
+                <Link href="/about" className={styles.navLink}>About</Link>
+              </nav>
+
+              <div className={styles.headerActions}>
+                <Link href="/auth/signin" className={styles.btnLogin}>
+                  <span className={styles.lockIcon}>🔒</span>
+                  Log In
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* FDIC Badge */}
+        <div className={styles.fdicBar}>
+          <div className={styles.container}>
+            <div className={styles.fdicBadge}>
+              <span className={styles.fdicIcon}>🏛️</span>
+              <span className={styles.fdicText}>FDIC-Insured - Backed by the full faith and credit of the U.S. Government</span>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className={styles.hero}>
-        <div className={styles.heroSlider}>
-          <div className={styles.heroSlide}>
-            <div className={styles.heroContent}>
-              <div className={styles.heroText}>
-                <h1 className={styles.heroTitle}>
-                  Transform Your <span>Financial Future</span>
-                </h1>
-                <p className={styles.heroSubtitle}>
-                  Experience premium banking with advanced security, real-time notifications, 
-                  and seamless digital transactions designed for modern life.
-                </p>
-                <div className={styles.heroActions}>
-                  <Link href="/auth/signup" className={styles.heroPrimary}>
-                    Open Premium Account
-                  </Link>
-                  <Link href="/auth/signin" className={styles.heroSecondary}>
-                    Access Your Account
-                  </Link>
-                </div>
-                <div className={styles.heroStats}>
-                  <div className={styles.stat}>
-                    <span className={styles.statValue}>100K+</span>
-                    <span className={styles.statLabel}>Trusted Customers</span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statValue}>$45.46M</span>
-                    <span className={styles.statLabel}>Assets Managed</span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statValue}>99.9%</span>
-                    <span className={styles.statLabel}>Uptime</span>
-                  </div>
-                </div>
+        <div className={styles.container}>
+          <div className={styles.heroContent}>
+            <div className={styles.heroText}>
+              <h1 className={styles.heroTitle}>
+                Welcome to simplified checking and payments.
+              </h1>
+              <p className={styles.heroDescription}>
+                Seamlessly switch banks, manage your direct deposit, and streamline saved payment methods. Open a checking account today.
+              </p>
+              <div className={styles.heroActions}>
+                <Link href="/auth/signup" className={styles.btnPrimary}>
+                  Get Started
+                </Link>
+                <Link href="/products" className={styles.btnSecondary}>
+                  Explore Products
+                </Link>
               </div>
-              <div className={styles.heroVisual}>
-                <div className={styles.heroImageContainer}>
-                  <Image
-                    src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&h=600&fit=crop"
-                    alt="Professional using modern banking dashboard"
-                    width={800}
-                    height={600}
-                    className={styles.heroImage}
-                    priority
-                  />
-                </div>
-              </div>
+            </div>
+            <div className={styles.heroImage}>
+              <Image
+                src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=600&fit=crop"
+                alt="Modern banking on mobile device"
+                width={600}
+                height={450}
+                className={styles.heroImg}
+                priority
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Trust Section */}
-      <section className={styles.trustSection}>
+      {/* Quick Products Grid */}
+      <section className={styles.productsGrid}>
         <div className={styles.container}>
-          <div className={styles.trustGrid}>
-            <div className={styles.trustItem}>
-              <div className={styles.trustBadge}>
-                <div className={styles.trustIcon}>🏛️</div>
-                <div>
-                  <div className={styles.trustTitle}>FDIC</div>
-                  <div className={styles.trustSubtitle}>Insured</div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.trustItem}>
-              <div className={styles.trustBadge}>
-                <div className={styles.trustIcon}>🔒</div>
-                <div>
-                  <div className={styles.trustTitle}>256-bit</div>
-                  <div className={styles.trustSubtitle}>SSL Secured</div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.trustItem}>
-              <div className={styles.trustBadge}>
-                <div className={styles.trustIcon}>✅</div>
-                <div>
-                  <div className={styles.trustTitle}>SOC 2</div>
-                  <div className={styles.trustSubtitle}>Compliant</div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.trustItem}>
-              <div className={styles.trustBadge}>
-                <div className={styles.trustIcon}>💳</div>
-                <div>
-                  <div className={styles.trustTitle}>PCI DSS</div>
-                  <div className={styles.trustSubtitle}>Certified</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-     {/* Features Section */}
-<section className={styles.features}>
-  <div className={styles.container}>
-    <div className={styles.sectionHeader}>
-      <h2>Why Choose ZentriBank</h2>
-      <p>Experience banking reimagined with cutting-edge technology and personalized service</p>
-    </div>
-    
-    <div className={styles.featuresGrid}>
-      {features.map((feature, index) => (
-        <div key={index} className={styles.featureCard}>
-          <div className={styles.featureIcon}>
-            <span className={styles.iconEmoji}>{feature.icon}</span>
-          </div>
-          <h3>{feature.title}</h3>
-          <p>{feature.description}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-</section>
-
-      {/* Stats Section */}
-      <section className={styles.statsSection}>
-        <div className={styles.container}>
-          <div className={styles.statsGrid}>
-            {stats.map((stat, index) => (
-              <div key={index} className={styles.statCard}>
-                <div className={styles.statNumber}>{stat.value}</div>
-                <div className={styles.statDescription}>{stat.label}</div>
+          <div className={styles.gridRow}>
+            {products.map((product, index) => (
+              <div key={index} className={styles.productCard}>
+                <div className={styles.productIcon}>{product.icon}</div>
+                <h3 className={styles.productTitle}>{product.title}</h3>
+                <p className={styles.productDesc}>{product.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Security Section */}
-      <section className={styles.security}>
+      {/* Featured Offers */}
+      <section className={styles.featuredSection}>
         <div className={styles.container}>
-          <div className={styles.securityContent}>
-            <div className={styles.securityText}>
-              <h2>Bank-Grade Security</h2>
-              <p>
-                Your security is our top priority. We use military-grade encryption and cutting-edge 
-                security protocols to protect your financial data.
-              </p>
-              <ul className={styles.securityFeatures}>
-                <li>256-bit SSL encryption</li>
-                <li>Two-factor authentication</li>
-                <li>Real-time fraud monitoring</li>
-                <li>Biometric authentication</li>
-                <li>Secure email notifications</li>
-                <li>24/7 security monitoring</li>
-              </ul>
-            </div>
-            
-            <div className={styles.securityVisual}>
-              <div className={styles.securityImage}>
-                <div className={styles.shieldContainer}>
-                  <div className={styles.shield}>🛡️</div>
-                  <div className={styles.securityText}>SECURE</div>
+          <div className={styles.featuresRow}>
+            {features.map((feature, index) => (
+              <div key={index} className={styles.featureCard}>
+                <div className={styles.featureImage}>
+                  <Image
+                    src={feature.image}
+                    alt={feature.title}
+                    width={400}
+                    height={300}
+                    className={styles.featImg}
+                  />
                 </div>
+                <div className={styles.featureContent}>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                  <Link href={feature.link} className={styles.featureLink}>
+                    {feature.cta} →
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Indicators */}
+      <section className={styles.trustSection}>
+        <div className={styles.container}>
+          <div className={styles.trustGrid}>
+            <div className={styles.trustBadge}>
+              <span className={styles.trustIcon}>🏛️</span>
+              <div>
+                <div className={styles.trustTitle}>FDIC</div>
+                <div className={styles.trustLabel}>Insured</div>
+              </div>
+            </div>
+            <div className={styles.trustBadge}>
+              <span className={styles.trustIcon}>🔒</span>
+              <div>
+                <div className={styles.trustTitle}>256-bit SSL</div>
+                <div className={styles.trustLabel}>Encrypted</div>
+              </div>
+            </div>
+            <div className={styles.trustBadge}>
+              <span className={styles.trustIcon}>✅</span>
+              <div>
+                <div className={styles.trustTitle}>SOC 2</div>
+                <div className={styles.trustLabel}>Compliant</div>
+              </div>
+            </div>
+            <div className={styles.trustBadge}>
+              <span className={styles.trustIcon}>💳</span>
+              <div>
+                <div className={styles.trustTitle}>PCI DSS</div>
+                <div className={styles.trustLabel}>Certified</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-     {/* Mobile App Section */}
-<section className={styles.appShowcase}>
-  <div className={styles.container}>
-    <div className={styles.appContent}>
-      <div className={styles.appText}>
-        <h2>Banking in Your Pocket</h2>
-        <p>
-          Access your accounts, make transfers, and manage your finances anywhere 
-          with our secure mobile banking app.
-        </p>
-        <div className={styles.appFeatures}>
-          <div className={styles.appFeature}>
-            <span className={styles.featureIcon}>🔐</span>
-            <span>Bank-grade security</span>
-          </div>
-          <div className={styles.appFeature}>
-            <span className={styles.featureIcon}>📧</span>
-            <span>Instant notifications</span>
-          </div>
-          <div className={styles.appFeature}>
-            <span className={styles.featureIcon}>📱</span>
-            <span>Biometric login</span>
-          </div>
-        </div>
-        <div className={styles.appButtons}>
-          <div className={styles.downloadBtn}>
-            <div className={styles.storeBadge}>
-              <span>📱</span>
-              <div>
-                <div className={styles.downloadText}>Download on the</div>
-                <div className={styles.storeName}>App Store</div>
-              </div>
-            </div>
-          </div>
-          <div className={styles.downloadBtn}>
-            <div className={styles.storeBadge}>
-              <span>📱</span>
-              <div>
-                <div className={styles.downloadText}>Get it on</div>
-                <div className={styles.storeName}>Google Play</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className={styles.phoneContainer}>
-        <div className={styles.phoneFrame}>
-          <div className={styles.phoneScreen}>
-            <Image
-              src="/images/app/mobile-app-screenshot.png"
-              alt="Horizon Banking Mobile App"
-              width={280}
-              height={560}
-              className={styles.mobileAppImage}
-              priority
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-      {/* Testimonials */}
-      <section className={styles.testimonials}>
+      {/* Services Section */}
+      <section className={styles.servicesSection}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <h2>What Our Clients Say</h2>
-            <p>Join thousands of satisfied customers who trust us with their financial future</p>
+            <h2>Customer service at your fingertips</h2>
           </div>
-          
-          <div className={styles.testimonialsGrid}>
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className={styles.testimonialCard}>
-                <div className={styles.testimonialHeader}>
-                  <Image
-                    src={testimonial.avatar}
-                    alt={`${testimonial.name} avatar`}
-                    width={60}
-                    height={60}
-                    className={styles.testimonialAvatar}
-                  />
-                  <div className={styles.testimonialInfo}>
-                    <strong>{testimonial.name}</strong>
-                    <span>{testimonial.role}</span>
-                  </div>
-                </div>
-                <div className={styles.stars}>
-                  {'★'.repeat(testimonial.rating)}
-                </div>
-                <p>"{testimonial.content}"</p>
+          <div className={styles.servicesGrid}>
+            {services.map((service, index) => (
+              <div key={index} className={styles.serviceCard}>
+                <div className={styles.serviceIcon}>{service.icon}</div>
+                <h3>{service.title}</h3>
+                <p>{service.description}</p>
+                <Link href={service.link} className={styles.serviceLink}>
+                  Learn More →
+                </Link>
               </div>
             ))}
           </div>
@@ -439,17 +415,17 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className={styles.cta}>
+      <section className={styles.ctaSection}>
         <div className={styles.container}>
           <div className={styles.ctaContent}>
             <h2>Ready to Start Your Financial Journey?</h2>
-            <p>Join ZentriBank today and experience banking excellence with advanced security and smart notifications</p>
-            <div className={styles.ctaButtons}>
-              <Link href="/auth/signup" className={styles.ctaPrimary}>
+            <p>Join thousands of satisfied customers who trust ZentriBank</p>
+            <div className={styles.ctaActions}>
+              <Link href="/auth/signup" className={styles.btnCtaPrimary}>
                 Open Your Account
               </Link>
-              <Link href="/auth/signin" className={styles.ctaSecondary}>
-                Sign In to Banking
+              <Link href="/contact" className={styles.btnCtaSecondary}>
+                Contact Us
               </Link>
             </div>
           </div>
@@ -459,54 +435,56 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className={styles.footer}>
         <div className={styles.container}>
-          <div className={styles.footerContent}>
-            <div className={styles.footerSection}>
-              <div className={styles.footerBrand}>
-                <div className={styles.footerLogo}>🏦</div>
-                <h4>ZentriBank</h4>
+          <div className={styles.footerMain}>
+            <div className={styles.footerBrand}>
+              <div className={styles.footerLogo}>
+                <Image
+                  src="/images/Logo.png"
+                  alt="ZentriBank Logo"
+                  width={220}
+                  height={60}
+                  className={styles.footerLogoImage}
+                />
               </div>
-              <p>Premier digital banking with cutting-edge security, two-factor authentication, and real-time notifications.</p>
-              <div className={styles.socialLinks}>
-                <a href="#">📘</a>
-                <a href="#">🐦</a>
-                <a href="#">💼</a>
-                <a href="#">📷</a>
-              </div>
+              <p className={styles.footerTagline}>
+                Your trusted partner in financial services
+              </p>
             </div>
-            
-            <div className={styles.footerSection}>
-              <h4>Banking Services</h4>
-              <Link href="/accounts/checking">Checking Accounts</Link>
-              <Link href="/accounts/savings">Savings Accounts</Link>
-              <Link href="/loans">Loans & Credit</Link>
-              <Link href="/cards">Credit Cards</Link>
-              <Link href="/business">Business Banking</Link>
-            </div>
-            
-            <div className={styles.footerSection}>
-              <h4>Security & Support</h4>
-              <Link href="/security">Security Center</Link>
-              <Link href="/two-factor-auth">Two-Factor Auth</Link>
-              <Link href="/notifications">Email Notifications</Link>
-              <Link href="/support">Help Center</Link>
-              <Link href="/contact">Contact Us</Link>
-            </div>
-            
-            <div className={styles.footerSection}>
+
+            <div className={styles.footerColumn}>
               <h4>Company</h4>
               <Link href="/about">About Us</Link>
               <Link href="/careers">Careers</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
+              <Link href="/newsroom">Newsroom</Link>
+              <Link href="/community">Community</Link>
+            </div>
+
+            <div className={styles.footerColumn}>
+              <h4>Help</h4>
+              <Link href="/contact">Contact Us</Link>
+              <Link href="/support">Help Center</Link>
+              <Link href="/security">Security Center</Link>
               <Link href="/accessibility">Accessibility</Link>
             </div>
+
+            <div className={styles.footerColumn}>
+              <h4>Resources</h4>
+              <Link href="/locations">Branch Locator</Link>
+              <Link href="/education">Financial Education</Link>
+              <Link href="/rates">Rates</Link>
+              <Link href="/forms">Forms & Documents</Link>
+            </div>
           </div>
-          
+
           <div className={styles.footerBottom}>
-            <p>© 2024 ZentriBank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
-            <div className={styles.footerCertifications}>
-              <span className={styles.certBadge}>🏛️ FDIC</span>
-              <span className={styles.certBadge}>🔒 SSL</span>
+            <div className={styles.footerLinks}>
+              <Link href="/privacy">Privacy Rights</Link>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/security">Security & Legal</Link>
+              <Link href="/disclosures">Disclosures</Link>
+            </div>
+            <div className={styles.footerCopy}>
+              <p>© 2024 ZentriBank. All rights reserved. Member FDIC. Equal Housing Lender.</p>
             </div>
           </div>
         </div>

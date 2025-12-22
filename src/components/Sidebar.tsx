@@ -6,7 +6,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import styles from "./Sidebar.module.css";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface NavItem {
   label: string;
@@ -19,14 +18,14 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { 
-    label: "Dashboard", 
+    label: "Overview", 
     href: "/dashboard", 
-    icon: "🏠"
+    icon: "◆"
   },
   { 
     label: "Accounts", 
     href: "/accounts", 
-    icon: "💼",
+    icon: "●",
     subItems: [
       { label: "Checking", href: "/accounts/checking" },
       { label: "Savings", href: "/accounts/savings" },
@@ -34,9 +33,26 @@ const NAV_ITEMS: NavItem[] = [
     ]
   },
   { 
-    label: "Credit Cards", 
+    label: "Payments", 
+    href: "/transfers", 
+    icon: "⬌",
+    subItems: [
+      { label: "Internal Transfer", href: "/transfers/internal" },
+      { label: "Wire Transfer", href: "/transfers/wire" },
+      { label: "International", href: "/transfers/international" },
+      { label: "Scheduled", href: "/transfers/scheduled" }
+    ]
+  },
+  { 
+    label: "Activity", 
+    href: "/transactions", 
+    icon: "≋",
+    badge: 0
+  },
+  { 
+    label: "Cards", 
     href: "/accounts/credit-cards", 
-    icon: "💳",
+    icon: "▭",
     subItems: [
       { label: "My Cards", href: "/accounts/credit-cards" },
       { label: "Apply for Card", href: "/accounts/credit-cards/apply" },
@@ -44,37 +60,9 @@ const NAV_ITEMS: NavItem[] = [
     ]
   },
   { 
-    label: "Transactions", 
-    href: "/transactions", 
-    icon: "📊",
-    badge: 0
-  },
-  { 
-    label: "Transfers", 
-    href: "/transfers", 
-    icon: "💸",
-    subItems: [
-      { label: "Between Accounts", href: "/transfers/internal" },
-      { label: "Wire Transfer", href: "/transfers/wire" },
-      { label: "International", href: "/transfers/international" },
-      { label: "Scheduled", href: "/transfers/scheduled" }
-    ]
-  },
-  { 
-    label: "Bill Pay", 
-    href: "/bills", 
-    icon: "📱",
-    badge: 0
-  },
-  { 
-    label: "Statements", 
-    href: "/accounts/statements", 
-    icon: "📄"
-  },
-  { 
     label: "Investments", 
     href: "/investments", 
-    icon: "📈",
+    icon: "▲",
     subItems: [
       { label: "Portfolio", href: "/investments/portfolio" },
       { label: "Trading", href: "/investments/trading" },
@@ -83,45 +71,36 @@ const NAV_ITEMS: NavItem[] = [
     ]
   },
   { 
-    label: "Loans", 
-    href: "/loans", 
-    icon: "🏠"
+    label: "Bills", 
+    href: "/bills", 
+    icon: "◐",
+    badge: 0
   },
   { 
-    label: "Cards", 
-    href: "/cards", 
-    icon: "💳"
+    label: "Statements", 
+    href: "/accounts/statements", 
+    icon: "▤"
   },
   { 
-    label: "Reports", 
+    label: "Analytics", 
     href: "/reports", 
-    icon: "📄"
+    icon: "◓"
   },
   { 
-    label: "Admin Panel", 
+    label: "Admin", 
     href: "/dashboard/admin", 
-    icon: "⚙️",
+    icon: "◈",
     requiredRole: ["admin"],
     subItems: [
       { label: "Dashboard", href: "/dashboard/admin" },
       { label: "Credit Cards", href: "/dashboard/admin/credit-cards" },
-      { label: "Email Statements", href: "/dashboard/admin/statements" },
-      { label: "Support Chats", href: "/dashboard/admin/chats" },
-      { label: "User Management", href: "/admin/users" },
-      { label: "Transaction Approval", href: "/admin/transactions" },
-      { label: "KYC Verification", href: "/admin/kyc" },
-      { label: "System Settings", href: "/admin/settings" }
+      { label: "Statements", href: "/dashboard/admin/statements" },
+      { label: "Support", href: "/dashboard/admin/chats" },
+      { label: "Users", href: "/admin/users" },
+      { label: "Approvals", href: "/admin/transactions" },
+      { label: "KYC", href: "/admin/kyc" },
+      { label: "Settings", href: "/admin/settings" }
     ]
-  },
-  { 
-    label: "Settings", 
-    href: "/settings", 
-    icon: "⚙️"
-  },
-  { 
-    label: "Help & Support", 
-    href: "/support", 
-    icon: "❓"
   }
 ];
 
@@ -129,12 +108,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [userName, setUserName] = useState<string>("User");
+  const [userEmail, setUserEmail] = useState<string>("");
   const [pendingTransactions, setPendingTransactions] = useState(0);
   const [pendingBills, setPendingBills] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
   
   const [quickBalance, setQuickBalance] = useState({
     checking: 0,
@@ -159,10 +138,11 @@ export default function Sidebar() {
               checking: checking,
               savings: savings,
               investment: investment,
-              total: checking + savings
+              total: checking + savings + investment
             });
             
             setUserName(data.user?.name || session.user.name || "User");
+            setUserEmail(data.user?.email || session.user.email || "");
             
             const pending = data.recent?.filter((t: any) => 
               t.rawStatus === "pending" || t.status === "Pending"
@@ -172,6 +152,7 @@ export default function Sidebar() {
         } catch (error) {
           console.error('Error fetching balances:', error);
           setUserName(session?.user?.name || "User");
+          setUserEmail(session?.user?.email || "");
         }
       }
     };
@@ -182,10 +163,10 @@ export default function Sidebar() {
   }, [session]);
 
   const navItemsWithBadges = NAV_ITEMS.map(item => {
-    if (item.label === "Transactions") {
+    if (item.label === "Activity") {
       return { ...item, badge: pendingTransactions > 0 ? pendingTransactions : undefined };
     }
-    if (item.label === "Bill Pay") {
+    if (item.label === "Bills") {
       return { ...item, badge: pendingBills > 0 ? pendingBills : undefined };
     }
     return item;
@@ -193,7 +174,9 @@ export default function Sidebar() {
 
   const filteredNavItems = navItemsWithBadges.filter(item => {
     if (!item.requiredRole) return true;
-    return session?.user?.role === "admin" || session?.user?.email === "admin@horizonbank.com" || session?.user?.email === "admin@example.com";
+    return session?.user?.role === "admin" || 
+           session?.user?.email === "admin@horizonbank.com" || 
+           session?.user?.email === "admin@example.com";
   });
 
   const toggleExpand = (label: string) => {
@@ -212,22 +195,20 @@ export default function Sidebar() {
     if (amount >= 1000000) {
       return `$${(amount / 1000000).toFixed(2)}M`;
     }
-    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (amount >= 1000) {
+      return `$${(amount / 1000).toFixed(1)}K`;
+    }
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   return (
     <>
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            className={styles.mobileOverlay}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {mobileOpen && (
+        <div 
+          className={styles.mobileOverlay}
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
       <button
         className={styles.mobileToggle}
@@ -241,190 +222,165 @@ export default function Sidebar() {
         </span>
       </button>
 
-      <motion.nav
-        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}
-        initial={false}
-        animate={{
-          width: collapsed ? 80 : 280,
-          transition: { duration: 0.3, ease: "easeInOut" }
-        }}
-      >
-        <div className={styles.logoSection}>
+      <nav className={`${styles.sidebar} ${mobileOpen ? styles.mobileOpen : ''}`}>
+        {/* Header Section */}
+        <div className={styles.sidebarHeader}>
           <div className={styles.logo}>
-            <span className={styles.logoIcon}>🦁</span>
-            {!collapsed && (
-              <div className={styles.logoText}>
-                <span className={styles.bankName}>ZentriBank</span>
-                <span className={styles.bankTagline}>Global Banking</span>
+            <div className={styles.logoIcon}>
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" 
+                      fill="currentColor" opacity="0.2"/>
+                <path d="M12 2L2 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" 
+                      stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
+            <div className={styles.logoText}>
+              <span className={styles.logoTitle}>ZentriBank</span>
+              <span className={styles.logoSubtitle}>Private Banking</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Balance Card */}
+        <div className={styles.balanceCard}>
+          <div className={styles.balanceHeader}>
+            <span className={styles.balanceLabel}>Total Balance</span>
+            <button 
+              className={styles.refreshButton}
+              onClick={() => window.location.reload()}
+              aria-label="Refresh"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 4v6h6M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+              </svg>
+            </button>
+          </div>
+          <div className={styles.balanceAmount}>
+            {formatCurrency(quickBalance.total)}
+          </div>
+          
+          <div className={styles.balanceBreakdown}>
+            <div className={styles.breakdownItem}>
+              <span className={styles.breakdownDot} style={{background: '#10b981'}}></span>
+              <span className={styles.breakdownLabel}>Liquid</span>
+              <span className={styles.breakdownValue}>
+                {formatCurrency(quickBalance.checking + quickBalance.savings)}
+              </span>
+            </div>
+            {quickBalance.investment > 0 && (
+              <div className={styles.breakdownItem}>
+                <span className={styles.breakdownDot} style={{background: '#34d399'}}></span>
+                <span className={styles.breakdownLabel}>Invested</span>
+                <span className={styles.breakdownValue}>
+                  {formatCurrency(quickBalance.investment)}
+                </span>
               </div>
             )}
           </div>
-          <button
-            className={styles.collapseBtn}
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+
+          <button 
+            className={styles.quickTransferButton}
+            onClick={() => router.push('/transfers/internal')}
           >
-            {collapsed ? "→" : "←"}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+            Quick Transfer
           </button>
         </div>
 
-        {!collapsed && (
-          <div className={styles.quickBalanceCard}>
-            <div className={styles.balanceHeader}>
-              <span className={styles.balanceTitle}>Quick Balance</span>
-              <button 
-                className={styles.refreshBtn} 
-                aria-label="Refresh balance"
-                onClick={() => window.location.reload()}
-              >
-                🔄
-              </button>
-            </div>
-            <div className={styles.balanceContent}>
-              <div className={styles.balanceItem}>
-                <span className={styles.balanceLabel}>Checking</span>
-                <span className={styles.balanceAmount}>
-                  {formatCurrency(quickBalance.checking)}
-                </span>
-              </div>
-              <div className={styles.balanceItem}>
-                <span className={styles.balanceLabel}>Savings</span>
-                <span className={styles.balanceAmount}>
-                  {formatCurrency(quickBalance.savings)}
-                </span>
-              </div>
-              <div className={styles.balanceDivider}></div>
-              <div className={styles.balanceItem}>
-                <span className={styles.balanceLabel}>Liquid Total</span>
-                <span className={styles.balanceTotalAmount}>
-                  {formatCurrency(quickBalance.total)}
-                </span>
-              </div>
-              {quickBalance.investment > 0 && (
-                <div className={styles.balanceItem} style={{ 
-                  marginTop: '0.75rem', 
-                  paddingTop: '0.75rem', 
-                  borderTop: '1px solid rgba(255,255,255,0.1)' 
-                }}>
-                  <span className={styles.balanceLabel}>Investment</span>
-                  <span className={styles.balanceAmount} style={{ 
-                    color: '#10b981', 
-                    fontWeight: 'bold',
-                    fontSize: '1.1rem' 
-                  }}>
-                    {formatCurrency(quickBalance.investment)}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div style={{
-              marginTop: '1rem',
-              paddingTop: '1rem',
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-              textAlign: 'center',
-              opacity: 0.8,
-              fontSize: '0.875rem'
-            }}>
-              {userName}
-            </div>
-          </div>
-        )}
-
-        <div className={styles.navSection}>
+        {/* Navigation */}
+        <div className={styles.navigation}>
+          <div className={styles.navLabel}>NAVIGATE</div>
           {filteredNavItems.map((item) => {
             const isActive = pathname === item.href || 
                            pathname.startsWith(item.href + '/');
             const isExpanded = expandedItems.includes(item.label);
+            const hasSubItems = item.subItems && item.subItems.length > 0;
 
             return (
               <div key={item.label} className={styles.navItemWrapper}>
                 <div
-                  className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                  className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   onClick={() => {
-                    if (item.subItems) {
+                    if (hasSubItems) {
                       toggleExpand(item.label);
                     } else {
                       router.push(item.href);
                     }
                   }}
                 >
-                  <div className={styles.navItemContent}>
-                    <span className={styles.navIcon}>{item.icon}</span>
-                    {!collapsed && (
-                      <>
-                        <span className={styles.navLabel}>{item.label}</span>
-                        {item.badge && item.badge > 0 && (
-                          <span className={styles.navBadge}>{item.badge}</span>
-                        )}
-                        {item.subItems && (
-                          <span className={styles.expandIcon}>
-                            {isExpanded ? "▼" : "▶"}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
+                  <span className={styles.navIcon}>{item.icon}</span>
+                  <span className={styles.navText}>{item.label}</span>
+                  
+                  {item.badge && item.badge > 0 && (
+                    <span className={styles.navBadge}>{item.badge}</span>
+                  )}
+                  
+                  {hasSubItems && (
+                    <svg 
+                      className={`${styles.expandIcon} ${isExpanded ? styles.expandIconOpen : ''}`}
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2"
+                    >
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                  )}
                 </div>
 
-                {!collapsed && item.subItems && (
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        className={styles.subItems}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                {hasSubItems && isExpanded && (
+                  <div className={styles.subItems}>
+                    {item.subItems!.map((subItem) => (
+                      <Link
+                        key={subItem.href}
+                        href={subItem.href}
+                        className={`${styles.subItem} ${
+                          pathname === subItem.href ? styles.subItemActive : ''
+                        }`}
                       >
-                        {item.subItems.map((subItem) => (
-                          <Link
-                            key={subItem.href}
-                            href={subItem.href}
-                            className={`${styles.subItem} ${
-                              pathname === subItem.href ? styles.subItemActive : ''
-                            }`}
-                          >
-                            {subItem.label}
-                          </Link>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        {subItem.label}
+                      </Link>
+                    ))}
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
 
-        {!collapsed && (
-          <div className={styles.bottomSection}>
-            <div className={styles.securityStatus}>
-              <span className={styles.securityIcon}>🔒</span>
-              <div className={styles.securityText}>
-                <span className={styles.securityLabel}>Secure Connection</span>
-                <span className={styles.securityDetail}>256-bit SSL</span>
-              </div>
+        {/* User Profile Section */}
+        <div className={styles.userSection}>
+          <div className={styles.userCard}>
+            <div className={styles.userAvatar}>
+              {userName.charAt(0).toUpperCase()}
             </div>
-            
-            <div className={styles.lastLogin}>
-              <span className={styles.lastLoginLabel}>Last Login</span>
-              <span className={styles.lastLoginTime}>
-                Today at {new Date().toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </span>
+            <div className={styles.userInfo}>
+              <div className={styles.userName}>{userName}</div>
+              <div className={styles.userEmail}>{userEmail}</div>
             </div>
-
             <button 
-              className={styles.quickTransferBtn}
-              onClick={() => router.push('/transfers/internal')}
+              className={styles.userMenu}
+              onClick={() => router.push('/settings')}
+              aria-label="Settings"
             >
-              <span>💸</span> Quick Transfer
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+              </svg>
             </button>
           </div>
-        )}
-      </motion.nav>
+
+          <div className={styles.securityBadge}>
+            <svg className={styles.securityIcon} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L4 7v6c0 4.52 3.13 8.75 8 9.88 4.87-1.13 8-5.36 8-9.88V7l-8-5z"/>
+            </svg>
+            <span>Secure Session</span>
+          </div>
+        </div>
+      </nav>
     </>
   );
 }

@@ -20,7 +20,6 @@ export default function Header() {
   });
   const [notifications, setNotifications] = useState<any[]>([]);
 
-  // Fetch actual user data
   useEffect(() => {
     const fetchUserData = async () => {
       if (session?.user?.email) {
@@ -29,7 +28,6 @@ export default function Header() {
           if (response.ok) {
             const data = await response.json();
             
-            // Use actual user data
             const total = (data.balances?.checking || 0) + 
                          (data.balances?.savings || 0) + 
                          (data.balances?.investment || 0);
@@ -40,7 +38,6 @@ export default function Header() {
               totalBalance: total
             });
             
-            // Set notifications based on pending transactions
             const pendingTx = data.recent?.filter((t: any) => 
               t.rawStatus === "pending" || t.status === "Pending"
             ) || [];
@@ -51,21 +48,20 @@ export default function Header() {
                 id: 1,
                 title: `${pendingTx.length} pending transaction${pendingTx.length > 1 ? 's' : ''}`,
                 time: "Now",
-                icon: "⏳"
+                icon: "⏳",
+                type: "pending"
               });
             }
             
-            // Add other notifications
             newNotifications.push(
-              { id: 2, title: "Account secured with 2FA", time: "Active", icon: "🔒" },
-              { id: 3, title: "Monthly statement available", time: "View", icon: "📄" }
+              { id: 2, title: "Account secured with 2FA", time: "Active", icon: "🔒", type: "security" },
+              { id: 3, title: "Monthly statement available", time: "View", icon: "📄", type: "info" }
             );
             
             setNotifications(newNotifications);
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
-          // Use session as fallback
           setUserData({
             name: session?.user?.name || "User",
             email: session?.user?.email || "",
@@ -76,6 +72,8 @@ export default function Header() {
     };
     
     fetchUserData();
+    const interval = setInterval(fetchUserData, 60000);
+    return () => clearInterval(interval);
   }, [session]);
 
   useEffect(() => {
@@ -101,73 +99,62 @@ export default function Header() {
     if (amount >= 1000000) {
       return `$${(amount / 1000000).toFixed(2)}M`;
     }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+    if (amount >= 1000) {
+      return `$${(amount / 1000).toFixed(0)}K`;
+    }
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   return (
     <header className={styles.header}>
       <div className={styles.headerContent}>
-        {/* Left Section - Logo & Search */}
-        <div className={styles.leftSection}>
-          <div className={styles.logo}>
-            <span className={styles.logoIcon}>🏦</span>
-            <div className={styles.logoText}>
-              <span className={styles.bankName}>ZentriBank</span>
-              <span className={styles.bankTagline}>Global Capital</span>
-            </div>
+        {/* Search Bar */}
+        <form onSubmit={handleSearch} className={styles.searchForm}>
+          <div className={styles.searchContainer}>
+            <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search transactions, accounts, recipients..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+            />
+            <kbd className={styles.searchShortcut}>⌘K</kbd>
           </div>
+        </form>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className={styles.searchForm}>
-            <div className={styles.searchContainer}>
-              <span className={styles.searchIcon}>🔍</span>
-              <input
-                type="text"
-                placeholder="Search transactions, accounts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
-              />
-              <kbd className={styles.searchShortcut}>⌘K</kbd>
-            </div>
-          </form>
-        </div>
-
-        {/* Right Section - Actions & Profile */}
+        {/* Right Section */}
         <div className={styles.rightSection}>
-          {/* Market Info (Optional - can be real-time data) */}
-          <div className={styles.marketInfo}>
-            <div className={styles.marketItem}>
-              <span className={styles.marketLabel}>Balance</span>
-              <span className={styles.marketValue}>
-                {formatCurrency(userData.totalBalance)}
-              </span>
-              <span className={styles.marketChange}>
-                {userData.totalBalance > 0 ? "Active" : "New"}
-              </span>
-            </div>
+          {/* Balance Display */}
+          <div className={styles.balanceDisplay}>
+            <span className={styles.balanceLabel}>Portfolio</span>
+            <span className={styles.balanceValue}>
+              {formatCurrency(userData.totalBalance)}
+            </span>
           </div>
 
           {/* Quick Actions */}
           <div className={styles.quickActions}>
             <button 
               className={styles.actionButton} 
-              title="Calculator"
-              onClick={() => router.push('/tools/calculator')}
+              title="Quick Transfer"
+              onClick={() => router.push('/transfers/internal')}
             >
-              🧮
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
             </button>
             <button 
               className={styles.actionButton} 
               title="Support"
               onClick={() => router.push('/support')}
             >
-              💬
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
             </button>
           </div>
 
@@ -177,7 +164,10 @@ export default function Header() {
               className={styles.notificationButton}
               onClick={() => setShowNotifications(!showNotifications)}
             >
-              🔔
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
               {notifications.length > 0 && (
                 <span className={styles.notificationBadge}>
                   {notifications.length}
@@ -189,11 +179,14 @@ export default function Header() {
               <div className={styles.notificationDropdown}>
                 <div className={styles.dropdownHeader}>
                   <h3>Notifications</h3>
-                  <button className={styles.markAllRead}>Mark all read</button>
+                  <button className={styles.markAllRead}>Clear all</button>
                 </div>
                 <div className={styles.notificationList}>
                   {notifications.map(notif => (
-                    <div key={notif.id} className={styles.notificationItem}>
+                    <div 
+                      key={notif.id} 
+                      className={`${styles.notificationItem} ${styles[`notif${notif.type}`]}`}
+                    >
                       <span className={styles.notifIcon}>{notif.icon}</span>
                       <div className={styles.notifContent}>
                         <p className={styles.notifTitle}>{notif.title}</p>
@@ -209,7 +202,7 @@ export default function Header() {
             )}
           </div>
 
-          {/* Profile - USING ACTUAL USER DATA */}
+          {/* Profile */}
           <div className={styles.profileWrapper}>
             <button 
               className={styles.profileButton}
@@ -223,10 +216,18 @@ export default function Header() {
                   {userData.name}
                 </span>
                 <span className={styles.profileRole}>
-                  {session?.user?.role === 'admin' ? 'Administrator' : 'Premium Account'}
+                  {session?.user?.role === 'admin' ? 'Administrator' : 'Member'}
                 </span>
               </div>
-              <span className={styles.profileArrow}>▼</span>
+              <svg 
+                className={`${styles.profileArrow} ${showProfile ? styles.profileArrowOpen : ''}`}
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+              >
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
             </button>
 
             {showProfile && (
@@ -235,7 +236,7 @@ export default function Header() {
                   <div className={styles.profileLarge}>
                     {userData.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
+                  <div className={styles.profileDetails}>
                     <p className={styles.profileFullName}>
                       {userData.name}
                     </p>
@@ -243,36 +244,55 @@ export default function Header() {
                       {userData.email || session?.user?.email || ""}
                     </p>
                     {userData.totalBalance > 0 && (
-                      <p style={{ 
-                        marginTop: '0.5rem', 
-                        fontSize: '0.875rem', 
-                        color: '#10b981',
-                        fontWeight: 'bold'
-                      }}>
-                        Balance: {formatCurrency(userData.totalBalance)}
-                      </p>
+                      <div className={styles.profileBalance}>
+                        <span className={styles.profileBalanceLabel}>Total Balance</span>
+                        <span className={styles.profileBalanceValue}>
+                          {formatCurrency(userData.totalBalance)}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
                 
                 <div className={styles.profileMenu}>
                   <a href="/profile" className={styles.profileMenuItem}>
-                    <span>👤</span> My Profile
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    My Profile
                   </a>
                   <a href="/settings" className={styles.profileMenuItem}>
-                    <span>⚙️</span> Settings
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                    </svg>
+                    Settings
                   </a>
                   <a href="/security" className={styles.profileMenuItem}>
-                    <span>🔒</span> Security
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2L4 7v6c0 4.52 3.13 8.75 8 9.88 4.87-1.13 8-5.36 8-9.88V7l-8-5z"/>
+                    </svg>
+                    Security
                   </a>
                   <a href="/help" className={styles.profileMenuItem}>
-                    <span>❓</span> Help & Support
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Help & Support
                   </a>
                 </div>
                 
                 <div className={styles.profileFooter}>
                   <button onClick={handleSignOut} className={styles.signOutButton}>
-                    <span>🚪</span> Sign Out
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                      <polyline points="16 17 21 12 16 7"/>
+                      <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Sign Out
                   </button>
                 </div>
               </div>
@@ -281,24 +301,29 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Bottom Bar - Date & Status */}
-      <div className={styles.bottomBar}>
-        <div className={styles.dateTime}>
-          <span className={styles.date}>
+      {/* Status Bar */}
+      <div className={styles.statusBar}>
+        <div className={styles.statusLeft}>
+          <div className={styles.statusItem}>
+            <svg className={styles.statusIcon} viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+            <span>All Systems Operational</span>
+          </div>
+        </div>
+        <div className={styles.statusRight}>
+          <div className={styles.timeDisplay}>
             {currentTime.toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
+              weekday: 'short',
+              month: 'short', 
+              day: 'numeric'
             })}
-          </span>
-          <span className={styles.time}>
+            <span className={styles.timeSeparator}>•</span>
             {currentTime.toLocaleTimeString('en-US', { 
               hour: '2-digit', 
-              minute: '2-digit', 
-              second: '2-digit' 
+              minute: '2-digit'
             })}
-          </span>
+          </div>
         </div>
       </div>
     </header>
