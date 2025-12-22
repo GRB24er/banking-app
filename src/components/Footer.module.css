@@ -1,17 +1,9 @@
 /* Footer.module.css - Elite Enterprise Footer */
 
-:root {
-  --footer-bg: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
-  --footer-text: #d1fae5;
-  --footer-text-muted: #6ee7b7;
-  --emerald-500: #10b981;
-  --emerald-600: #059669;
-}
-
 /* ===== BASE FOOTER ===== */
 .footer {
-  background: var(--footer-bg);
-  color: var(--footer-text);
+  background: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
+  color: #d1fae5;
   margin-top: auto;
   position: relative;
   overflow: hidden;
@@ -71,7 +63,7 @@
 .brandIcon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-600) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -104,7 +96,7 @@
 
 .brandTagline {
   font-size: 0.875rem;
-  color: var(--footer-text-muted);
+  color: #6ee7b7;
   margin: 0;
   font-weight: 500;
 }
@@ -141,14 +133,14 @@
 
 .newsletterInput:focus {
   background: rgba(16, 185, 129, 0.12);
-  border-color: var(--emerald-500);
+  border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 
 .newsletterButton {
   width: 52px;
   height: 52px;
-  background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-600) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border: none;
   border-radius: 12px;
   display: flex;
@@ -208,13 +200,13 @@
   background: rgba(16, 185, 129, 0.08);
   border: 1px solid rgba(16, 185, 129, 0.2);
   border-radius: 12px;
-  color: var(--footer-text-muted);
+  color: #6ee7b7;
   text-decoration: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .socialLink:hover {
-  background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-600) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-color: transparent;
   color: white;
   transform: translateY(-4px);
@@ -256,7 +248,7 @@
   left: 0;
   width: 40px;
   height: 2px;
-  background: linear-gradient(90deg, var(--emerald-500) 0%, transparent 100%);
+  background: linear-gradient(90deg, #10b981 0%, transparent 100%);
   border-radius: 1px;
 }
 
@@ -290,7 +282,7 @@
   left: -8px;
   width: 0;
   height: 2px;
-  background: var(--emerald-500);
+  background: #10b981;
   transition: width 0.3s;
 }
 
@@ -343,7 +335,7 @@
 .trustIcon {
   width: 24px;
   height: 24px;
-  color: var(--emerald-500);
+  color: #10b981;
   flex-shrink: 0;
 }
 

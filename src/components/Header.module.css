@@ -1,20 +1,13 @@
 /* Header.module.css - Elite Enterprise Header */
 
-:root {
-  --header-bg: rgba(255, 255, 255, 0.95);
-  --header-border: rgba(16, 185, 129, 0.15);
-  --emerald-500: #10b981;
-  --emerald-600: #059669;
-}
-
 /* ===== BASE HEADER ===== */
 .header {
   position: sticky;
   top: 0;
   z-index: 90;
-  background: var(--header-bg);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--header-border);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.15);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -58,7 +51,7 @@
 }
 
 .searchContainer:focus-within {
-  border-color: var(--emerald-500);
+  border-color: #10b981;
   background: white;
   box-shadow: 
     0 4px 12px rgba(16, 185, 129, 0.15),
@@ -162,7 +155,7 @@
 }
 
 .actionButton:hover {
-  background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-600) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-color: transparent;
   color: white;
   transform: translateY(-2px);
@@ -195,7 +188,7 @@
 }
 
 .notificationButton:hover {
-  background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-600) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-color: transparent;
   color: white;
   transform: translateY(-2px);
@@ -269,7 +262,7 @@
 
 .markAllRead {
   font-size: 0.8125rem;
-  color: var(--emerald-600);
+  color: #059669;
   background: none;
   border: none;
   cursor: pointer;
@@ -278,7 +271,7 @@
 }
 
 .markAllRead:hover {
-  color: var(--emerald-500);
+  color: #10b981;
 }
 
 .notificationList {
@@ -373,7 +366,7 @@
 }
 
 .dropdownFooter a {
-  color: var(--emerald-600);
+  color: #059669;
   font-size: 0.9375rem;
   font-weight: 600;
   text-decoration: none;
@@ -381,7 +374,7 @@
 }
 
 .dropdownFooter a:hover {
-  color: var(--emerald-500);
+  color: #10b981;
 }
 
 /* ===== PROFILE ===== */
@@ -403,14 +396,14 @@
 
 .profileButton:hover {
   background: white;
-  border-color: var(--emerald-500);
+  border-color: #10b981;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
 }
 
 .profileAvatar {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-600) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border-radius: 10px;
   display: flex;
@@ -481,7 +474,7 @@
 .profileLarge {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, var(--emerald-500) 0%, var(--emerald-600) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border-radius: 14px;
   display: flex;

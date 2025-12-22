@@ -1,16 +1,5 @@
 /* Sidebar.module.css - Elite Enterprise Sidebar */
 
-/* ===== DESIGN SYSTEM ===== */
-:root {
-  --sidebar-bg: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
-  --sidebar-text: #d1fae5;
-  --sidebar-text-muted: #6ee7b7;
-  --sidebar-accent: #10b981;
-  --sidebar-hover: rgba(16, 185, 129, 0.1);
-  --sidebar-active: rgba(16, 185, 129, 0.15);
-  --sidebar-border: rgba(16, 185, 129, 0.2);
-}
-
 /* ===== BASE SIDEBAR ===== */
 .sidebar {
   position: fixed;
@@ -18,7 +7,7 @@
   top: 0;
   width: 280px;
   height: 100vh;
-  background: var(--sidebar-bg);
+  background: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
   display: flex;
   flex-direction: column;
   z-index: 100;
