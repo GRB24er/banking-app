@@ -4,8 +4,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import Transaction, { isCreditType, getBalanceField } from '@/models/Transaction';
+import Transaction from '@/models/Transaction';
 import { sendTransactionEmail } from '@/lib/mail';
+
+// Helper functions
+function isCreditType(type: string): boolean {
+  const t = (type || '').toLowerCase();
+  return t.includes('deposit') || t.includes('transfer-in') || t.includes('interest') || t.includes('credit');
+}
+
+function getBalanceField(accountType: string): string {
+  const type = (accountType || 'checking').toLowerCase();
+  if (type === 'savings') return 'savingsBalance';
+  if (type === 'investment') return 'investmentBalance';
+  return 'checkingBalance';
+}
 
 export async function POST(
   req: NextRequest,
@@ -168,8 +181,7 @@ export async function POST(
         try {
           await sendTransactionEmail(user.email, {
             name: user.name || 'Customer',
-            transaction: transaction.toObject(),
-            subject: 'Transaction Rejected'
+            transaction: transaction.toObject()
           });
         } catch (emailError) {
           console.error('[Admin] Rejection email failed:', emailError);

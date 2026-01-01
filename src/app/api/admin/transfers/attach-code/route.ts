@@ -7,7 +7,7 @@ import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
-import { sendSimpleEmail } from "@/lib/mail";
+import { transporter } from "@/lib/mail";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
     
     const session = await getServerSession(authOptions);
     
-    // Check admin role
     if (!session?.user?.email) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
@@ -36,7 +35,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clean the verification code
     const cleanCode = verificationCode.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     
     if (cleanCode.length !== 16) {
@@ -46,21 +44,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the transaction
     const transaction = await Transaction.findById(transactionId);
     
     if (!transaction) {
       return NextResponse.json({ success: false, error: "Transaction not found" }, { status: 404 });
     }
 
-    // Get the user for email notification
     const user = await User.findById(transaction.userId);
     
     if (!user) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    // Update transaction with verification code
     transaction.metadata = {
       ...transaction.metadata,
       verificationCode: cleanCode,
@@ -79,11 +74,12 @@ export async function POST(request: NextRequest) {
       codeLastFour: cleanCode.slice(-4)
     });
 
-    // Format code with dashes for display
     const formattedCode = cleanCode.match(/.{1,4}/g)?.join('-') || cleanCode;
 
-    // Send email to user notifying them verification is ready
+    // Send email using transporter
     try {
+      console.log('[Admin] Sending verification email to:', user.email);
+      
       const subject = '🔐 Transfer Verification Required - Action Needed';
       
       const textContent = `
@@ -108,7 +104,7 @@ HOW TO COMPLETE VERIFICATION:
 
 Complete Verification: ${process.env.NEXTAUTH_URL || 'https://zentribank.capital'}/send-money
 
-⚠️ IMPORTANT:
+IMPORTANT:
 - Do not share this code with anyone
 - ZentriBank will never ask for your verification code over the phone
 - Do not use VPN during verification
@@ -124,27 +120,22 @@ ZentriBank Capital
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Transfer Verification Required</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5;">
   <div style="max-width: 600px; margin: 0 auto; background: white;">
     
-    <!-- Header -->
     <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px 30px; text-align: center;">
-      <h1 style="margin: 0; font-size: 24px; font-weight: 700;">🔐 Transfer Verification Required</h1>
+      <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Transfer Verification Required</h1>
       <p style="margin: 10px 0 0; opacity: 0.9;">Action Required to Release Funds</p>
     </div>
     
-    <!-- Content -->
     <div style="padding: 40px 30px;">
       
-      <!-- Alert Box -->
       <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-        <h2 style="color: #92400e; margin: 0 0 10px; font-size: 18px;">⚠️ Action Required</h2>
+        <h2 style="color: #92400e; margin: 0 0 10px; font-size: 18px;">Action Required</h2>
         <p style="margin: 0; color: #92400e;">Your transfer requires verification to release the funds. Please complete the verification process using the code below.</p>
       </div>
       
-      <!-- Code Box -->
       <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; padding: 30px; text-align: center; margin: 30px 0;">
         <p style="margin: 0 0 10px; color: #64748b; font-size: 14px;">Your Security Verification Code</p>
         <div style="font-family: 'Courier New', Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #059669;">
@@ -152,7 +143,6 @@ ZentriBank Capital
         </div>
       </div>
       
-      <!-- Instructions -->
       <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <h3 style="margin: 0 0 15px; color: #0f172a; font-size: 16px;">How to Complete Verification</h3>
         <ol style="margin: 0; padding-left: 20px; color: #475569;">
@@ -164,15 +154,13 @@ ZentriBank Capital
         </ol>
       </div>
       
-      <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">
         <a href="${process.env.NEXTAUTH_URL || 'https://zentribank.capital'}/send-money" 
            style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-          Complete Verification →
+          Complete Verification
         </a>
       </div>
       
-      <!-- Transfer Summary -->
       <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px;">
         <h3 style="margin: 0 0 15px; color: #0f172a; font-size: 16px;">Transfer Summary</h3>
         <table style="width: 100%; border-collapse: collapse;">
@@ -193,16 +181,14 @@ ZentriBank Capital
         </table>
       </div>
       
-      <!-- Warning -->
       <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin-top: 25px;">
         <p style="margin: 0; color: #dc2626; font-size: 13px;">
-          <strong>⚠️ Security Warning:</strong> Do not share this code with anyone. ZentriBank will never ask for your verification code over the phone. Do not use VPN during verification.
+          <strong>Security Warning:</strong> Do not share this code with anyone. ZentriBank will never ask for your verification code over the phone. Do not use VPN during verification.
         </p>
       </div>
       
     </div>
     
-    <!-- Footer -->
     <div style="background: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
       <p style="margin: 5px 0;"><strong>ZentriBank Capital</strong></p>
       <p style="margin: 5px 0;">If you did not initiate this transfer, please contact support immediately.</p>
@@ -214,16 +200,18 @@ ZentriBank Capital
 </html>
       `;
 
-      const emailResult = await sendSimpleEmail(
-        user.email,
-        subject,
-        textContent,
-        htmlContent
-      );
+      const emailResult = await transporter.sendMail({
+        from: 'ZentriBank Capital <admin@zentribank.capital>',
+        to: user.email,
+        subject: subject,
+        text: textContent,
+        html: htmlContent
+      });
       
-      console.log('[Admin] Verification email sent to user:', emailResult?.messageId);
-    } catch (emailError) {
-      console.error('[Admin] Email failed:', emailError);
+      console.log('[Admin] Verification email sent:', emailResult?.messageId);
+      
+    } catch (emailError: any) {
+      console.error('[Admin] Email failed:', emailError?.message || emailError);
     }
 
     return NextResponse.json({
