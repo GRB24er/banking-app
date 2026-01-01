@@ -1,17 +1,15 @@
 // src/app/api/statements/send/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 import connectDB from '@/lib/mongodb';
 import Statement from '@/models/Statement';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
-import nodemailer from 'nodemailer';
 
-const authOptions = {
-  secret: 'b3bc4dcf9055e490cef86fd9647fc8acd61d6bbe07dfb85fb6848bfe7f4f3926',
-};
+const { sendSimpleEmail } = require('@/lib/mail');
 
-const ADMIN_EMAILS = ['admin@horizonbank.com', 'your-email@example.com'];
+const ADMIN_EMAILS = ['admin@horizonbank.com', 'admin@zentribank.capital'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +32,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
-    const { requestId } = await req.json();
+    const body = await req.json();
+    const { requestId } = body;
 
     if (!requestId) {
       return NextResponse.json({ success: false, error: 'Request ID is required' }, { status: 400 });
@@ -50,7 +49,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Statement already sent' }, { status: 400 });
     }
 
-    // Get transactions for the date range
     const transactions = await Transaction.find({
       userId: statement.userId._id,
       date: {
@@ -59,7 +57,6 @@ export async function POST(req: NextRequest) {
       }
     }).sort({ date: 1 });
 
-    // Calculate totals and balances
     const deposits = transactions
       .filter((t: any) => t.type === 'credit')
       .reduce((sum: number, t: any) => sum + t.amount, 0);
@@ -68,14 +65,10 @@ export async function POST(req: NextRequest) {
       .filter((t: any) => t.type === 'debit')
       .reduce((sum: number, t: any) => sum + t.amount, 0);
 
-    // Get opening balance (simplified - you may want to calculate from actual balance)
-    const openingBalance = 5000; // You should calculate this from your actual data
+    const openingBalance = 5000;
     const closingBalance = openingBalance + deposits - withdrawals;
-
-    // Statement number generation
     const statementNumber = `ZB-${new Date().getFullYear()}-${String(Date.now()).slice(-8)}`;
 
-    // Create professional banking statement HTML
     const emailHTML = `
       <!DOCTYPE html>
       <html>
@@ -85,7 +78,7 @@ export async function POST(req: NextRequest) {
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
             line-height: 1.6; 
             color: #1e293b;
             background: #f8f9fa;
@@ -97,10 +90,8 @@ export async function POST(req: NextRequest) {
             background: white;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
           }
-          
-          /* Letterhead */
           .letterhead {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             padding: 40px;
             position: relative;
@@ -114,10 +105,6 @@ export async function POST(req: NextRequest) {
             height: 4px;
             background: linear-gradient(90deg, #d4af37, #f4d03f, #d4af37);
           }
-          .bank-logo {
-            width: 180px;
-            margin-bottom: 20px;
-          }
           .bank-info {
             font-size: 12px;
             line-height: 1.8;
@@ -130,8 +117,6 @@ export async function POST(req: NextRequest) {
             font-weight: 600;
             letter-spacing: 1px;
           }
-          
-          /* Statement Header */
           .statement-header {
             padding: 40px;
             border-bottom: 3px solid #e5e7eb;
@@ -158,7 +143,7 @@ export async function POST(req: NextRequest) {
             background: #f8fafc;
             padding: 16px;
             border-radius: 8px;
-            border-left: 4px solid #2563eb;
+            border-left: 4px solid #10b981;
           }
           .meta-label {
             font-size: 11px;
@@ -173,8 +158,6 @@ export async function POST(req: NextRequest) {
             font-weight: 600;
             color: #1e293b;
           }
-          
-          /* Account Summary */
           .account-summary {
             padding: 40px;
             background: #f8fafc;
@@ -211,13 +194,10 @@ export async function POST(req: NextRequest) {
           .summary-item-value {
             font-size: 24px;
             font-weight: 700;
-            color: #1e293b;
           }
+          .summary-item-value.balance { color: #1e293b; }
           .summary-item-value.credit { color: #10b981; }
           .summary-item-value.debit { color: #ef4444; }
-          .summary-item-value.balance { color: #2563eb; }
-          
-          /* Transactions Table */
           .transactions-section {
             padding: 40px;
           }
@@ -232,155 +212,113 @@ export async function POST(req: NextRequest) {
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-            background: white;
-          }
-          thead {
-            background: #1e293b;
-            color: white;
+            font-size: 14px;
           }
           th {
+            background: #f1f5f9;
             padding: 14px 12px;
             text-align: left;
             font-weight: 700;
+            color: #475569;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-          }
-          tbody tr {
-            border-bottom: 1px solid #f1f5f9;
-          }
-          tbody tr:hover {
-            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
           }
           td {
-            padding: 14px 12px;
-            font-size: 13px;
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
           }
-          .date-col { 
-            color: #64748b; 
-            font-weight: 600;
-            width: 100px;
+          tr:hover {
+            background: #fafafa;
           }
-          .desc-col { 
-            color: #1e293b;
-            font-weight: 500;
-          }
-          .type-col {
-            width: 100px;
-          }
+          .date-col { width: 110px; font-weight: 500; }
+          .type-col { width: 100px; }
+          .amount-col { width: 120px; text-align: right; font-weight: 600; }
+          .balance-col { width: 120px; text-align: right; font-weight: 600; color: #1e293b; }
+          .amount-credit { color: #10b981; }
+          .amount-debit { color: #ef4444; }
           .type-badge {
             display: inline-block;
             padding: 4px 10px;
             border-radius: 20px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          .type-credit {
-            background: #d1fae5;
-            color: #065f46;
-          }
-          .type-debit {
-            background: #fee2e2;
-            color: #991b1b;
-          }
-          .amount-col {
-            text-align: right;
-            font-weight: 700;
-            font-family: 'Courier New', monospace;
-            width: 120px;
-          }
-          .amount-credit { color: #10b981; }
-          .amount-debit { color: #ef4444; }
-          .balance-col {
-            text-align: right;
+            font-size: 11px;
             font-weight: 600;
-            font-family: 'Courier New', monospace;
-            color: #2563eb;
-            width: 120px;
+            text-transform: uppercase;
           }
-          
-          /* Footer */
+          .type-credit { background: #d1fae5; color: #065f46; }
+          .type-debit { background: #fee2e2; color: #991b1b; }
           .statement-footer {
-            padding: 40px;
             background: #1e293b;
             color: white;
+            padding: 40px;
           }
           .footer-important {
             background: rgba(255,255,255,0.1);
             padding: 20px;
             border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #d4af37;
+            margin-bottom: 30px;
           }
           .footer-important-title {
-            font-size: 14px;
             font-weight: 700;
-            margin-bottom: 8px;
-            color: #d4af37;
+            margin-bottom: 10px;
+            color: #fbbf24;
           }
           .footer-important-text {
-            font-size: 12px;
-            line-height: 1.8;
+            font-size: 13px;
+            line-height: 1.7;
             opacity: 0.9;
           }
           .footer-contact {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 30px;
           }
           .contact-item {
-            font-size: 12px;
-            opacity: 0.9;
+            font-size: 13px;
           }
           .contact-label {
             font-weight: 700;
-            margin-bottom: 4px;
-            color: #d4af37;
+            margin-bottom: 8px;
+            color: #10b981;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
           .footer-legal {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.2);
             font-size: 11px;
             opacity: 0.7;
-            text-align: center;
             line-height: 1.8;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
           }
-          
-          /* No transactions message */
           .no-transactions {
             text-align: center;
-            padding: 60px 40px;
+            padding: 60px 20px;
             color: #64748b;
           }
           .no-transactions-icon {
             font-size: 48px;
             margin-bottom: 16px;
-            opacity: 0.3;
+            opacity: 0.5;
           }
         </style>
       </head>
       <body>
         <div class="statement-container">
-          <!-- Letterhead -->
           <div class="letterhead">
-            <img src="https://i.ibb.co/ymwC7HBZ/zentri-bank-logo.png" alt="ZentriBank" class="bank-logo" style="filter: brightness(0) invert(1);">
             <div class="bank-info">
-              <strong>ZENTRIBANK</strong>
+              <strong>ZENTRIBANK CAPITAL</strong>
               123 Financial District, Suite 500<br>
               New York, NY 10004, United States<br>
-              Tel: +1 (800) 123-4567 | Fax: +1 (800) 123-4568<br>
-              www.zentribank.com | support@zentribank.com
+              Tel: +1 (800) 123-4567<br>
+              www.zentribank.capital | admin@zentribank.capital
             </div>
           </div>
           
-          <!-- Statement Header -->
           <div class="statement-header">
             <div class="statement-title">ACCOUNT STATEMENT</div>
             <div class="statement-subtitle">Confidential - For Account Holder Use Only</div>
@@ -413,7 +351,6 @@ export async function POST(req: NextRequest) {
             </div>
           </div>
           
-          <!-- Account Summary -->
           <div class="account-summary">
             <div class="summary-title">ACCOUNT SUMMARY</div>
             <div class="summary-grid">
@@ -436,7 +373,6 @@ export async function POST(req: NextRequest) {
             </div>
           </div>
           
-          <!-- Transactions -->
           <div class="transactions-section">
             <div class="transactions-title">TRANSACTION HISTORY (${transactions.length} Transactions)</div>
             
@@ -486,13 +422,12 @@ export async function POST(req: NextRequest) {
             `}
           </div>
           
-          <!-- Footer -->
           <div class="statement-footer">
             <div class="footer-important">
               <div class="footer-important-title">IMPORTANT NOTICE</div>
               <div class="footer-important-text">
                 Please review this statement carefully. If you notice any discrepancies or unauthorized transactions, 
-                please contact us immediately at +1 (800) 123-4567 or support@zentribank.com. You have 60 days from 
+                please contact us immediately at +1 (800) 123-4567 or admin@zentribank.capital. You have 60 days from 
                 the statement date to report any errors.
               </div>
             </div>
@@ -505,20 +440,20 @@ export async function POST(req: NextRequest) {
               </div>
               <div class="contact-item">
                 <div class="contact-label">EMAIL SUPPORT</div>
-                support@zentribank.com<br>
+                admin@zentribank.capital<br>
                 Response within 24 hours
               </div>
               <div class="contact-item">
                 <div class="contact-label">ONLINE BANKING</div>
-                www.zentribank.com<br>
+                www.zentribank.capital<br>
                 Secure access anytime
               </div>
             </div>
             
             <div class="footer-legal">
               This statement is confidential and intended solely for the account holder named above. 
-              ZentriBank is a member of FDIC. Deposits are insured up to $250,000 per depositor.<br>
-              &copy; ${new Date().getFullYear()} ZentriBank. All rights reserved. | Member FDIC | Equal Housing Lender
+              ZentriBank Capital is a member of FDIC. Deposits are insured up to $250,000 per depositor.<br>
+              © ${new Date().getFullYear()} ZentriBank Capital. All rights reserved. | Member FDIC | Equal Housing Lender
             </div>
           </div>
         </div>
@@ -526,28 +461,18 @@ export async function POST(req: NextRequest) {
       </html>
     `;
 
-    // Send email
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    await sendSimpleEmail(
+      statement.userId.email,
+      `ZentriBank Capital - Account Statement ${statementNumber}`,
+      `Your account statement for ${new Date(statement.startDate).toLocaleDateString()} - ${new Date(statement.endDate).toLocaleDateString()} is attached.`,
+      emailHTML
+    );
 
-    await transporter.sendMail({
-      from: `"ZentriBank" <${process.env.SMTP_USER}>`,
-      to: statement.userId.email,
-      subject: `ZentriBank Account Statement - ${statementNumber}`,
-      html: emailHTML,
-    });
-
-    // Update statement status
     statement.status = 'sent';
     statement.sentAt = new Date();
     await statement.save();
+
+    console.log(`✅ Statement sent to ${statement.userId.email}`);
 
     return NextResponse.json({
       success: true,
@@ -556,18 +481,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Send statement error:', error);
-    
-    try {
-      const { requestId } = await req.json();
-      if (requestId) {
-        await Statement.findByIdAndUpdate(requestId, {
-          status: 'failed',
-          errorMessage: error.message
-        });
-      }
-    } catch (e) {
-      console.error('Failed to update statement status:', e);
-    }
 
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to send statement' },

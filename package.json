@@ -15,6 +15,10 @@
     "create-admin": "tsx src/scripts/createAdmin.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
     "@heroicons/react": "^2.2.0",
     "bcryptjs": "^3.0.2",
     "firebase": "^12.1.0",

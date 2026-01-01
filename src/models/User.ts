@@ -1,88 +1,96 @@
 // File: src/models/User.ts
+// CLEAN VERSION - NO EMBEDDED TRANSACTIONS
 
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-// ── Transaction sub‐document interface ───────────────────────────────────────
-export interface ITransaction {
-  type: 'deposit' | 'withdraw' | 'transfer-in' | 'transfer-out' | 'fee' | 'interest' | 'adjustment-credit' | 'adjustment-debit';
-  amount: number;
-  description: string;
-  date: Date;
-  balanceAfter: number;
-  relatedUser?: mongoose.Types.ObjectId;
-}
-
-// ── User document interface ─────────────────────────────────────────────────
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  /** Distinguish regular users & admins */
   role: 'user' | 'admin';
   verified: boolean;
 
-  /** New: separate account balances */
+  // Three separate account balances
   checkingBalance: number;
   savingsBalance: number;
   investmentBalance: number;
 
-  /** Optional account details - removed bitcoin */
+  // Account details
   accountNumber?: string;
   routingNumber?: string;
 
-  transactions: ITransaction[];
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-// ── Transaction schema ─────────────────────────────────────────────────────
-const TransactionSchema = new Schema<ITransaction>({
-  type:        { type: String, enum: ['deposit','withdraw','transfer-in','transfer-out','fee','interest','adjustment-credit','adjustment-debit'], required: true },
-  amount:      { type: Number, required: true },
-  description: { type: String, required: true },
-  date:        { type: Date,   default: Date.now },
-  balanceAfter:{ type: Number, required: true },
-  relatedUser: { type: Schema.Types.ObjectId, ref: 'User' },
-}, { _id: false });
-
-// ── User schema ────────────────────────────────────────────────────────────
 const UserSchema = new Schema<IUser>({
-  name:           { type: String, required: true, trim: true, maxlength: 50 },
-  email:          {
-                   type: String, required: true, unique: true,
-                   match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email']
-                  },
-  password:       { type: String, required: true, minlength: 8, select: false },
+  name: { 
+    type: String, 
+    required: true, 
+    trim: true, 
+    maxlength: 50 
+  },
+  email: {
+    type: String, 
+    required: true, 
+    unique: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email']
+  },
+  password: { 
+    type: String, 
+    required: true, 
+    minlength: 8, 
+    select: false 
+  },
 
-  role:           { type: String, enum: ['user','admin'], default: 'user' },
-  verified:       { type: Boolean, default: false },
+  role: { 
+    type: String, 
+    enum: ['user', 'admin'], 
+    default: 'user' 
+  },
+  verified: { 
+    type: Boolean, 
+    default: false 
+  },
 
-  // ── Three separate balances ────────────────────────────────────────────
-  checkingBalance:   { type: Number, default: 0, min: 0 },
-  savingsBalance:    { type: Number, default: 0, min: 0 },
-  investmentBalance: { type: Number, default: 0, min: 0 },
+  // Three separate balances
+  checkingBalance: { 
+    type: Number, 
+    default: 0 
+  },
+  savingsBalance: { 
+    type: Number, 
+    default: 0 
+  },
+  investmentBalance: { 
+    type: Number, 
+    default: 0 
+  },
 
-  // ── Optional account details (removed bitcoin) ─────────────────────────
-  accountNumber:  { type: String, required: false },
-  routingNumber:  { type: String, required: false },
-
-  transactions:   [TransactionSchema]
+  // Account details
+  accountNumber: { 
+    type: String, 
+    required: false 
+  },
+  routingNumber: { 
+    type: String, 
+    required: false 
+  }
 }, {
   timestamps: true,
   toJSON: {
     virtuals: true,
     transform: (_doc, ret) => {
-      // Keep both _id and id for compatibility
       ret.id = ret._id.toString();
-      ret._id = ret._id.toString() as any; // Keep _id as string
-      delete (ret as any) .password;
-      delete (ret as any). __v;
+      ret._id = ret._id.toString() as any;
+      delete (ret as any).password;
+      delete (ret as any).__v;
       return ret;
     },
   },
 });
 
-// ── Password hashing ───────────────────────────────────────────────────────
+// Password hashing
 UserSchema.pre<IUser>('save', async function(next) {
   if (!this.isModified('password')) return next();
   try {
@@ -94,10 +102,14 @@ UserSchema.pre<IUser>('save', async function(next) {
   }
 });
 
-// ── Auto‐generate account & routing numbers ────────────────────────────────
+// Auto-generate account & routing numbers
 UserSchema.pre<IUser>('save', function(next) {
-  if (!this.accountNumber)  this.accountNumber  = 'AC' + Math.floor(1e8 + Math.random()*9e8);
-  if (!this.routingNumber)  this.routingNumber  = 'RT' + Math.floor(1e8 + Math.random()*9e8);
+  if (!this.accountNumber) {
+    this.accountNumber = 'AC' + Math.floor(1e8 + Math.random() * 9e8);
+  }
+  if (!this.routingNumber) {
+    this.routingNumber = 'RT' + Math.floor(1e8 + Math.random() * 9e8);
+  }
   next();
 });
 

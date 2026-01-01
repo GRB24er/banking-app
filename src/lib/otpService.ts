@@ -1,6 +1,6 @@
-// src/lib/otpService.ts
+// src/lib/otpService.ts - UPDATED VERSION
 import crypto from 'crypto';
-import { sendTransactionEmail } from './mail';
+import { sendOTPEmail } from './mail'; // Use your existing mail service
 
 // OTP Configuration
 const OTP_CONFIG = {
@@ -37,7 +37,7 @@ interface OTPRecord {
   ipAddress?: string;
 }
 
-// In production, use Redis or database. For now, using in-memory storage
+// In-memory storage (replace with MongoDB in production)
 const otpStorage = new Map<string, OTPRecord>();
 const blockedUsers = new Map<string, Date>();
 
@@ -123,8 +123,14 @@ export async function createOTP(
     // Also store by token for URL-based verification
     otpStorage.set(`token-${token}`, otpRecord);
 
-    // Send OTP via email or SMS
-    await sendOTP(email, code, type, phone);
+    // Send OTP via email using YOUR existing mail service
+    try {
+      await sendOTPEmail(email, code, type, OTP_CONFIG.EXPIRY_MINUTES);
+      console.log(`[OTP] Code sent to ${email}: ${code}`);
+    } catch (emailError) {
+      console.error('[OTP] Failed to send email:', emailError);
+      // Don't fail - code is still stored
+    }
 
     return {
       success: true,
@@ -132,7 +138,7 @@ export async function createOTP(
       token
     };
   } catch (error: any) {
-    console.error('Failed to create OTP:', error);
+    console.error('[OTP] Failed to create OTP:', error);
     return {
       success: false,
       error: 'Failed to generate verification code'
@@ -204,9 +210,10 @@ export async function verifyOTP(
     otpRecord.verified = true;
     otpStorage.delete(key); // Remove after successful verification
 
+    console.log(`[OTP] Code verified successfully for ${userId}`);
     return { success: true };
   } catch (error: any) {
-    console.error('Failed to verify OTP:', error);
+    console.error('[OTP] Failed to verify OTP:', error);
     return {
       success: false,
       error: 'Verification failed'
@@ -250,98 +257,11 @@ export async function verifyOTPToken(
       type: otpRecord.type
     };
   } catch (error: any) {
-    console.error('Failed to verify OTP token:', error);
+    console.error('[OTP] Failed to verify OTP token:', error);
     return {
       success: false,
       error: 'Verification failed'
     };
-  }
-}
-
-/**
- * Send OTP via email or SMS
- */
-async function sendOTP(
-  email: string,
-  code: string,
-  type: OTPType,
-  phone?: string
-): Promise<void> {
-  // Get appropriate message based on type
-  const messages = {
-    [OTPType.LOGIN]: 'Login Verification',
-    [OTPType.TRANSFER]: 'Transfer Authorization',
-    [OTPType.PROFILE_UPDATE]: 'Profile Update Verification',
-    [OTPType.CARD_APPLICATION]: 'Credit Card Application',
-    [OTPType.PASSWORD_RESET]: 'Password Reset',
-    [OTPType.TRANSACTION_APPROVAL]: 'Transaction Approval'
-  };
-
-  const subject = `${messages[type]} - Verification Code`;
-  
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 10px 10px; }
-        .otp-code { background: white; border: 2px solid #667eea; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; }
-        .otp-code h2 { margin: 0; color: #667eea; font-size: 36px; letter-spacing: 5px; }
-        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
-        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Verification Required</h1>
-          <p>${messages[type]}</p>
-        </div>
-        <div class="content">
-          <p>Hello,</p>
-          <p>You requested a verification code for ${messages[type].toLowerCase()}. Please use the code below to complete your action:</p>
-          
-          <div class="otp-code">
-            <h2>${code}</h2>
-            <p style="margin: 10px 0 0; color: #666; font-size: 14px;">
-              This code expires in ${OTP_CONFIG.EXPIRY_MINUTES} minutes
-            </p>
-          </div>
-          
-          <div class="warning">
-            <strong>Security Notice:</strong><br>
-            • Never share this code with anyone<br>
-            • Our staff will never ask for this code<br>
-            • If you didn't request this, please ignore this email
-          </div>
-          
-          <p>For your security, this code can only be used once and will expire at ${new Date(Date.now() + OTP_CONFIG.EXPIRY_MINUTES * 60000).toLocaleTimeString()}.</p>
-        </div>
-        <div class="footer">
-          <p>This is an automated message. Please do not reply to this email.</p>
-          <p>© ${new Date().getFullYear()} Your Bank. All rights reserved.</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  // Fixed: Remove customHTML and send it as a separate parameter or handle differently
-  await sendTransactionEmail(email, {
-    name: 'Customer',
-    transaction: {
-      type: 'otp',
-      description: subject
-      // Removed customHTML as it's not part of TxLike interface
-    }
-  });
-
-  // If phone number provided and SMS service configured, send SMS
-  if (phone && process.env.TWILIO_ACCOUNT_SID) {
-    // await sendSMS(phone, `Your ${messages[type]} code is: ${code}. Expires in ${OTP_CONFIG.EXPIRY_MINUTES} minutes.`);
   }
 }
 
@@ -351,6 +271,7 @@ async function sendOTP(
 function blockUser(userId: string): void {
   const blockUntil = new Date(Date.now() + OTP_CONFIG.BLOCK_DURATION_MINUTES * 60000);
   blockedUsers.set(userId, blockUntil);
+  console.log(`[OTP] User ${userId} blocked until ${blockUntil.toISOString()}`);
 }
 
 /**
@@ -387,6 +308,17 @@ export function cleanupExpiredOTPs(): void {
       blockedUsers.delete(userId);
     }
   }
+}
+
+/**
+ * Get OTP for testing (dev only)
+ */
+export function getOTPForTesting(userId: string, type: OTPType): string | null {
+  if (process.env.NODE_ENV !== 'development') return null;
+  
+  const key = `${userId}-${type}`;
+  const record = otpStorage.get(key);
+  return record?.code || null;
 }
 
 // Run cleanup every 5 minutes

@@ -1,40 +1,36 @@
-// src/lib/mail.ts
+// src/lib/mail.ts - HARDCODED NAMECHEAP PRIVATEEMAIL
 import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
 
-/** ==============================
- * SMTP CONFIGURATION - HOSTINGER
- * ============================== */
-const SMTP_HOST = process.env.SMTP_HOST || "smtp.hostinger.com";
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || "465", 10);
-const SMTP_SECURE = process.env.SMTP_SECURE === "false" ? false : true;
-const SMTP_USER = process.env.SMTP_USER || "support@horizonglobalcapital.com";
-const SMTP_PASS = process.env.SMTP_PASSWORD || "";
 
-// Validate SMTP configuration
-if (!process.env.SMTP_PASSWORD && process.env.NODE_ENV === "production") {
-  console.error("[mail] WARNING: SMTP_PASSWORD environment variable is not set!");
-}
+/** ==============================
+ * HARDCODED SMTP CONFIGURATION
+ * ============================== */
+const SMTP_HOST = "mail.privateemail.com";
+const SMTP_PORT = 465;
+const SMTP_SECURE = true;
+const SMTP_USER = "admin@zentribank.capital";
+const SMTP_PASS = "Valmont15#";
 
 // Email configuration
-const FROM_DISPLAY = `Horizon Group Support <${SMTP_USER}>`;
+const FROM_DISPLAY = `ZentriBank Capital <${SMTP_USER}>`;
 const ENVELOPE_FROM = SMTP_USER;
-const REPLY_TO = process.env.REPLY_TO_EMAIL || SMTP_USER;
+const REPLY_TO = SMTP_USER;
 const LIST_UNSUBSCRIBE = `<mailto:${SMTP_USER}?subject=Unsubscribe>`;
 
 // Connection pool settings
 const POOL_CONFIG = {
   pool: true,
-  maxConnections: parseInt(process.env.SMTP_MAX_CONNECTIONS || "3", 10),
-  maxMessages: parseInt(process.env.SMTP_MAX_MESSAGES || "100", 10),
+  maxConnections: 3,
+  maxMessages: 100,
   rateDelta: 1000,
-  rateLimit: parseInt(process.env.SMTP_RATE_LIMIT || "5", 10),
+  rateLimit: 5,
 };
 
 // Timeout settings
 const TIMEOUT_CONFIG = {
-  connectionTimeout: parseInt(process.env.SMTP_CONNECTION_TIMEOUT || "20000", 10),
-  greetingTimeout: parseInt(process.env.SMTP_GREETING_TIMEOUT || "20000", 10),
-  socketTimeout: parseInt(process.env.SMTP_SOCKET_TIMEOUT || "40000", 10),
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 40000,
 };
 
 let cachedTransporter: Transporter | null = null;
@@ -52,26 +48,21 @@ async function getTransporter(): Promise<Transporter> {
     },
     ...POOL_CONFIG,
     ...TIMEOUT_CONFIG,
-    logger: process.env.NODE_ENV === "development",
-    debug: process.env.NODE_ENV === "development",
+    logger: false,
+    debug: false,
     tls: {
-      rejectUnauthorized: process.env.NODE_ENV === "production",
+      rejectUnauthorized: true,
       minVersion: "TLSv1.2",
     },
   });
 
-  if (process.env.NODE_ENV === "development" || process.env.VERIFY_SMTP === "true") {
-    try {
-      if (cachedTransporter) {
-        await cachedTransporter.verify();
-        console.log("[mail] SMTP connection verified successfully");
-      }
-    } catch (err) {
-      console.error("[mail] SMTP verification failed:", err);
-      if (process.env.NODE_ENV === "production" && process.env.VERIFY_SMTP === "true") {
-        throw new Error(`SMTP configuration error: ${err}`);
-      }
+  try {
+    if (cachedTransporter) {
+      await cachedTransporter.verify();
+      console.log("[mail] ✅ SMTP connection verified successfully");
     }
+  } catch (err) {
+    console.error("[mail] ❌ SMTP verification failed:", err);
   }
   
   return cachedTransporter as Transporter;
@@ -208,24 +199,6 @@ async function sendWithRetry(
   options: Parameters<Transporter["sendMail"]>[0],
   maxAttempts = 3
 ): Promise<SentMessageInfo & { failed?: boolean; error?: string; skipped?: boolean }> {
-  if (!SMTP_PASS) {
-    const errorMsg = "[mail] SMTP password not configured. Set SMTP_PASSWORD environment variable.";
-    console.error(errorMsg);
-    
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(errorMsg);
-    }
-    
-    return {
-      accepted: [],
-      rejected: [],
-      envelope: { from: ENVELOPE_FROM, to: options.to as any },
-      messageId: "SKIPPED-NO-CONFIG-" + Date.now(),
-      skipped: true,
-      response: "Email skipped - SMTP not configured",
-    } as any;
-  }
-
   const transporter = await getTransporter();
   let attempt = 0;
   let lastErr: any = null;
@@ -234,7 +207,7 @@ async function sendWithRetry(
     attempt++;
     try {
       const info = await transporter.sendMail(options);
-      console.log(`[mail] Email sent successfully (attempt ${attempt}/${maxAttempts}): messageId=${info.messageId}`);
+      console.log(`[mail] ✅ Email sent (attempt ${attempt}/${maxAttempts}): ${info.messageId}`);
       return info;
     } catch (err: any) {
       lastErr = err;
@@ -244,7 +217,7 @@ async function sendWithRetry(
                        /timed?out/i.test(message) || 
                        /connection.*closed/i.test(message);
 
-      console.warn(`[mail] Send attempt ${attempt} failed:`, {
+      console.warn(`[mail] ⚠️ Send attempt ${attempt} failed:`, {
         code,
         message: message.substring(0, 200),
         transient
@@ -254,13 +227,13 @@ async function sendWithRetry(
           /auth/i.test(message) || 
           /invalid.*recipient/i.test(message) ||
           /user.*not.*found/i.test(message)) {
-        console.error("[mail] Permanent error detected, not retrying");
+        console.error("[mail] ❌ Permanent error, not retrying");
         break;
       }
 
       if (attempt < maxAttempts && transient) {
         const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-        console.log(`[mail] Retrying in ${backoff}ms...`);
+        console.log(`[mail] 🔄 Retrying in ${backoff}ms...`);
         await new Promise((r) => setTimeout(r, backoff));
         continue;
       }
@@ -268,7 +241,7 @@ async function sendWithRetry(
     }
   }
 
-  console.error("[mail] Final failure after all attempts:", lastErr?.code || "", lastErr?.message || lastErr);
+  console.error("[mail] ❌ Final failure:", lastErr?.code || "", lastErr?.message || lastErr);
   
   return {
     accepted: [],
@@ -317,7 +290,7 @@ export async function sendTransactionEmail(
   </head>
   <body style="margin:0; padding:20px; background-color:#f8fafc;">
     <div style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-      <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; line-height:1.6; color:#0f172a">
         <h2 style="margin:0 0 8px 0; color:#0f172a;">Hi ${greetingName},</h2>
         <p style="margin:0 0 16px 0; color:#475569;">A recent transaction on your account is now <strong style="color:#0f172a;">${label}</strong>.</p>
         
@@ -408,7 +381,7 @@ export async function sendTransactionEmail(
 export async function sendWelcomeEmail(to: string, opts?: any) {
   try {
     const name = (opts?.name as string) || "Customer";
-    const subject = "Welcome to ZentriBank Group";
+    const subject = "Welcome to ZentriBank Capital";
     
     const html = `
     <!DOCTYPE html>
@@ -419,14 +392,14 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
     </head>
     <body style="margin:0; padding:20px; background-color:#f8fafc;">
       <div style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
-          <h1 style="margin:0 0 24px 0; color:#0f172a; font-size:28px;">Welcome to Horizon Group!</h1>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; line-height:1.6; color:#0f172a">
+          <h1 style="margin:0 0 24px 0; color:#0f172a; font-size:28px;">Welcome to ZentriBank Capital!</h1>
           <p style="font-size:16px; color:#475569;">Hi ${name},</p>
           <p style="font-size:16px; color:#475569;">Your online banking profile has been created successfully.</p>
           <div style="margin-top:32px; padding-top:24px; border-top:1px solid #e2e8f0;">
             <p style="margin:0; color:#64748b; font-size:14px;">
               Best regards,<br>
-              The ZentriBank Group Team
+              The ZentriBank Capital Team
             </p>
           </div>
         </div>
@@ -435,7 +408,7 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
     </html>
     `;
     
-    const text = `Hi ${name},\n\nWelcome to ZentriBank Group!\n\nYour online banking profile has been created successfully.\n\nBest regards,\nThe Horizon Group Team`;
+    const text = `Hi ${name},\n\nWelcome to ZentriBank Capital!\n\nYour online banking profile has been created successfully.\n\nBest regards,\nThe ZentriBank Capital Team`;
     
     return sendWithRetry(
       {
@@ -496,7 +469,7 @@ export async function sendBankStatementEmail(
 
   const subject = `Your account statement ${periodText || ""}`.trim();
   const html = `<h2>Account Statement</h2><p>Hi ${displayName},</p><p>Your account statement ${periodText || ""} is attached.</p>`;
-  const text = `Hi ${displayName},\n\nYour account statement ${periodText || ""} is attached.\n\nBest regards,\nThe Horizon Group Team`;
+  const text = `Hi ${displayName},\n\nYour account statement ${periodText || ""} is attached.\n\nBest regards,\nThe ZentriBank Capital Team`;
 
   return sendWithRetry(
     {
@@ -517,7 +490,221 @@ export async function sendBankStatementEmail(
   );
 }
 
-// 4) CRITICAL: Simple utility for ad-hoc messages - THIS IS THE MISSING EXPORT
+// 4) OTP EMAIL - NEW
+export async function sendOTPEmail(
+  to: string,
+  code: string,
+  type: string,
+  expiryMinutes: number = 10
+) {
+  const typeLabels: Record<string, string> = {
+    login: 'Login Verification',
+    transfer: 'Transfer Authorization',
+    profile_update: 'Profile Update Verification',
+    card_application: 'Credit Card Application',
+    password_reset: 'Password Reset',
+    transaction_approval: 'Transaction Approval'
+  };
+
+  const typeLabel = typeLabels[type] || 'Verification';
+  const subject = `${typeLabel} - Code: ${code}`;
+  const expiryTime = new Date(Date.now() + expiryMinutes * 60000);
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+          line-height: 1.6; 
+          color: #0f172a;
+          margin: 0;
+          padding: 0;
+          background: #f8fafc;
+        }
+        .container { 
+          max-width: 600px; 
+          margin: 40px auto; 
+          background: white;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header { 
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white; 
+          padding: 40px 30px; 
+          text-align: center;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 28px;
+          font-weight: 700;
+        }
+        .header p {
+          margin: 10px 0 0;
+          opacity: 0.9;
+          font-size: 16px;
+        }
+        .content { 
+          padding: 40px 30px;
+        }
+        .otp-box { 
+          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+          border: 2px solid #10b981;
+          border-radius: 16px; 
+          padding: 30px; 
+          margin: 30px 0; 
+          text-align: center;
+        }
+        .otp-code { 
+          font-size: 48px;
+          font-weight: 800;
+          color: #059669;
+          letter-spacing: 10px;
+          margin: 0;
+          font-family: 'Courier New', monospace;
+        }
+        .otp-label {
+          margin: 15px 0 0;
+          color: #047857;
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .warning { 
+          background: #fef3c7;
+          border-left: 4px solid #f59e0b;
+          padding: 20px;
+          margin: 25px 0;
+          border-radius: 8px;
+        }
+        .warning strong {
+          color: #92400e;
+          display: block;
+          margin-bottom: 10px;
+          font-size: 16px;
+        }
+        .warning ul {
+          margin: 0;
+          padding-left: 20px;
+          color: #92400e;
+        }
+        .warning li {
+          margin: 5px 0;
+        }
+        .info {
+          background: #f0fdf4;
+          padding: 20px;
+          border-radius: 8px;
+          margin: 25px 0;
+          border: 1px solid #bbf7d0;
+        }
+        .footer { 
+          text-align: center; 
+          padding: 30px; 
+          color: #64748b;
+          font-size: 14px;
+          background: #f8fafc;
+          border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+          margin: 5px 0;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🔐 Verification Code</h1>
+          <p>${typeLabel}</p>
+        </div>
+        <div class="content">
+          <p>Hello,</p>
+          <p>You requested a verification code for <strong>${typeLabel.toLowerCase()}</strong>. Use the code below to proceed:</p>
+          
+          <div class="otp-box">
+            <div class="otp-code">${code}</div>
+            <div class="otp-label">
+              Valid until ${expiryTime.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+              })}
+            </div>
+          </div>
+          
+          <div class="warning">
+            <strong>⚠️ Security Notice</strong>
+            <ul>
+              <li>Never share this code with anyone</li>
+              <li>Our staff will NEVER ask for this code</li>
+              <li>This code expires in ${expiryMinutes} minutes</li>
+              <li>If you didn't request this, please ignore this email</li>
+            </ul>
+          </div>
+          
+          <div class="info">
+            <p style="margin: 0; color: #047857;">
+              <strong>Need help?</strong> Contact our support team at ${REPLY_TO} if you didn't request this code or have any concerns.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <p><strong>ZentriBank Capital</strong></p>
+          <p>This is an automated message. Please do not reply.</p>
+          <p>© ${new Date().getFullYear()} All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Hello,
+
+You requested a verification code for ${typeLabel.toLowerCase()}.
+
+Your verification code is: ${code}
+
+This code expires at ${expiryTime.toLocaleTimeString()}.
+
+SECURITY NOTICE:
+- Never share this code with anyone
+- Our staff will NEVER ask for this code
+- This code expires in ${expiryMinutes} minutes
+- If you didn't request this, please ignore this email
+
+Need help? Contact us at ${REPLY_TO}
+
+ZentriBank Capital
+This is an automated message. Please do not reply.
+© ${new Date().getFullYear()} All rights reserved.
+  `.trim();
+
+  return sendWithRetry(
+    {
+      from: FROM_DISPLAY,
+      replyTo: REPLY_TO,
+      envelope: { from: ENVELOPE_FROM, to: [to] },
+      to,
+      subject,
+      text,
+      html,
+      headers: {
+        "List-Unsubscribe": LIST_UNSUBSCRIBE,
+        "X-Priority": "1",
+        "X-OTP-Type": type,
+        "X-OTP-Expiry": expiryTime.toISOString(),
+      },
+    },
+    3
+  );
+}
+
+// 5) Simple utility for ad-hoc messages
 export async function sendSimpleEmail(
   to: string | string[],
   subject: string,
@@ -552,7 +739,7 @@ export async function sendSimpleEmail(
   );
 }
 
-// 5) Export transporter proxy for legacy code
+// 6) Export transporter proxy
 export const transporter = {
   async sendMail(options: Parameters<Transporter["sendMail"]>[0]) {
     try {
@@ -571,24 +758,24 @@ export const transporter = {
   },
 };
 
-// 6) Export utility to test SMTP configuration
+// 7) Test SMTP
 export async function testSMTPConnection(): Promise<boolean> {
   try {
     const transporter = await getTransporter();
     await transporter.verify();
-    console.log("[mail] SMTP test successful");
+    console.log("[mail] ✅ SMTP test successful");
     return true;
   } catch (error) {
-    console.error("[mail] SMTP test failed:", error);
+    console.error("[mail] ❌ SMTP test failed:", error);
     return false;
   }
 }
 
-// MAKE SURE ALL EXPORTS ARE LISTED
 export default {
   sendTransactionEmail,
   sendWelcomeEmail,
   sendBankStatementEmail,
+  sendOTPEmail,
   sendSimpleEmail,
   testSMTPConnection,
   transporter
