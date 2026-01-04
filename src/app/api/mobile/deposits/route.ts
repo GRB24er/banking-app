@@ -2,9 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import clientPromise from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'b3bc4dcf9055e490cef86fd9647fc8acd61d6bbe07dfb85fb6848bfe7f4f3926';
+export const runtime = 'nodejs';
+
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  'b3bc4dcf9055e490cef86fd9647fc8acd61d6bbe07dfb85fb6848bfe7f4f3926';
 
 async function verifyAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -18,6 +21,24 @@ async function verifyAuth(request: NextRequest) {
   }
 }
 
+/**
+ * IMPORTANT FIX:
+ * Some mongodb helpers return MongoClient, others return Db.
+ * If you call `.db()` on a Db, you get: ".db is not a function".
+ */
+async function getDb() {
+  const mongo = await clientPromise;
+
+  // If mongo has a .db() function, it's a MongoClient
+  if (mongo && typeof (mongo as any).db === 'function') {
+    const dbName = process.env.MONGODB_DB; // optional
+    return dbName ? (mongo as any).db(dbName) : (mongo as any).db();
+  }
+
+  // Otherwise assume mongo already IS the Db instance
+  return mongo as any;
+}
+
 // GET /api/mobile/deposits - Get user's deposit history
 export async function GET(request: NextRequest) {
   try {
@@ -26,8 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const client = await clientPromise;
-    const db = client.db();
+    const db = await getDb();
 
     const user = await db.collection('users').findOne({ email: auth.email });
     if (!user) {
@@ -43,12 +63,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      deposits: deposits.map((d) => ({
+      deposits: deposits.map((d: any) => ({
         _id: d._id.toString(),
         amount: d.amount,
         accountType: d.accountType,
         status: d.status,
-        checkFrontImage: d.checkFrontImage ? true : false, // Don't send full image
+        checkFrontImage: d.checkFrontImage ? true : false,
         checkBackImage: d.checkBackImage ? true : false,
         reference: d.reference,
         createdAt: d.createdAt,
@@ -56,9 +76,12 @@ export async function GET(request: NextRequest) {
         reviewNote: d.reviewNote,
       })),
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Deposits fetch error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch deposits' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Failed to fetch deposits' },
+      { status: 500 }
+    );
   }
 }
 
@@ -70,8 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const client = await clientPromise;
-    const db = client.db();
+    const db = await getDb();
 
     const user = await db.collection('users').findOne({ email: auth.email });
     if (!user) {
@@ -81,7 +103,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { amount, accountType, checkFrontImage, checkBackImage } = body;
 
-    // DEBUG + SAFETY: log payload sizes (helps identify 500 cause)
+    // DEBUG + SAFETY: log payload sizes
     const frontLen = typeof checkFrontImage === 'string' ? checkFrontImage.length : 0;
     const backLen = typeof checkBackImage === 'string' ? checkBackImage.length : 0;
 
@@ -92,7 +114,7 @@ export async function POST(request: NextRequest) {
       backLen,
     });
 
-    // SAFETY: reject overly large base64 payloads (prevents serverless/DB crashes)
+    // SAFETY: reject overly large payloads
     const MAX_B64_LEN = 6_000_000;
     if (frontLen > MAX_B64_LEN || backLen > MAX_B64_LEN) {
       return NextResponse.json(
@@ -101,19 +123,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Normalize: strip "data:image/...;base64," prefix if present (keeps DB smaller)
+    // Normalize: strip prefix
     const normalizedFront =
-      typeof checkFrontImage === 'string' ? checkFrontImage.replace(/^data:image\/\w+;base64,/, '') : checkFrontImage;
+      typeof checkFrontImage === 'string'
+        ? checkFrontImage.replace(/^data:image\/\w+;base64,/, '')
+        : checkFrontImage;
 
     const normalizedBack =
-      typeof checkBackImage === 'string' ? checkBackImage.replace(/^data:image\/\w+;base64,/, '') : checkBackImage;
+      typeof checkBackImage === 'string'
+        ? checkBackImage.replace(/^data:image\/\w+;base64,/, '')
+        : checkBackImage;
 
     // Validation
-    if (!amount || amount <= 0) {
+    if (!amount || Number(amount) <= 0) {
       return NextResponse.json({ success: false, error: 'Invalid amount' }, { status: 400 });
     }
 
-    if (!checkFrontImage || !checkBackImage) {
+    if (!normalizedFront || !normalizedBack) {
       return NextResponse.json(
         { success: false, error: 'Both front and back check images are required' },
         { status: 400 }
@@ -124,19 +150,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid account type' }, { status: 400 });
     }
 
-    // Generate reference number
     const reference = `DEP${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
-    // Create deposit record
     const deposit = {
       userId: user._id.toString(),
       userEmail: user.email,
       userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || 'Unknown',
       amount: Number(amount),
       accountType,
-      checkFrontImage: normalizedFront, // Base64 image (prefix removed)
-      checkBackImage: normalizedBack, // Base64 image (prefix removed)
-      status: 'pending', // pending, approved, rejected
+      checkFrontImage: normalizedFront,
+      checkBackImage: normalizedBack,
+      status: 'pending',
       reference,
       createdAt: new Date(),
       reviewedAt: null,
@@ -146,7 +170,6 @@ export async function POST(request: NextRequest) {
 
     const result = await db.collection('deposits').insertOne(deposit);
 
-    // Create pending transaction (not posted to balance yet)
     await db.collection('transactions').insertOne({
       userId: user._id.toString(),
       type: 'deposit',
@@ -175,7 +198,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Deposit submit error:', error);
-    const message = error?.message || 'Failed to submit deposit';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Failed to submit deposit' },
+      { status: 500 }
+    );
   }
 }
