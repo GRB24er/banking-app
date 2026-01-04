@@ -1,0 +1,151 @@
+// app/api/mobile/deposits/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+import clientPromise from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'b3bc4dcf9055e490cef86fd9647fc8acd61d6bbe07dfb85fb6848bfe7f4f3926';
+
+async function verifyAuth(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  
+  try {
+    const token = authHeader.split(' ')[1];
+    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
+  } catch {
+    return null;
+  }
+}
+
+// GET /api/mobile/deposits - Get user's deposit history
+export async function GET(request: NextRequest) {
+  try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    const user = await db.collection('users').findOne({ email: auth.email });
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    const deposits = await db.collection('deposits')
+      .find({ userId: user._id.toString() })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .toArray();
+
+    return NextResponse.json({
+      success: true,
+      deposits: deposits.map(d => ({
+        _id: d._id.toString(),
+        amount: d.amount,
+        accountType: d.accountType,
+        status: d.status,
+        checkFrontImage: d.checkFrontImage ? true : false, // Don't send full image
+        checkBackImage: d.checkBackImage ? true : false,
+        reference: d.reference,
+        createdAt: d.createdAt,
+        reviewedAt: d.reviewedAt,
+        reviewNote: d.reviewNote,
+      })),
+    });
+
+  } catch (error) {
+    console.error('Deposits fetch error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to fetch deposits' }, { status: 500 });
+  }
+}
+
+// POST /api/mobile/deposits - Submit new check deposit
+export async function POST(request: NextRequest) {
+  try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    const user = await db.collection('users').findOne({ email: auth.email });
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const { amount, accountType, checkFrontImage, checkBackImage } = body;
+
+    // Validation
+    if (!amount || amount <= 0) {
+      return NextResponse.json({ success: false, error: 'Invalid amount' }, { status: 400 });
+    }
+
+    if (!checkFrontImage || !checkBackImage) {
+      return NextResponse.json({ success: false, error: 'Both front and back check images are required' }, { status: 400 });
+    }
+
+    if (!['checking', 'savings'].includes(accountType)) {
+      return NextResponse.json({ success: false, error: 'Invalid account type' }, { status: 400 });
+    }
+
+    // Generate reference number
+    const reference = `DEP${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+    // Create deposit record
+    const deposit = {
+      userId: user._id.toString(),
+      userEmail: user.email,
+      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || 'Unknown',
+      amount: Number(amount),
+      accountType,
+      checkFrontImage, // Base64 image
+      checkBackImage,  // Base64 image
+      status: 'pending', // pending, approved, rejected
+      reference,
+      createdAt: new Date(),
+      reviewedAt: null,
+      reviewedBy: null,
+      reviewNote: null,
+    };
+
+    const result = await db.collection('deposits').insertOne(deposit);
+
+    // Create pending transaction (not posted to balance yet)
+    await db.collection('transactions').insertOne({
+      userId: user._id.toString(),
+      type: 'deposit',
+      subType: 'check_deposit',
+      amount: Number(amount),
+      description: `Mobile Check Deposit - ${reference}`,
+      accountType,
+      status: 'pending',
+      reference,
+      depositId: result.insertedId.toString(),
+      posted: false,
+      createdAt: new Date(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Check deposit submitted for review',
+      deposit: {
+        _id: result.insertedId.toString(),
+        reference,
+        amount: Number(amount),
+        accountType,
+        status: 'pending',
+        createdAt: new Date(),
+      },
+    });
+
+  } catch (error) {
+    console.error('Deposit submit error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to submit deposit' }, { status: 500 });
+  }
+}
