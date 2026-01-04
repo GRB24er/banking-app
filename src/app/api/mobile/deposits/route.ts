@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'b3bc4dcf9055e490cef86fd9647fc8acd6
 async function verifyAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
-  
+
   try {
     const token = authHeader.split(' ')[1];
     return jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
-    const deposits = await db.collection('deposits')
+    const deposits = await db
+      .collection('deposits')
       .find({ userId: user._id.toString() })
       .sort({ createdAt: -1 })
       .limit(50)
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      deposits: deposits.map(d => ({
+      deposits: deposits.map((d) => ({
         _id: d._id.toString(),
         amount: d.amount,
         accountType: d.accountType,
@@ -55,7 +56,6 @@ export async function GET(request: NextRequest) {
         reviewNote: d.reviewNote,
       })),
     });
-
   } catch (error) {
     console.error('Deposits fetch error:', error);
     return NextResponse.json({ success: false, error: 'Failed to fetch deposits' }, { status: 500 });
@@ -81,13 +81,43 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { amount, accountType, checkFrontImage, checkBackImage } = body;
 
+    // DEBUG + SAFETY: log payload sizes (helps identify 500 cause)
+    const frontLen = typeof checkFrontImage === 'string' ? checkFrontImage.length : 0;
+    const backLen = typeof checkBackImage === 'string' ? checkBackImage.length : 0;
+
+    console.log('[mobile/deposits] payload', {
+      amount,
+      accountType,
+      frontLen,
+      backLen,
+    });
+
+    // SAFETY: reject overly large base64 payloads (prevents serverless/DB crashes)
+    const MAX_B64_LEN = 6_000_000;
+    if (frontLen > MAX_B64_LEN || backLen > MAX_B64_LEN) {
+      return NextResponse.json(
+        { success: false, error: 'Image too large. Please retake photo closer and ensure good lighting.' },
+        { status: 413 }
+      );
+    }
+
+    // Normalize: strip "data:image/...;base64," prefix if present (keeps DB smaller)
+    const normalizedFront =
+      typeof checkFrontImage === 'string' ? checkFrontImage.replace(/^data:image\/\w+;base64,/, '') : checkFrontImage;
+
+    const normalizedBack =
+      typeof checkBackImage === 'string' ? checkBackImage.replace(/^data:image\/\w+;base64,/, '') : checkBackImage;
+
     // Validation
     if (!amount || amount <= 0) {
       return NextResponse.json({ success: false, error: 'Invalid amount' }, { status: 400 });
     }
 
     if (!checkFrontImage || !checkBackImage) {
-      return NextResponse.json({ success: false, error: 'Both front and back check images are required' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Both front and back check images are required' },
+        { status: 400 }
+      );
     }
 
     if (!['checking', 'savings'].includes(accountType)) {
@@ -104,8 +134,8 @@ export async function POST(request: NextRequest) {
       userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || 'Unknown',
       amount: Number(amount),
       accountType,
-      checkFrontImage, // Base64 image
-      checkBackImage,  // Base64 image
+      checkFrontImage: normalizedFront, // Base64 image (prefix removed)
+      checkBackImage: normalizedBack, // Base64 image (prefix removed)
       status: 'pending', // pending, approved, rejected
       reference,
       createdAt: new Date(),
@@ -143,9 +173,9 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(),
       },
     });
-
-  } catch (error) {
+  } catch (error: any) {
     console.error('Deposit submit error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to submit deposit' }, { status: 500 });
+    const message = error?.message || 'Failed to submit deposit';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
