@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret';
+const JWT_SECRET = 'b3bc4dcf9055e490cef86fd9647fc8acd61d6bbe07dfb85fb6848bfe7f4f3926';
 
 async function getMobileUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
