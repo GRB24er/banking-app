@@ -4,25 +4,31 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET!;
+const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret';
 
 async function getMobileUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
+  console.log('[Mobile Dashboard] Auth header present:', !!authHeader);
   
   if (!authHeader?.startsWith('Bearer ')) {
+    console.log('[Mobile Dashboard] No Bearer token');
     return null;
   }
 
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
+    console.log('[Mobile Dashboard] Token verified for:', decoded.email);
     return decoded;
-  } catch {
+  } catch (error: any) {
+    console.log('[Mobile Dashboard] Token verification failed:', error.message);
     return null;
   }
 }
 
 export async function GET(request: NextRequest) {
+  console.log('[Mobile Dashboard] GET request received');
+  
   try {
     const decoded = await getMobileUser(request);
     
@@ -34,22 +40,32 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
+    console.log('[Mobile Dashboard] Database connected');
 
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
+      console.log('[Mobile Dashboard] User not found:', decoded.userId);
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
       );
     }
 
-    const transactions = await Transaction.find({ userId: user._id })
-      .sort({ date: -1, createdAt: -1 })
-      .limit(20)
-      .lean();
+    console.log('[Mobile Dashboard] User found:', user.email);
 
-    const formattedTransactions = (transactions as any[]).map((tx) => {
+    let transactions: any[] = [];
+    try {
+      transactions = await Transaction.find({ userId: user._id })
+        .sort({ date: -1, createdAt: -1 })
+        .limit(20)
+        .lean();
+      console.log('[Mobile Dashboard] Transactions:', transactions.length);
+    } catch (txError) {
+      console.error('[Mobile Dashboard] Transaction error:', txError);
+    }
+
+    const formattedTransactions = transactions.map((tx: any) => {
       let adjustedAmount = tx.amount;
       const isDebit = ['transfer-out', 'withdrawal', 'payment', 'fee', 'charge', 'purchase'].includes(tx.type);
       
@@ -102,8 +118,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error) {
-    console.error('Mobile dashboard error:', error);
+  } catch (error: any) {
+    console.error('[Mobile Dashboard] Error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to load dashboard' },
       { status: 500 }

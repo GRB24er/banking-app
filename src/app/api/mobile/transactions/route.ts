@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET!;
+const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret';
 
 async function getMobileUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -47,16 +47,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const page = parseInt(searchParams.get('page') || '1');
     const type = searchParams.get('type');
-    const accountType = searchParams.get('accountType');
 
     const query: any = { userId: user._id };
     
     if (type && type !== 'all') {
       query.type = type;
-    }
-    
-    if (accountType && accountType !== 'all') {
-      query.accountType = accountType;
     }
 
     const transactions = await Transaction.find(query)
@@ -116,8 +111,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error) {
-    console.error('Mobile transactions error:', error);
+  } catch (error: any) {
+    console.error('[Mobile Transactions] Error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch transactions' },
       { status: 500 }
