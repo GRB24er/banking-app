@@ -6,10 +6,9 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import CountUpNumber from "@/components/CountUpNumber";
 import TransactionTable, { Transaction } from "@/components/TransactionTable";
 import styles from "./dashboard.module.css";
-import { ResponsiveContainer, AreaChart, Area } from "recharts";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 
 interface RawTxn {
   reference: string;
@@ -43,6 +42,13 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -58,42 +64,29 @@ export default function DashboardPage() {
       
       fetch("/api/user/dashboard", { 
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include" 
       })
         .then(async (res) => {
           const contentType = res.headers.get("content-type");
-          
           if (!contentType || !contentType.includes("application/json")) {
             throw new Error("Server returned non-JSON response");
           }
-          
           const jsonData = await res.json();
-          
           if (!res.ok) {
             throw new Error(jsonData.error || `HTTP error! status: ${res.status}`);
           }
-          
           return jsonData;
         })
         .then((jsonData: DashboardResponse) => {
-          console.log("Dashboard data received:", jsonData);
           setData(jsonData);
           setError(null);
         })
         .catch((err) => {
           console.error("Dashboard fetch error:", err);
           setError(err.message || "Failed to load dashboard data");
-          
-          // Set empty data for new users instead of seeded data
           setData({
-            balances: {
-              checking: 0,
-              savings: 0,
-              investment: 0,
-            },
+            balances: { checking: 0, savings: 0, investment: 0 },
             recent: [],
             user: {
               name: session?.user?.name || "User",
@@ -105,46 +98,37 @@ export default function DashboardPage() {
     }
   }, [status, router, session]);
 
+  // Loading State
   if (status === "loading" || loading) {
     return (
       <div className={styles.wrapper}>
-        <div className={styles.loading}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🏦</div>
-            <div>Loading your banking dashboard...</div>
+        <div className={styles.loadingScreen}>
+          <div className={styles.loadingContent}>
+            <div className={styles.loadingLogo}>
+              <div className={styles.loadingLogoIcon}>H</div>
+              <div className={styles.loadingPulse}></div>
+            </div>
+            <div className={styles.loadingText}>Loading your dashboard</div>
+            <div className={styles.loadingDots}>
+              <span></span><span></span><span></span>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  // Error State
   if (error && !data) {
     return (
       <div className={styles.wrapper}>
-        <div className={styles.loading}>
-          <div style={{ 
-            background: '#fee2e2', 
-            padding: '2rem', 
-            borderRadius: '12px',
-            maxWidth: '500px',
-            margin: '0 auto'
-          }}>
-            <h2 style={{ color: '#dc2626', marginBottom: '1rem' }}>
-              ⚠️ Connection Error
-            </h2>
-            <p style={{ color: '#7f1d1d', marginBottom: '1rem' }}>{error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              style={{
-                background: '#dc2626',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Retry
+        <div className={styles.errorScreen}>
+          <div className={styles.errorCard}>
+            <div className={styles.errorIcon}>⚠️</div>
+            <h2 className={styles.errorTitle}>Connection Error</h2>
+            <p className={styles.errorMessage}>{error}</p>
+            <button onClick={() => window.location.reload()} className={styles.retryBtn}>
+              Try Again
             </button>
           </div>
         </div>
@@ -152,137 +136,103 @@ export default function DashboardPage() {
     );
   }
 
-  if (!data) {
-    return null;
-  }
+  if (!data) return null;
 
-  // Use actual user data from API
+  // Data extraction
   const userName = data?.user?.name || session?.user?.name || "User";
+  const firstName = userName.split(' ')[0];
   const { balances, recent } = data;
   
-  // USE ACTUAL BALANCES FROM DATABASE - NO HARDCODING!
   const checkingBalance = balances.checking || 0;
   const savingsBalance = balances.savings || 0;
   const investmentBalance = balances.investment || 0;
-  
-  // Calculate totals based on actual balances
-  const liquidTotal = checkingBalance + savingsBalance;
   const totalNetWorth = checkingBalance + savingsBalance + investmentBalance;
-  
-  const previousBalance = totalNetWorth * 0.95;
-  const balanceChange = totalNetWorth > 0 ? ((totalNetWorth - previousBalance) / previousBalance) * 100 : 0;
+  const liquidAssets = checkingBalance + savingsBalance;
 
-  // Count processing transactions
+  // Time-based greeting
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
+  // Processing count
   const processingCount = recent.filter(t => 
-    t.rawStatus === "pending" || 
-    t.status === "Processing"
+    t.rawStatus === "pending" || t.status === "Processing"
   ).length;
 
-  // Generate spark data for charts
-  const generateSparkData = (currentBalance: number) => {
+  // Generate chart data
+  const generateChartData = (balance: number) => {
     const data = [];
-    let balance = currentBalance * 0.85;
-    for (let i = 0; i < 12; i++) {
-      balance += (Math.random() - 0.3) * (currentBalance * 0.05);
-      data.push({ value: Math.max(0, balance), index: i });
+    let value = balance * 0.82;
+    for (let i = 0; i < 30; i++) {
+      value += (Math.random() - 0.35) * (balance * 0.03);
+      value = Math.max(0, value);
+      data.push({ day: i + 1, value: Math.round(value) });
     }
-    data[11] = { value: currentBalance, index: 11 };
+    data[29] = { day: 30, value: balance };
     return data;
   };
 
-  // Account configurations with ACTUAL balances
+  // Account configs
   const accounts = [
     {
+      id: "checking",
       type: "Checking",
       name: "Premier Checking",
-      number: "****1234",
+      accountNum: "****4521",
       balance: checkingBalance,
       available: checkingBalance,
       icon: "💳",
-      iconBg: "#eef2ff",
-      iconColor: "#667eea",
-      gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      sparkData: generateSparkData(checkingBalance),
-      sparkColor: "#667eea",
-      lastTransaction: recent.find(t => t.accountType === 'checking')?.description || "No recent activity"
+      color: "#6366f1",
+      gradient: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+      chartData: generateChartData(checkingBalance),
+      badge: null
     },
     {
+      id: "savings",
       type: "Savings",
-      name: "High Yield Savings",
-      number: "****5678",
+      name: "High-Yield Savings",
+      accountNum: "****7832",
       balance: savingsBalance,
       available: savingsBalance,
       icon: "🏦",
-      iconBg: "#f0fdfa",
-      iconColor: "#14b8a6",
-      gradient: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
-      sparkData: generateSparkData(savingsBalance),
-      sparkColor: "#14b8a6",
-      interestRate: "4.50% APY",
-      lastTransaction: recent.find(t => t.accountType === 'savings')?.description || "No recent activity"
+      color: "#10b981",
+      gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+      chartData: generateChartData(savingsBalance),
+      badge: "4.50% APY"
     },
     {
+      id: "investment",
       type: "Investment",
       name: "Investment Portfolio",
-      number: "****9012",
+      accountNum: "****9103",
       balance: investmentBalance,
-      available: investmentBalance * 0.7,
+      available: investmentBalance * 0.85,
       icon: "📈",
-      iconBg: "#fef3c7",
-      iconColor: "#f59e0b",
-      gradient: "linear-gradient(135deg, #f59e0b 0%, #dc2626 100%)",
-      sparkData: generateSparkData(investmentBalance),
-      sparkColor: "#f59e0b",
-      returns: investmentBalance > 0 ? "+12.5%" : "0%",
-      lastTransaction: recent.find(t => t.accountType === 'investment')?.description || "No recent activity"
-    },
+      color: "#f59e0b",
+      gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+      chartData: generateChartData(investmentBalance),
+      badge: investmentBalance > 0 ? "+12.4% YTD" : null
+    }
   ];
 
   // Quick actions
   const quickActions = [
-    { icon: "💸", title: "Transfer", subtitle: "Move money", bgColor: "#eef2ff", link: "/transfers/internal" },
-    { icon: "📲", title: "Pay Bills", subtitle: "Schedule payments", bgColor: "#f0fdfa", link: "/bills" },
-    { icon: "💰", title: "Deposit", subtitle: "Add funds", bgColor: "#fef3c7", link: "/deposit" },
-    { icon: "📊", title: "Analytics", subtitle: "View insights", bgColor: "#fee2e2", link: "/analytics" },
+    { icon: "↗️", title: "Transfer", desc: "Move money", link: "/transfers/internal", color: "#6366f1" },
+    { icon: "📄", title: "Pay Bills", desc: "Scheduled payments", link: "/bills", color: "#10b981" },
+    { icon: "💰", title: "Deposit", desc: "Add funds", link: "/deposit", color: "#f59e0b" },
+    { icon: "📊", title: "Reports", desc: "Analytics", link: "/reports", color: "#ec4899" },
   ];
 
-   const transactions: Transaction[] = recent.slice(0, 10).map((t) => {
-    // Determine if this is a debit (money going out)
-    const isDebit = [
-      'transfer-out',
-      'withdrawal', 
-      'payment',
-      'fee',
-      'charge',
-      'purchase'
-    ].includes(t.type || '') || 
-    (t.reference?.includes('-OUT'));
-    
-    // Use the actual amount with correct sign
-    const displayAmount = isDebit ? -Math.abs(t.amount) : Math.abs(t.amount);
-    
-    return {
-      id: t.reference,
-      description: t.description || "Transaction",
-      amount: displayAmount,  // <-- This will now be negative for debits
-      status: (t.status === "Pending" || t.rawStatus === "pending") ? "Processing" : 
-              (t.status === "Completed" ? "Completed" : 
-              (t.status === "Rejected" ? "Declined" : "Processing")) as Transaction["status"],
-      date: new Date(t.date).toISOString(),
-      category: t.accountType ? 
-        t.accountType.charAt(0).toUpperCase() + t.accountType.slice(1) : 
-        "General",
-      type: isDebit ? "debit" : "credit",  // <-- Properly set based on transaction type
-      reference: t.reference,
-      method: "Bank Transfer",
-      balance: 0
-    };
-  });
-
-  // Format currency helper
-  const formatCurrency = (amount: number) => {
-    if (amount >= 1000000) {
+  // Format currency
+  const formatCurrency = (amount: number, compact = false) => {
+    if (compact && amount >= 1000000) {
       return `$${(amount / 1000000).toFixed(2)}M`;
+    }
+    if (compact && amount >= 1000) {
+      return `$${(amount / 1000).toFixed(1)}K`;
     }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -291,240 +241,234 @@ export default function DashboardPage() {
     }).format(amount);
   };
 
+  // Transform transactions
+  const transactions: Transaction[] = recent.slice(0, 8).map((t) => {
+    const isDebit = ['transfer-out', 'withdrawal', 'payment', 'fee', 'charge', 'purchase', 'withdraw'].includes(t.type || '');
+    const displayAmount = isDebit ? -Math.abs(t.amount) : Math.abs(t.amount);
+    
+    // Map status correctly - Transaction type only accepts: Completed, Pending, Failed, Processing, Cancelled
+    let mappedStatus: "Completed" | "Pending" | "Failed" | "Processing" | "Cancelled" = "Processing";
+    if (t.status === "Completed" || t.rawStatus === "completed" || t.rawStatus === "approved") {
+      mappedStatus = "Completed";
+    } else if (t.status === "Pending" || t.rawStatus === "pending") {
+      mappedStatus = "Processing";
+    } else if (t.status === "Rejected" || t.rawStatus === "rejected") {
+      mappedStatus = "Failed";
+    } else if (t.status === "Cancelled" || t.rawStatus === "cancelled") {
+      mappedStatus = "Cancelled";
+    }
+    
+    return {
+      id: t.reference,
+      description: t.description || "Transaction",
+      amount: displayAmount,
+      status: mappedStatus,
+      date: new Date(t.date).toISOString(),
+      category: t.accountType ? t.accountType.charAt(0).toUpperCase() + t.accountType.slice(1) : "General",
+      type: isDebit ? "debit" : "credit",
+      reference: t.reference,
+      method: "Bank Transfer",
+      balance: 0
+    };
+  });
+
   return (
     <div className={styles.wrapper}>
-      <aside className={styles.sidebar}>
-        <Sidebar />
-      </aside>
+      <Sidebar />
       
-      <div className={styles.main}>
-        <header className={styles.header}>
-          <Header />
-        </header>
+      <div className={styles.mainContent}>
+        <Header />
         
-        <div className={styles.content}>
-          {/* Welcome Section */}
-          <div className={styles.welcomeSection}>
-            <div className={styles.welcomeContent}>
-              <div className={styles.welcomeGreeting}>
-                Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'},
+        <main className={styles.dashboard}>
+          {/* Hero Section */}
+          <section className={styles.hero}>
+            <div className={styles.heroMain}>
+              <div className={styles.heroGreeting}>
+                <span className={styles.greetingText}>{getGreeting()},</span>
+                <h1 className={styles.heroName}>{firstName}</h1>
               </div>
-              <div className={styles.userName}>{userName}</div>
-              <div className={styles.totalBalanceWrapper}>
-                <div>
-                  <div className={styles.totalBalanceLabel}>Total Balance</div>
-                  <div className={styles.totalBalanceAmount}>
-                    {formatCurrency(totalNetWorth)}
-                  </div>
-                  {totalNetWorth > 0 && (
-                    <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.5rem' }}>
-                      Liquid: {formatCurrency(liquidTotal)} | Investment: {formatCurrency(investmentBalance)}
-                    </div>
-                  )}
+              
+              <div className={styles.heroBalance}>
+                <div className={styles.balanceLabel}>Total Net Worth</div>
+                <div className={styles.balanceValue}>{formatCurrency(totalNetWorth)}</div>
+                <div className={styles.balanceBreakdown}>
+                  <span>Liquid: {formatCurrency(liquidAssets, true)}</span>
+                  <span className={styles.breakdownDivider}>•</span>
+                  <span>Invested: {formatCurrency(investmentBalance, true)}</span>
                 </div>
-                {totalNetWorth > 0 && (
-                  <div className={`${styles.balanceChange} ${balanceChange >= 0 ? styles.balanceChangePositive : styles.balanceChangeNegative}`}>
-                    {balanceChange >= 0 ? '↑' : '↓'} {Math.abs(balanceChange).toFixed(1)}% this month
-                  </div>
-                )}
               </div>
-            </div>
-          </div>
 
-          {/* Success Banner - Only show for users with high investment balance */}
-          {investmentBalance > 1000000 && (
-            <div style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              marginBottom: '2rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem'
-            }}>
-              <div style={{ fontSize: '2rem' }}>🎉</div>
-              <div>
-                <div style={{ fontWeight: 'bold', fontSize: '1.125rem' }}>
-                  Great Investment Performance!
+              {totalNetWorth > 0 && (
+                <div className={styles.heroStats}>
+                  <div className={styles.statItem}>
+                    <div className={styles.statValue}>+5.2%</div>
+                    <div className={styles.statLabel}>This Month</div>
+                  </div>
+                  <div className={styles.statDivider}></div>
+                  <div className={styles.statItem}>
+                    <div className={styles.statValue}>{accounts.filter(a => a.balance > 0).length}</div>
+                    <div className={styles.statLabel}>Active Accounts</div>
+                  </div>
+                  <div className={styles.statDivider}></div>
+                  <div className={styles.statItem}>
+                    <div className={styles.statValue}>{recent.length}</div>
+                    <div className={styles.statLabel}>Transactions</div>
+                  </div>
                 </div>
-                <div style={{ opacity: 0.95, marginTop: '0.25rem' }}>
-                  Your investment portfolio is performing well with {formatCurrency(investmentBalance)} in total value.
-                </div>
-              </div>
+              )}
             </div>
-          )}
+
+            <div className={styles.heroChart}>
+              {totalNetWorth > 0 && (
+                <ResponsiveContainer width="100%" height={120}>
+                  <AreaChart data={generateChartData(totalNetWorth)}>
+                    <defs>
+                      <linearGradient id="heroGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ffffff" stopOpacity={0.3}/>
+                        <stop offset="100%" stopColor="#ffffff" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#ffffff" 
+                      strokeWidth={2}
+                      fill="url(#heroGradient)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </section>
 
           {/* Quick Actions */}
-          <div className={styles.quickActions}>
+          <section className={styles.quickActions}>
             {quickActions.map((action, idx) => (
-              <div 
-                key={idx} 
-                className={styles.quickActionButton}
+              <button
+                key={idx}
+                className={styles.actionCard}
                 onClick={() => router.push(action.link)}
-                role="button"
-                tabIndex={0}
+                style={{ '--action-color': action.color } as React.CSSProperties}
               >
-                <div 
-                  className={styles.quickActionIcon}
-                  style={{ backgroundColor: action.bgColor }}
-                >
-                  {action.icon}
+                <div className={styles.actionIcon}>{action.icon}</div>
+                <div className={styles.actionInfo}>
+                  <span className={styles.actionTitle}>{action.title}</span>
+                  <span className={styles.actionDesc}>{action.desc}</span>
                 </div>
-                <div className={styles.quickActionText}>
-                  <div className={styles.quickActionTitle}>{action.title}</div>
-                  <div className={styles.quickActionSubtitle}>{action.subtitle}</div>
-                </div>
-              </div>
+                <div className={styles.actionArrow}>→</div>
+              </button>
             ))}
-          </div>
+          </section>
 
           {/* Accounts Section */}
-          <div className={styles.accountsSection}>
+          <section className={styles.accountsSection}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                <span>My Accounts</span>
-              </h2>
-              <a href="/accounts" className={styles.viewAllLink}>
-                View all →
-              </a>
+              <h2 className={styles.sectionTitle}>My Accounts</h2>
+              <a href="/accounts" className={styles.sectionLink}>View All</a>
             </div>
 
-            <div className={styles.accountGrid}>
+            <div className={styles.accountsGrid}>
               {accounts.map((account) => (
                 <div 
-                  key={account.type}
+                  key={account.id} 
                   className={styles.accountCard}
-                  style={{ 
-                    '--accent-gradient': account.gradient,
-                    '--icon-bg': account.iconBg,
-                    '--icon-color': account.iconColor,
-                  } as React.CSSProperties}
+                  style={{ '--card-color': account.color } as React.CSSProperties}
                 >
-                  <div className={styles.accountHeader}>
-                    <div className={styles.accountInfo}>
-                      <div className={styles.accountType}>
-                        <div className={styles.accountTypeIcon}>
-                          {account.icon}
-                        </div>
-                        <div>
-                          <div className={styles.accountName}>{account.name}</div>
-                          <div className={styles.accountNumber}>{account.number}</div>
-                        </div>
-                      </div>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.cardIcon}>{account.icon}</div>
+                    <div className={styles.cardInfo}>
+                      <div className={styles.cardName}>{account.name}</div>
+                      <div className={styles.cardNumber}>{account.accountNum}</div>
                     </div>
-                    <div className={styles.accountMenu}>⋮</div>
+                    {account.badge && (
+                      <div className={styles.cardBadge}>{account.badge}</div>
+                    )}
                   </div>
 
-                  <div className={styles.balanceInfo}>
-                    <div className={styles.balanceRow}>
-                      <span className={styles.balanceLabel}>Current Balance</span>
-                    </div>
-                    <div className={styles.balanceAmount}>
-                      {formatCurrency(account.balance)}
-                    </div>
-                    <div className={styles.availableBalance}>
-                      {account.type === "Investment" && account.returns
-                        ? `Returns: ${account.returns}`
-                        : `Available: ${formatCurrency(account.available)}`}
+                  <div className={styles.cardBalance}>
+                    <div className={styles.cardBalanceLabel}>Current Balance</div>
+                    <div className={styles.cardBalanceValue}>{formatCurrency(account.balance)}</div>
+                    <div className={styles.cardAvailable}>
+                      Available: {formatCurrency(account.available)}
                     </div>
                   </div>
 
-                  {account.balance > 0 && account.type !== "Investment" && (
-                    <div className={styles.miniChart}>
-                      <ResponsiveContainer width="100%" height={60}>
-                        <AreaChart data={account.sparkData}>
+                  {account.balance > 0 && (
+                    <div className={styles.cardChart}>
+                      <ResponsiveContainer width="100%" height={50}>
+                        <AreaChart data={account.chartData}>
                           <defs>
-                            <linearGradient id={`gradient-${account.type}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={account.sparkColor} stopOpacity={0.3} />
-                              <stop offset="100%" stopColor={account.sparkColor} stopOpacity={0} />
+                            <linearGradient id={`grad-${account.id}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={account.color} stopOpacity={0.2}/>
+                              <stop offset="100%" stopColor={account.color} stopOpacity={0}/>
                             </linearGradient>
                           </defs>
-                          <Area
-                            type="monotone"
-                            dataKey="value"
-                            stroke={account.sparkColor}
+                          <Area 
+                            type="monotone" 
+                            dataKey="value" 
+                            stroke={account.color} 
                             strokeWidth={2}
-                            fillOpacity={1}
-                            fill={`url(#gradient-${account.type})`}
+                            fill={`url(#grad-${account.id})`}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
                   )}
+
+                  <div className={styles.cardActions}>
+                    <button 
+                      className={styles.cardAction}
+                      onClick={() => router.push(`/transfers/internal?from=${account.id}`)}
+                    >
+                      Transfer
+                    </button>
+                    <button 
+                      className={styles.cardAction}
+                      onClick={() => router.push(`/accounts/${account.id}`)}
+                    >
+                      Details
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Recent Activity Section */}
-          <div className={styles.transactionsSection}>
+          {/* Recent Activity */}
+          <section className={styles.activitySection}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                <span>Recent Activity</span>
+              <div className={styles.sectionTitleGroup}>
+                <h2 className={styles.sectionTitle}>Recent Activity</h2>
                 {processingCount > 0 && (
-                  <span style={{
-                    marginLeft: '0.75rem',
-                    padding: '0.25rem 0.75rem',
-                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                    borderRadius: '20px',
-                    fontSize: '0.75rem',
-                    fontWeight: '500',
-                    color: '#64748b'
-                  }}>
-                    {processingCount} Processing
-                  </span>
+                  <span className={styles.processingBadge}>{processingCount} Processing</span>
                 )}
-              </h2>
-              <a href="/transactions" className={styles.viewAllLink}>
-                View all →
-              </a>
+              </div>
+              <a href="/transactions" className={styles.sectionLink}>View All</a>
             </div>
 
             {transactions.length > 0 ? (
-              <div className={styles.transactionsTableContainer}>
+              <div className={styles.transactionsCard}>
                 <TransactionTable transactions={transactions} />
               </div>
             ) : (
-              <div style={{
-                background: 'white',
-                borderRadius: '12px',
-                padding: '3rem',
-                textAlign: 'center',
-                color: '#64748b'
-              }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-                <p>No recent transactions</p>
-                <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                  Your transaction history will appear here
-                </p>
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>📊</div>
+                <h3 className={styles.emptyTitle}>No Recent Activity</h3>
+                <p className={styles.emptyText}>Your transactions will appear here</p>
               </div>
             )}
-          </div>
+          </section>
 
           {/* Security Footer */}
-          <div style={{
-            marginTop: '3rem',
-            padding: '1rem',
-            background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            color: '#64748b',
-            fontSize: '0.875rem'
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L4 7v6c0 4.52 3.13 8.75 8 9.88 4.87-1.13 8-5.36 8-9.88V7l-8-5z"/>
+          <div className={styles.securityBanner}>
+            <svg className={styles.securityIcon} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
             </svg>
-            <span>Your account is protected by bank-grade 256-bit encryption</span>
+            <span>Protected by bank-grade 256-bit SSL encryption</span>
           </div>
-        </div>
+        </main>
 
-        <footer className={styles.footer}>
-          <Footer />
-        </footer>
+        <Footer />
       </div>
     </div>
   );

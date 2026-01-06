@@ -5,12 +5,13 @@ import { getAuth } from "firebase/auth";
 
 // Hardcoded Firebase configuration - REPLACE THESE VALUES WITH YOUR ACTUAL CONFIG
 const firebaseConfig = {
-  apiKey: "AIzaSyBWw5wL86Tn_ssO24OKs6HRoeY7lUlCoL0",
-  authDomain: "chat-3fde3.firebaseapp.com",
-  projectId: "chat-3fde3",
-  storageBucket: "chat-3fde3.appspot.com",
-  messagingSenderId: "984676655951",
-  appId: "1:984676655951:web:3625030deee61a01f95b3a"
+  apiKey: "AIzaSyCmBBF3nYQBPPk1-Y91Yy9U0rKbiJ5dXiw",
+  authDomain: "horizon-a9087.firebaseapp.com",
+  projectId: "horizon-a9087",
+  storageBucket: "horizon-a9087.firebasestorage.app",
+  messagingSenderId: "151569457690",
+  appId: "1:151569457690:web:2b829e8353f91b758ea7a3",
+  measurementId: "G-T06BDR56WD"
 };
 
 // Initialize Firebase
