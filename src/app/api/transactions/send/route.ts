@@ -1,10 +1,13 @@
-// src/app/api/transactions/send/route.ts
+// FILE: src/app/api/transactions/send/route.ts
+// COMPLETE FIXED VERSION - WITH EMAIL
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
+import { sendTransactionEmail } from "@/lib/mail";
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,8 +28,8 @@ export async function POST(req: NextRequest) {
       transferType
     } = body;
 
-    // Validate amount
-    const transferAmount = parseFloat(amount);
+    // ALWAYS POSITIVE AMOUNT
+    const transferAmount = Math.abs(parseFloat(amount));
     if (isNaN(transferAmount) || transferAmount <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
@@ -39,7 +42,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check balance
     const balance = accountType === "checking" ? user.checkingBalance :
                    accountType === "savings" ? user.savingsBalance :
                    user.investmentBalance;
@@ -48,26 +50,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Insufficient funds" }, { status: 400 });
     }
 
-    // Create PENDING transaction (requires admin approval)
+    // Create PENDING transaction
     const transaction = await Transaction.create({
       userId: user._id,
-      type: "withdraw",
+      type: "transfer-out",
       currency: "USD",
-      amount: transferAmount,
-      description: `Transfer to ${recipientName} - ${recipientBank} (${recipientAccount}) ${description ? ': ' + description : ''}`,
-      status: "pending", // PENDING - requires approval
+      amount: transferAmount, // POSITIVE
+      description: `Transfer to ${recipientName} - ${recipientBank} (${recipientAccount})${description ? ': ' + description : ''}`,
+      status: "pending",
       date: new Date(),
       accountType: accountType,
-      posted: false, // NOT posted until approved
+      posted: false,
       reference: `TRF-${Date.now()}`,
-      category: "Transfer",
       channel: "online",
-      origin: "web_banking"
+      origin: "user_transfer"
     });
+
+    // ✅ SEND EMAIL
+    try {
+      await sendTransactionEmail(user.email, {
+        name: user.name || user.firstName || 'Customer',
+        transaction: transaction
+      });
+      console.log('✅ Transfer email sent (pending)');
+    } catch (emailError) {
+      console.error('❌ Email failed:', emailError);
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Transaction initiated. Pending admin approval.",
+      message: "Transaction initiated. Pending approval.",
       transaction: {
         id: transaction._id,
         reference: transaction.reference,
