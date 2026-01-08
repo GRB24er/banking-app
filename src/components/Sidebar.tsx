@@ -118,8 +118,7 @@ export default function Sidebar() {
   const [quickBalance, setQuickBalance] = useState({
     checking: 0,
     savings: 0,
-    investment: 0,
-    total: 0
+    investment: 0
   });
 
   useEffect(() => {
@@ -137,8 +136,7 @@ export default function Sidebar() {
             setQuickBalance({
               checking: checking,
               savings: savings,
-              investment: investment,
-              total: checking + savings + investment
+              investment: investment
             });
             
             setUserName(data.user?.name || session.user.name || "User");
@@ -201,6 +199,9 @@ export default function Sidebar() {
     return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
+  // Cash balance = Checking + Savings only (NO investments)
+  const cashBalance = quickBalance.checking + quickBalance.savings;
+
   return (
     <>
       {mobileOpen && (
@@ -241,10 +242,10 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Balance Card */}
+        {/* Cash Balance Card - Checking + Savings ONLY */}
         <div className={styles.balanceCard}>
           <div className={styles.balanceHeader}>
-            <span className={styles.balanceLabel}>Total Balance</span>
+            <span className={styles.balanceLabel}>Cash Balance</span>
             <button 
               className={styles.refreshButton}
               onClick={() => window.location.reload()}
@@ -257,26 +258,24 @@ export default function Sidebar() {
             </button>
           </div>
           <div className={styles.balanceAmount}>
-            {formatCurrency(quickBalance.total)}
+            {formatCurrency(cashBalance)}
           </div>
           
           <div className={styles.balanceBreakdown}>
             <div className={styles.breakdownItem}>
-              <span className={styles.breakdownDot} style={{background: '#10b981'}}></span>
-              <span className={styles.breakdownLabel}>Liquid</span>
+              <span className={styles.breakdownDot} style={{background: '#6366f1'}}></span>
+              <span className={styles.breakdownLabel}>Checking</span>
               <span className={styles.breakdownValue}>
-                {formatCurrency(quickBalance.checking + quickBalance.savings)}
+                {formatCurrency(quickBalance.checking)}
               </span>
             </div>
-            {quickBalance.investment > 0 && (
-              <div className={styles.breakdownItem}>
-                <span className={styles.breakdownDot} style={{background: '#34d399'}}></span>
-                <span className={styles.breakdownLabel}>Invested</span>
-                <span className={styles.breakdownValue}>
-                  {formatCurrency(quickBalance.investment)}
-                </span>
-              </div>
-            )}
+            <div className={styles.breakdownItem}>
+              <span className={styles.breakdownDot} style={{background: '#10b981'}}></span>
+              <span className={styles.breakdownLabel}>Savings</span>
+              <span className={styles.breakdownValue}>
+                {formatCurrency(quickBalance.savings)}
+              </span>
+            </div>
           </div>
 
           <button 
@@ -289,6 +288,28 @@ export default function Sidebar() {
             Quick Transfer
           </button>
         </div>
+
+        {/* Investments Card - Separate from Cash */}
+        {quickBalance.investment > 0 && (
+          <div className={styles.balanceCard} style={{ marginTop: '0.75rem', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%)' }}>
+            <div className={styles.balanceHeader}>
+              <span className={styles.balanceLabel}>Investments</span>
+            </div>
+            <div className={styles.balanceAmount} style={{ fontSize: '1.25rem' }}>
+              {formatCurrency(quickBalance.investment)}
+            </div>
+            <button 
+              className={styles.quickTransferButton}
+              onClick={() => router.push('/investments/portfolio')}
+              style={{ marginTop: '0.75rem' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              View Portfolio
+            </button>
+          </div>
+        )}
 
         {/* Navigation */}
         <div className={styles.navigation}>
