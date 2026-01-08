@@ -103,7 +103,8 @@ export default function ProfileClient() {
     return null;
   }
 
-  const totalBalance = profile.checkingBalance + profile.savingsBalance + profile.investmentBalance;
+  const cashBalance = profile.checkingBalance + profile.savingsBalance;
+  const investmentBalance = profile.investmentBalance;
 
   return (
     <div className={styles.wrapper}>
@@ -251,7 +252,7 @@ export default function ProfileClient() {
                     justifyContent: 'center',
                     marginRight: '1rem'
                   }}>
-                    🦆
+                    🏦
                   </div>
                   <div>
                     <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Savings</p>
@@ -291,20 +292,44 @@ export default function ProfileClient() {
               </div>
             </div>
 
-            {/* Total Balance Card */}
+            {/* Balance Summary Cards */}
             <div style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: '12px',
-              padding: '2rem',
-              color: 'white',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '1.5rem',
               marginBottom: '2rem'
             }}>
-              <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>
-                Total Net Worth
-              </p>
-              <p style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
-                ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
+              <div style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '12px',
+                padding: '2rem',
+                color: 'white'
+              }}>
+                <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>
+                  Cash Balance
+                </p>
+                <p style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
+                  ${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
+                <p style={{ fontSize: '0.875rem', opacity: 0.8, marginTop: '0.5rem' }}>
+                  Checking + Savings
+                </p>
+              </div>
+              {investmentBalance > 0 && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                  borderRadius: '12px',
+                  padding: '2rem',
+                  color: 'white'
+                }}>
+                  <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>
+                    Investment Portfolio
+                  </p>
+                  <p style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
+                    ${investmentBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

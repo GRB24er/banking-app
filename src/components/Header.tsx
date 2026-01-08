@@ -16,7 +16,8 @@ export default function Header() {
   const [userData, setUserData] = useState({
     name: "User",
     email: "",
-    totalBalance: 0
+    cashBalance: 0,
+    investmentBalance: 0
   });
   const [notifications, setNotifications] = useState<any[]>([]);
 
@@ -28,14 +29,15 @@ export default function Header() {
           if (response.ok) {
             const data = await response.json();
             
-            const total = (data.balances?.checking || 0) + 
-                         (data.balances?.savings || 0) + 
-                         (data.balances?.investment || 0);
+            const cashBalance = (data.balances?.checking || 0) + 
+                               (data.balances?.savings || 0);
+            const investmentBalance = data.balances?.investment || 0;
             
             setUserData({
               name: data.user?.name || session.user.name || "User",
               email: session.user.email,
-              totalBalance: total
+              cashBalance: cashBalance,
+              investmentBalance: investmentBalance
             });
             
             const pendingTx = data.recent?.filter((t: any) => 
@@ -65,7 +67,8 @@ export default function Header() {
           setUserData({
             name: session?.user?.name || "User",
             email: session?.user?.email || "",
-            totalBalance: 0
+            cashBalance: 0,
+            investmentBalance: 0
           });
         }
       }
@@ -130,9 +133,9 @@ export default function Header() {
         <div className={styles.rightSection}>
           {/* Balance Display */}
           <div className={styles.balanceDisplay}>
-            <span className={styles.balanceLabel}>Portfolio</span>
+            <span className={styles.balanceLabel}>Cash</span>
             <span className={styles.balanceValue}>
-              {formatCurrency(userData.totalBalance)}
+              {formatCurrency(userData.cashBalance)}
             </span>
           </div>
 
@@ -243,12 +246,20 @@ export default function Header() {
                     <p className={styles.profileEmail}>
                       {userData.email || session?.user?.email || ""}
                     </p>
-                    {userData.totalBalance > 0 && (
+                    {(userData.cashBalance > 0 || userData.investmentBalance > 0) && (
                       <div className={styles.profileBalance}>
-                        <span className={styles.profileBalanceLabel}>Total Balance</span>
+                        <span className={styles.profileBalanceLabel}>Cash Balance</span>
                         <span className={styles.profileBalanceValue}>
-                          {formatCurrency(userData.totalBalance)}
+                          {formatCurrency(userData.cashBalance)}
                         </span>
+                        {userData.investmentBalance > 0 && (
+                          <>
+                            <span className={styles.profileBalanceLabel}>Investments</span>
+                            <span className={styles.profileBalanceValue}>
+                              {formatCurrency(userData.investmentBalance)}
+                            </span>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

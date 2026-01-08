@@ -146,8 +146,7 @@ export default function DashboardPage() {
   const checkingBalance = balances.checking || 0;
   const savingsBalance = balances.savings || 0;
   const investmentBalance = balances.investment || 0;
-  const totalNetWorth = checkingBalance + savingsBalance + investmentBalance;
-  const liquidAssets = checkingBalance + savingsBalance;
+  const cashBalance = checkingBalance + savingsBalance;
 
   // Time-based greeting
   const getGreeting = () => {
@@ -289,16 +288,16 @@ export default function DashboardPage() {
               </div>
               
               <div className={styles.heroBalance}>
-                <div className={styles.balanceLabel}>Total Net Worth</div>
-                <div className={styles.balanceValue}>{formatCurrency(totalNetWorth)}</div>
-                <div className={styles.balanceBreakdown}>
-                  <span>Liquid: {formatCurrency(liquidAssets, true)}</span>
-                  <span className={styles.breakdownDivider}>•</span>
-                  <span>Invested: {formatCurrency(investmentBalance, true)}</span>
-                </div>
+                <div className={styles.balanceLabel}>Cash Balance</div>
+                <div className={styles.balanceValue}>{formatCurrency(cashBalance)}</div>
+                {investmentBalance > 0 && (
+                  <div className={styles.balanceBreakdown}>
+                    <span>Investments: {formatCurrency(investmentBalance, true)}</span>
+                  </div>
+                )}
               </div>
 
-              {totalNetWorth > 0 && (
+              {cashBalance > 0 && (
                 <div className={styles.heroStats}>
                   <div className={styles.statItem}>
                     <div className={styles.statValue}>+5.2%</div>
@@ -319,9 +318,9 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.heroChart}>
-              {totalNetWorth > 0 && (
+              {cashBalance > 0 && (
                 <ResponsiveContainer width="100%" height={120}>
-                  <AreaChart data={generateChartData(totalNetWorth)}>
+                  <AreaChart data={generateChartData(cashBalance)}>
                     <defs>
                       <linearGradient id="heroGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#ffffff" stopOpacity={0.3}/>
