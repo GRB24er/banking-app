@@ -1,224 +1,323 @@
 // src/app/api/transfers/internal/route.ts
+// INTERNAL TRANSFERS - CREATES PENDING TRANSACTIONS
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
+import { sendTransactionEmail } from "@/lib/mail";
 
-type AccountKey = "checking" | "savings" | "investment";
 interface InternalTransferRequest {
-  fromAccount: AccountKey;
-  toAccount: AccountKey;
+  fromAccount: 'checking' | 'savings' | 'investment';
+  toAccount: 'checking' | 'savings' | 'investment';
   amount: number | string;
   description?: string;
+  transferType?: 'instant' | 'scheduled';
+  scheduledDate?: string;
 }
 
-const parseAmount = (val: number | string) => {
-  if (typeof val === "number") return val;
-  const cleaned = `${val}`.replace(/[\s,]/g, "");
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : NaN;
-};
-
-const ref = (prefix = "ITR") =>
-  `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random()
-    .toString(36)
-    .slice(2, 7)
-    .toUpperCase()}`;
-
-/** Resolve a schema enum value for Transaction.type that matches our logical “debit/credit”. */
-function resolveTxType(kind: "debit" | "credit") {
-  // @ts-ignore
-  const allowed: string[] = (Transaction?.schema?.path?.("type")?.enumValues as string[]) || [];
-  const candidates: Record<"debit" | "credit", string[]> = {
-    debit: ["debit", "withdrawal", "outflow", "expense", "sent", "decrease"],
-    credit: ["credit", "deposit", "inflow", "income", "received", "increase"],
-  };
-  if (allowed.length) {
-    if (allowed.includes(kind)) return kind;
-    const match = candidates[kind].find((c) => allowed.includes(c));
-    if (match) return match;
-    return allowed[0];
-  }
-  return kind;
-}
-
-/** Resolve a “completed”-like status that fits your schema, with a safe fallback. */
-function resolveCompletedStatus() {
-  // @ts-ignore
-  const allowed: string[] = (Transaction?.schema?.path?.("status")?.enumValues as string[]) || [];
-  if (!allowed.length) return "completed";
-  if (allowed.includes("completed")) return "completed";
-  if (allowed.includes("approved")) return "approved";
-  if (allowed.includes("success")) return "success";
-  if (allowed.includes("posted")) return "posted";
-  return allowed[0];
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
+    console.log('[Internal Transfer] 💸 Initiated');
+    
     const session = await getServerSession(authOptions);
+    
     if (!session?.user?.email) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      console.log('[Internal Transfer] ❌ Unauthorized');
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - Please login" },
+        { status: 401 }
+      );
     }
 
-    const body = (await req.json()) as InternalTransferRequest;
-    const missing: string[] = [];
-    if (!body.fromAccount) missing.push("fromAccount");
-    if (!body.toAccount) missing.push("toAccount");
-    if (body.amount === undefined || body.amount === null) missing.push("amount");
-    if (missing.length) {
+    const body: InternalTransferRequest = await request.json();
+    const { fromAccount, toAccount, amount, description } = body;
+
+    // Validation
+    if (!fromAccount || !toAccount) {
       return NextResponse.json(
-        { success: false, error: `Missing required field(s): ${missing.join(", ")}` },
+        { success: false, error: "Both source and destination accounts are required" },
         { status: 400 }
       );
     }
 
-    const from = body.fromAccount;
-    const to = body.toAccount;
-    if (from === to) {
+    if (fromAccount === toAccount) {
       return NextResponse.json(
-        { success: false, error: "fromAccount and toAccount must be different." },
+        { success: false, error: "Cannot transfer to the same account" },
         { status: 400 }
       );
     }
 
-    const amount = parseAmount(body.amount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return NextResponse.json({ success: false, error: "Invalid amount." }, { status: 400 });
+    // ALWAYS POSITIVE AMOUNT
+    const transferAmount = Math.abs(
+      typeof amount === 'string' 
+        ? parseFloat(amount.replace(/[^0-9.-]/g, ''))
+        : Number(amount)
+    );
+
+    if (isNaN(transferAmount) || transferAmount <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Invalid amount. Please enter a valid number greater than 0" },
+        { status: 400 }
+      );
     }
 
     await connectDB();
+
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ success: false, error: "User not found." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "User account not found" },
+        { status: 404 }
+      );
     }
 
-    const fromKey = `${from}Balance` as const;
-    const toKey = `${to}Balance` as const;
-    const currentFromBalance = Number((user as any)[fromKey] ?? 0);
-    const currentToBalance = Number((user as any)[toKey] ?? 0);
+    console.log('[Internal Transfer] 👤 User:', user._id);
 
-    if (amount > currentFromBalance) {
-      return NextResponse.json({ success: false, error: "Insufficient funds." }, { status: 400 });
-    }
-
-    const debitType = resolveTxType("debit");
-    const creditType = resolveTxType("credit");
-    const completedStatus = resolveCompletedStatus();
-
-    // Update balances (same user document)
-    (user as any)[fromKey] = currentFromBalance - amount;
-    (user as any)[toKey] = currentToBalance + amount;
-
-    const pairId = ref("PAIR");
-    const now = new Date();
-    const baseMeta = {
-      kind: "internal",
-      pairId,
-      fromAccount: from,
-      toAccount: to,
-      ui: { type: "internal", debitCreditHint: { from: "debit", to: "credit" } },
+    // Check current balance (just for validation - not updating yet)
+    const balanceFieldMap: { [key: string]: string } = {
+      'checking': 'checkingBalance',
+      'savings': 'savingsBalance',
+      'investment': 'investmentBalance'
     };
 
-    const debitTx = new (Transaction as any)({
-      userId: user._id,
-      accountType: from,
-      type: debitType,
-      amount: -amount,
-      currency: (user as any).currency || "USD",
-      description: body.description ? `Internal transfer to ${to} — ${body.description}` : `Internal transfer to ${to}`,
-      reference: ref("ITR-D"),
-      status: completedStatus,
-      posted: true,
-      postedAt: now,
-      metadata: baseMeta,
+    const fromBalanceField = balanceFieldMap[fromAccount];
+    const currentFromBalance = Number((user as any)[fromBalanceField] || 0);
+    
+    console.log('[Internal Transfer] 💰 Balance check:', {
+      fromAccount,
+      currentBalance: currentFromBalance,
+      requiredAmount: transferAmount
     });
-
-    const creditTx = new (Transaction as any)({
-      userId: user._id,
-      accountType: to,
-      type: creditType,
-      amount: amount,
-      currency: (user as any).currency || "USD",
-      description: body.description ? `Internal transfer from ${from} — ${body.description}` : `Internal transfer from ${from}`,
-      reference: ref("ITR-C"),
-      status: completedStatus,
-      posted: true,
-      postedAt: now,
-      metadata: baseMeta,
-    });
-
-    await debitTx.save();
-    await creditTx.save();
-    await user.save();
-
-    if (process.env.NODE_ENV !== "production") {
-      // @ts-ignore
-      const allowedTypeEnum = Transaction?.schema?.path?.("type")?.enumValues;
-      // @ts-ignore
-      const allowedStatusEnum = Transaction?.schema?.path?.("status")?.enumValues;
-      console.warn("[InternalTransfer] type enum:", allowedTypeEnum, "status enum:", allowedStatusEnum);
+    
+    if (transferAmount > currentFromBalance) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: "Insufficient funds",
+          details: {
+            available: currentFromBalance,
+            requested: transferAmount,
+            shortfall: transferAmount - currentFromBalance
+          }
+        },
+        { status: 400 }
+      );
     }
+
+    // Generate unique reference
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const transferRef = `INT-${timestamp}-${random}`;
+    
+    console.log('[Internal Transfer] 📝 Reference:', transferRef);
+
+    // Create TWO PENDING transactions (debit + credit)
+    // Admin will approve both, then balances update
+    
+    const transferOutTransaction = await Transaction.create({
+      userId: user._id,
+      type: 'transfer-out',
+      currency: 'USD',
+      amount: transferAmount, // POSITIVE
+      description: description?.trim() || `Transfer to ${toAccount}`,
+      status: 'pending', // PENDING - awaits admin approval
+      accountType: fromAccount,
+      posted: false,
+      postedAt: null,
+      reference: `${transferRef}-OUT`,
+      channel: 'online',
+      origin: 'internal_transfer',
+      date: new Date(),
+      metadata: {
+        fromAccount,
+        toAccount,
+        isInternalTransfer: true,
+        linkedReference: `${transferRef}-IN`
+      }
+    });
+
+    console.log('[Internal Transfer] 💾 Transfer-out created:', transferOutTransaction._id);
+
+    const transferInTransaction = await Transaction.create({
+      userId: user._id,
+      type: 'transfer-in',
+      currency: 'USD',
+      amount: transferAmount, // POSITIVE
+      description: description?.trim() || `Transfer from ${fromAccount}`,
+      status: 'pending', // PENDING - awaits admin approval
+      accountType: toAccount,
+      posted: false,
+      postedAt: null,
+      reference: `${transferRef}-IN`,
+      channel: 'online',
+      origin: 'internal_transfer',
+      date: new Date(),
+      metadata: {
+        fromAccount,
+        toAccount,
+        isInternalTransfer: true,
+        linkedReference: `${transferRef}-OUT`
+      }
+    });
+
+    console.log('[Internal Transfer] 💾 Transfer-in created:', transferInTransaction._id);
+
+    // ✅ SEND EMAILS for BOTH transactions
+    try {
+      await sendTransactionEmail(user.email, {
+        name: user.name || 'Customer',
+        transaction: transferOutTransaction
+      });
+      
+      await sendTransactionEmail(user.email, {
+        name: user.name || 'Customer',
+        transaction: transferInTransaction
+      });
+      
+      console.log('[Internal Transfer] ✅ Emails sent');
+    } catch (emailError) {
+      console.error('[Internal Transfer] ❌ Email failed:', emailError);
+      // Continue even if email fails
+    }
+
+    console.log('[Internal Transfer] ✅ Transfer created (pending approval)');
 
     return NextResponse.json({
       success: true,
+      message: "Transfer initiated. Awaiting admin approval.",
+      transferReference: transferRef,
       transfer: {
-        pairId,
-        from,
-        to,
-        amount,
-        description: body.description || "Internal Transfer",
-        status: completedStatus,
-        postedAt: now,
+        type: 'internal',
+        from: fromAccount,
+        to: toAccount,
+        amount: transferAmount,
+        description: description || 'Internal Transfer',
+        reference: transferRef,
+        status: 'pending',
+        date: new Date().toISOString()
       },
-      balances: {
-        checking: Number((user as any).checkingBalance ?? 0),
-        savings: Number((user as any).savingsBalance ?? 0),
-        investment: Number((user as any).investmentBalance ?? 0),
-      },
-    });
-  } catch (err: any) {
-    console.error("💥 Internal transfer error:", err);
+      transactions: [
+        {
+          id: transferOutTransaction._id,
+          reference: transferOutTransaction.reference,
+          status: 'pending'
+        },
+        {
+          id: transferInTransaction._id,
+          reference: transferInTransaction.reference,
+          status: 'pending'
+        }
+      ]
+    }, { status: 200 });
+
+  } catch (error: any) {
+    console.error('[Internal Transfer] ❌ Error:', error);
     return NextResponse.json(
-      { success: false, error: "Internal transfer failed.", details: process.env.NODE_ENV === "development" ? err?.message : undefined },
+      { 
+        success: false,
+        error: "An unexpected error occurred. Please try again.",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
 }
 
-export async function GET(req: NextRequest) {
+// GET - Fetch internal transfer history
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    
     if (!session?.user?.email) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
     }
+
     await connectDB();
+
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ success: false, error: "User not found." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
     }
 
-    const txs = await (Transaction as any).find({
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const accountType = searchParams.get('account');
+
+    const query: any = {
       userId: user._id,
-      "metadata.kind": "internal",
-    }).sort({ createdAt: -1 }).limit(20).lean();
+      origin: 'internal_transfer'
+    };
 
-    const items = txs.map((tx: any) => ({
-      reference: tx.reference,
-      date: tx.postedAt || tx.date || tx.createdAt,
-      type: tx.amount < 0 ? "debit" : "credit",
-      amount: tx.amount,
-      fromAccount: tx.metadata?.fromAccount,
-      toAccount: tx.metadata?.toAccount,
-      description: tx.description,
-      status: tx.status,
-    }));
+    if (accountType) {
+      query.accountType = accountType;
+    }
 
-    return NextResponse.json({ success: true, items });
-  } catch (err: any) {
-    console.error("💥 Get internal transfers error:", err);
-    return NextResponse.json({ success: false, error: "Failed to fetch transfer history" }, { status: 500 });
+    const internalTransfers = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    // Group transfers by reference pair
+    const transfersByRef: { [key: string]: any[] } = {};
+    internalTransfers.forEach((tx: any) => {
+      const baseRef = tx.reference.replace(/-OUT$|-IN$/, '');
+      if (!transfersByRef[baseRef]) {
+        transfersByRef[baseRef] = [];
+      }
+      transfersByRef[baseRef].push(tx);
+    });
+
+    const formattedTransfers = Object.entries(transfersByRef).map(([ref, txs]) => {
+      const outTx = txs.find(tx => tx.reference.includes('-OUT'));
+      const inTx = txs.find(tx => tx.reference.includes('-IN'));
+      
+      return {
+        reference: ref,
+        date: outTx?.date || inTx?.date,
+        amount: outTx?.amount || inTx?.amount,
+        fromAccount: outTx?.accountType,
+        toAccount: inTx?.accountType,
+        description: outTx?.description || inTx?.description,
+        status: outTx?.status || inTx?.status,
+        posted: outTx?.posted && inTx?.posted,
+        transactions: txs.map(tx => ({
+          id: tx._id.toString(),
+          type: tx.type,
+          reference: tx.reference,
+          account: tx.accountType,
+          amount: tx.amount,
+          status: tx.status,
+          posted: tx.posted,
+          postedAt: tx.postedAt
+        }))
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      internalTransfers: formattedTransfers,
+      total: formattedTransfers.length,
+      currentBalances: {
+        checking: user.checkingBalance || 0,
+        savings: user.savingsBalance || 0,
+        investment: user.investmentBalance || 0
+      }
+    });
+
+  } catch (error: any) {
+    console.error('[Internal Transfer] ❌ GET Error:', error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch internal transfer history" },
+      { status: 500 }
+    );
   }
 }

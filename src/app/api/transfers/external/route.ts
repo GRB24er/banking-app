@@ -1,562 +1,338 @@
 // src/app/api/transfers/external/route.ts
+// External Transfer - Creates PENDING transaction that requires verification
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
+import { sendTransactionEmail } from "@/lib/mail";
 
-// Define interfaces for better type safety
 interface ExternalTransferRequest {
   fromAccount: 'checking' | 'savings' | 'investment';
   recipientName: string;
   recipientAccount: string;
   recipientBank: string;
-  recipientRoutingNumber?: string;
-  amount: number | string;
+  recipientRoutingNumber: string;
+  recipientAddress?: string;
+  amount: number;
   description?: string;
   transferSpeed?: 'standard' | 'express' | 'wire';
 }
 
-interface TransferFeeStructure {
-  fee: number;
-  estimatedDays: string;
-}
-
-interface TransferDocument {
-  _id: any;
-  reference: string;
-  date: Date;
-  createdAt: Date;
-  amount: number;
-  accountType: string;
-  status: string;
-  posted: boolean;
-  postedAt: Date | null;
-  description: string;
-  metadata?: {
-    recipientName?: string;
-    recipientAccount?: string;
-    recipientBank?: string;
-    fee?: number;
-    transferSpeed?: string;
-    estimatedCompletion?: string;
-  };
-  updatedAt: Date;
-}
-
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 External transfer initiated');
+    console.log('[External Transfer] Started');
     
-    // Get session
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      console.log('❌ Unauthorized access attempt');
       return NextResponse.json(
-        { 
-          success: false,
-          error: "Unauthorized - Please login" 
-        },
+        { success: false, error: "Unauthorized - Please login" },
         { status: 401 }
       );
     }
 
-    // Parse request body with detailed logging
     const body: ExternalTransferRequest = await request.json();
-    console.log('📥 Transfer request received:', {
-      fromAccount: body.fromAccount,
-      recipientName: body.recipientName,
-      amount: body.amount,
-      transferSpeed: body.transferSpeed,
-      userEmail: session.user.email
-    });
-    
-    // Destructure with validation
-    const { 
+    const {
       fromAccount,
       recipientName,
       recipientAccount,
       recipientBank,
       recipientRoutingNumber,
+      recipientAddress,
       amount,
       description,
       transferSpeed = 'standard'
     } = body;
 
-    // Enhanced field validation with specific error messages
-    const missingFields = [];
-    if (!fromAccount) missingFields.push('fromAccount');
-    if (!recipientName?.trim()) missingFields.push('recipientName');
-    if (!recipientAccount?.trim()) missingFields.push('recipientAccount');
-    if (!recipientBank?.trim()) missingFields.push('recipientBank');
-    if (!amount) missingFields.push('amount');
-
-    if (missingFields.length > 0) {
-      console.log('❌ Missing required fields:', missingFields);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: `Missing required fields: ${missingFields.join(', ')}`,
-          missingFields 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate and parse amount
-    const transferAmount = typeof amount === 'string' 
-      ? parseFloat(amount.replace(/[^0-9.-]/g, '')) 
-      : Number(amount);
-      
-    console.log('💰 Parsed amount:', transferAmount);
-
-    if (isNaN(transferAmount) || transferAmount <= 0) {
-      console.log('❌ Invalid amount:', amount);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: "Invalid amount. Please enter a valid number greater than 0" 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Minimum transfer validation
-    if (transferAmount < 1) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: "Minimum transfer amount is $1.00" 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Maximum transfer validation
-    if (transferAmount > 50000) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: "Maximum transfer amount is $50,000.00. Please contact support for larger transfers." 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Calculate fees and processing time
-    const feeStructure: { [key: string]: TransferFeeStructure } = {
-      'standard': { fee: 0, estimatedDays: '3-5 business days' },
-      'express': { fee: 15, estimatedDays: '1-2 business days' },
-      'wire': { fee: 30, estimatedDays: 'Same business day' }
-    };
-
-    const { fee, estimatedDays } = feeStructure[transferSpeed] || feeStructure['standard'];
-    const totalAmount = transferAmount + fee;
-
-    console.log('💸 Transfer details:', {
-      transferAmount,
-      fee,
-      totalAmount,
+    console.log('[External Transfer] Request:', {
+      fromAccount,
+      recipientName,
+      recipientBank,
+      amount,
       transferSpeed,
-      estimatedDays
+      userEmail: session.user.email
     });
 
-    // Connect to database
-    await connectDB();
-    console.log('🗄️ Database connected');
+    // Validation
+    if (!fromAccount || !['checking', 'savings', 'investment'].includes(fromAccount)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid source account" },
+        { status: 400 }
+      );
+    }
 
-    // Find and validate user
+    if (!recipientName || !recipientAccount || !recipientBank || !recipientRoutingNumber) {
+      return NextResponse.json(
+        { success: false, error: "Missing recipient information" },
+        { status: 400 }
+      );
+    }
+
+    if (!amount || amount <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Invalid amount" },
+        { status: 400 }
+      );
+    }
+
+    // Validate routing number (9 digits)
+    if (!/^\d{9}$/.test(recipientRoutingNumber)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid routing number. Must be 9 digits." },
+        { status: 400 }
+      );
+    }
+
+    // Calculate fees
+    let fee = 0;
+    if (transferSpeed === 'express') fee = 15;
+    if (transferSpeed === 'wire') fee = 30;
+
+    const totalAmount = amount + fee;
+
+    await connectDB();
+    console.log('[External Transfer] Database connected');
+
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      console.log('❌ User not found:', session.user.email);
       return NextResponse.json(
-        { 
-          success: false,
-          error: "User account not found" 
-        },
+        { success: false, error: "User account not found" },
         { status: 404 }
       );
     }
 
-    console.log('👤 User found:', user._id);
+    // Get balance field
+    const balanceField = `${fromAccount}Balance`;
+    const currentBalance = (user as any)[balanceField] || 0;
 
-    // Validate account type and get balance
-    const balanceFieldMap: { [key: string]: keyof typeof user } = {
-      'checking': 'checkingBalance',
-      'savings': 'savingsBalance',
-      'investment': 'investmentBalance'
-    };
-
-    const fromBalanceField = balanceFieldMap[fromAccount];
-    if (!fromBalanceField) {
-      console.log('❌ Invalid account type:', fromAccount);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: "Invalid account type. Must be checking, savings, or investment" 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check sufficient funds
-    const currentBalance = Number(user[fromBalanceField] || 0);
-    console.log('💰 Current balance check:', {
+    console.log('[External Transfer] Balance check:', {
       account: fromAccount,
       currentBalance,
-      requiredAmount: totalAmount,
-      hasSufficientFunds: currentBalance >= totalAmount
+      totalRequired: totalAmount
     });
-    
-    if (totalAmount > currentBalance) {
+
+    // Check sufficient funds
+    if (currentBalance < totalAmount) {
       return NextResponse.json(
         { 
-          success: false,
-          error: "Insufficient funds",
-          details: {
-            available: currentBalance,
-            transferAmount: transferAmount,
-            fee: fee,
-            totalRequired: totalAmount,
-            shortfall: totalAmount - currentBalance
-          }
+          success: false, 
+          error: `Insufficient funds. Available: $${currentBalance.toFixed(2)}, Required: $${totalAmount.toFixed(2)}` 
         },
         { status: 400 }
       );
     }
 
-    // Generate unique reference number
+    // Generate reference
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     const transferRef = `EXT-${timestamp}-${random}`;
-    
-    console.log('📖 Generated reference:', transferRef);
 
-    // Use MongoDB session for transaction consistency
-    const mongoSession = await User.startSession();
-    
-    try {
-      await mongoSession.withTransaction(async () => {
-        console.log('🔄 Starting database transaction');
+    console.log('[External Transfer] Generated reference:', transferRef);
 
-        // Create main transfer transaction
-        const mainTransaction = new Transaction({
-          userId: user._id,
-          type: 'transfer-out',
-          currency: 'USD',
-          amount: transferAmount,
-          description: description?.trim() || `External transfer to ${recipientName}`,
-          status: transferSpeed === 'wire' ? 'completed' : 'pending', // Wire transfers are immediate
-          accountType: fromAccount,
-          posted: transferSpeed === 'wire', // Wire transfers are posted immediately
-          postedAt: transferSpeed === 'wire' ? new Date() : null,
-          reference: transferRef,
-          channel: 'online',
-          origin: 'external_transfer',
-          date: new Date(),
-          metadata: {
-            recipientName: recipientName.trim(),
-            recipientAccount: recipientAccount.slice(-4), // Store only last 4 digits
-            recipientBank: recipientBank.trim(),
-            recipientRoutingNumber: recipientRoutingNumber ? recipientRoutingNumber.slice(-4) : '',
-            transferSpeed,
-            fee,
-            estimatedCompletion: estimatedDays,
-            isExternalTransfer: true,
-            fullRecipientAccount: recipientAccount // Store full account for admin use
-          }
-        });
+    // Estimated delivery
+    let estimatedDays = 5;
+    if (transferSpeed === 'express') estimatedDays = 2;
+    if (transferSpeed === 'wire') estimatedDays = 1;
 
-        await mainTransaction.save({ session: mongoSession });
-        console.log('💾 Main transaction saved:', mainTransaction._id);
+    const estimatedDelivery = new Date();
+    estimatedDelivery.setDate(estimatedDelivery.getDate() + estimatedDays);
 
-        // Create fee transaction if applicable
-        let feeTransaction = null;
-        if (fee > 0) {
-          feeTransaction = new Transaction({
-            userId: user._id,
-            type: 'fee',
-            currency: 'USD',
-            amount: fee,
-            description: `${transferSpeed.charAt(0).toUpperCase() + transferSpeed.slice(1)} transfer fee`,
-            status: transferSpeed === 'wire' ? 'completed' : 'pending',
-            accountType: fromAccount,
-            posted: transferSpeed === 'wire',
-            postedAt: transferSpeed === 'wire' ? new Date() : null,
-            reference: `${transferRef}-FEE`,
-            channel: 'online',
-            origin: 'external_transfer',
-            date: new Date(),
-            metadata: {
-              relatedTransferRef: transferRef,
-              transferSpeed
-            }
-          });
+    // =====================================================
+    // CREATE PENDING TRANSACTION
+    // NO balance deduction yet - only when admin approves
+    // User must complete verification before funds release
+    // =====================================================
 
-          await feeTransaction.save({ session: mongoSession });
-          console.log('💾 Fee transaction saved:', feeTransaction._id);
-        }
-
-        // Update user balance
-        const newBalance = currentBalance - totalAmount;
-        const updateField = { [fromBalanceField]: newBalance };
-        
-        await User.findByIdAndUpdate(
-          user._id, 
-          { $set: updateField },
-          { session: mongoSession }
-        );
-
-        console.log('💰 Balance updated:', {
-          field: fromBalanceField,
-          oldBalance: currentBalance,
-          newBalance: newBalance,
-          deducted: totalAmount
-        });
-
-        // Add to user's transaction history (embedded)
-        const userTransactionEntry = {
-          _id: mainTransaction._id,
-          type: 'transfer-out',
-          amount: totalAmount,
-          description: `External transfer to ${recipientName}`,
-          date: new Date(),
-          balanceAfter: newBalance,
-          status: mainTransaction.status,
-          reference: transferRef
-        };
-
-        await User.findByIdAndUpdate(
-          user._id,
-          {
-            $push: {
-              transactions: {
-                $each: [userTransactionEntry],
-                $position: 0,
-                $slice: 100 // Keep only last 100 transactions
-              }
-            }
-          },
-          { session: mongoSession }
-        );
-
-        console.log('📝 User transaction history updated');
-      });
-
-      await mongoSession.endSession();
-      console.log('✅ Database transaction completed successfully');
-
-      // Prepare response data
-      const responseData = {
-        success: true,
-        message: transferSpeed === 'wire' 
-          ? "Wire transfer completed successfully!" 
-          : "Transfer initiated successfully. Pending admin approval.",
-        transferReference: transferRef,
-        transfer: {
-          from: fromAccount,
-          to: {
-            name: recipientName,
-            account: `****${recipientAccount.slice(-4)}`,
-            bank: recipientBank
-          },
-          amount: transferAmount,
-          fee: fee,
-          total: totalAmount,
-          description: description || 'External Transfer',
-          reference: transferRef,
-          status: transferSpeed === 'wire' ? 'completed' : 'pending',
-          estimatedCompletion: estimatedDays,
-          transferSpeed,
-          date: new Date().toISOString()
-        },
-        newBalance: currentBalance - totalAmount,
-        balanceInfo: {
-          previousBalance: currentBalance,
-          transferAmount: transferAmount,
-          feeAmount: fee,
-          newBalance: currentBalance - totalAmount
-        }
-      };
-
-      console.log('✅ Transfer completed:', {
-        reference: transferRef,
-        status: responseData.transfer.status,
-        newBalance: responseData.newBalance
-      });
-
-      return NextResponse.json(responseData, { status: 200 });
-
-    } catch (dbError: any) {
-      await mongoSession.abortTransaction();
-      await mongoSession.endSession();
-      
-      console.error('💥 Database transaction failed:', {
-        error: dbError.message,
-        stack: dbError.stack,
-        transferRef
-      });
-      
-      return NextResponse.json(
-        { 
-          success: false,
-          error: "Failed to process transfer. Please try again.",
-          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined,
-          reference: transferRef
-        },
-        { status: 500 }
-      );
-    }
-
-  } catch (error: any) {
-    console.error('💥 External transfer error:', {
-      message: error.message,
-      stack: error.stack,
-      userEmail: (await getServerSession(authOptions))?.user?.email
-    });
-    
-    return NextResponse.json(
-      { 
-        success: false,
-        error: "An unexpected error occurred. Please try again.",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// GET - Fetch external transfer history with enhanced filtering
-export async function GET(request: NextRequest) {
-  try {
-    console.log('📊 Fetching external transfer history');
-    
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: "Unauthorized" 
-        },
-        { status: 401 }
-      );
-    }
-
-    await connectDB();
-
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: "User not found" 
-        },
-        { status: 404 }
-      );
-    }
-
-    // Get URL parameters for filtering
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const status = searchParams.get('status');
-    const accountType = searchParams.get('accountType');
-
-    // Build query
-    const query: any = {
+    const mainTransaction = await Transaction.create({
       userId: user._id,
       type: 'transfer-out',
-      origin: 'external_transfer'
-    };
-
-    if (status) query.status = status;
-    if (accountType) query.accountType = accountType;
-
-    console.log('🔍 Query filters:', query);
-
-    // Get external transfers with related fee transactions
-    const transfers: TransferDocument[] = await Transaction.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
-
-    // Get related fee transactions - FIXED: Added proper typing
-    const transferRefs = transfers.map((t: TransferDocument) => t.reference);
-    const feeTransactions = await Transaction.find({
-      userId: user._id,
-      type: 'fee',
+      currency: 'USD',
+      amount: amount,
+      description: description || `Transfer to ${recipientName}`,
+      status: 'pending',
+      accountType: fromAccount,
+      posted: false,
+      postedAt: null,
+      reference: transferRef,
+      channel: 'online',
       origin: 'external_transfer',
-      reference: { $in: transferRefs.map(ref => `${ref}-FEE`) }
-    }).lean();
-
-    // Create a map for quick fee lookup
-const feeMap = feeTransactions.reduce((acc: { [key: string]: any }, fee: any) => {
-  const mainRef = fee.reference?.replace('-FEE', '');
-  if (mainRef) acc[mainRef] = fee;
-  return acc;
-}, {} as { [key: string]: any });
-
-    // Format transfers with enhanced data - FIXED: Added proper typing
-    const transferHistory = transfers.map((tx: TransferDocument) => {
-      const relatedFee = feeMap[tx.reference];
-      
-      return {
-        id: tx._id.toString(),
-        reference: tx.reference,
-        date: tx.date || tx.createdAt,
-        amount: tx.amount,
-        fee: relatedFee?.amount || tx.metadata?.fee || 0,
-        total: tx.amount + (relatedFee?.amount || tx.metadata?.fee || 0),
-        fromAccount: tx.accountType,
-        recipient: {
-          name: tx.metadata?.recipientName || 'Unknown',
-          account: tx.metadata?.recipientAccount ? `****${tx.metadata.recipientAccount}` : '****',
-          bank: tx.metadata?.recipientBank || 'Unknown Bank'
-        },
-        status: tx.status,
-        transferSpeed: tx.metadata?.transferSpeed || 'standard',
-        estimatedCompletion: tx.metadata?.estimatedCompletion || 'Unknown',
-        description: tx.description,
-        posted: tx.posted,
-        postedAt: tx.postedAt,
-        createdAt: tx.createdAt,
-        updatedAt: tx.updatedAt
-      };
-    });
-
-    console.log(`📋 Found ${transferHistory.length} transfers`);
-
-    return NextResponse.json({
-      success: true,
-      transfers: transferHistory,
-      total: transferHistory.length,
-      pagination: {
-        limit,
-        hasMore: transferHistory.length === limit
-      },
-      currentBalances: {
-        checking: user.checkingBalance || 0,
-        savings: user.savingsBalance || 0,
-        investment: user.investmentBalance || 0
-      },
-      summary: {
-        totalTransfers: transferHistory.length,
-        pendingTransfers: transferHistory.filter(t => t.status === 'pending').length,
-        completedTransfers: transferHistory.filter(t => t.status === 'completed').length,
-        totalAmountTransferred: transferHistory
-          .filter(t => t.status === 'completed')
-          .reduce((sum, t) => sum + t.total, 0)
+      date: new Date(),
+      metadata: {
+        recipientName,
+        recipientAccount: recipientAccount.slice(-4).padStart(recipientAccount.length, '*'),
+        recipientAccountFull: recipientAccount, // Store full for admin
+        recipientBank,
+        recipientRoutingNumber: recipientRoutingNumber.slice(-4).padStart(9, '*'),
+        recipientRoutingFull: recipientRoutingNumber, // Store full for admin
+        recipientAddress: recipientAddress || '',
+        transferSpeed,
+        fee,
+        totalAmount,
+        estimatedDelivery: estimatedDelivery.toISOString(),
+        // Verification fields - admin will populate these
+        verificationRequired: true,
+        verificationCode: null,
+        verificationCompleted: false,
+        verificationUrl: null
       }
     });
 
+    console.log('[External Transfer] Main transaction created:', mainTransaction._id);
+
+    // Create fee transaction if applicable
+    if (fee > 0) {
+      await Transaction.create({
+        userId: user._id,
+        type: 'fee',
+        currency: 'USD',
+        amount: fee,
+        description: `${transferSpeed === 'wire' ? 'Wire' : 'Express'} transfer fee`,
+        status: 'pending',
+        accountType: fromAccount,
+        posted: false,
+        postedAt: null,
+        reference: `${transferRef}-FEE`,
+        channel: 'system',
+        origin: 'transfer_fee',
+        date: new Date(),
+        metadata: {
+          linkedReference: transferRef,
+          feeType: `${transferSpeed}_transfer`
+        }
+      });
+
+      console.log('[External Transfer] Fee transaction created');
+    }
+
+    // Send email notification
+    try {
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; }
+            .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px 30px; text-align: center; }
+            .content { padding: 40px 30px; }
+            .amount { font-size: 36px; font-weight: bold; color: #10b981; text-align: center; margin: 20px 0; }
+            .details { background: #f8fafc; border-radius: 8px; padding: 20px; margin: 20px 0; }
+            .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+            .row:last-child { border-bottom: none; }
+            .label { color: #64748b; }
+            .value { font-weight: 600; color: #0f172a; }
+            .status { display: inline-block; background: #fef3c7; color: #92400e; padding: 8px 16px; border-radius: 20px; font-weight: 600; }
+            .footer { background: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #64748b; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Transfer Initiated</h1>
+              <p>Your transfer is being processed</p>
+            </div>
+            <div class="content">
+              <div class="amount">$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+              
+              <div style="text-align: center; margin: 20px 0;">
+                <span class="status">⏳ Processing</span>
+              </div>
+              
+              <div class="details">
+                <div class="row">
+                  <span class="label">Reference</span>
+                  <span class="value">${transferRef}</span>
+                </div>
+                <div class="row">
+                  <span class="label">To</span>
+                  <span class="value">${recipientName}</span>
+                </div>
+                <div class="row">
+                  <span class="label">Bank</span>
+                  <span class="value">${recipientBank}</span>
+                </div>
+                <div class="row">
+                  <span class="label">Account</span>
+                  <span class="value">****${recipientAccount.slice(-4)}</span>
+                </div>
+                <div class="row">
+                  <span class="label">Speed</span>
+                  <span class="value">${transferSpeed.charAt(0).toUpperCase() + transferSpeed.slice(1)}</span>
+                </div>
+                ${fee > 0 ? `
+                <div class="row">
+                  <span class="label">Fee</span>
+                  <span class="value">$${fee.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                <div class="row">
+                  <span class="label">Total</span>
+                  <span class="value">$${totalAmount.toFixed(2)}</span>
+                </div>
+                <div class="row">
+                  <span class="label">Estimated Delivery</span>
+                  <span class="value">${estimatedDelivery.toLocaleDateString()}</span>
+                </div>
+              </div>
+              
+              <p style="background: #f0f9ff; border: 1px solid #bae6fd; padding: 15px; border-radius: 8px; color: #0369a1;">
+                <strong>What's next?</strong><br>
+                Your transfer is being reviewed. You will receive a notification when verification is required to release the funds.
+              </p>
+            </div>
+            <div class="footer">
+              <p>This is an automated message. Please do not reply.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await sendTransactionEmail(user.email, {
+        name: user.name || 'Customer',
+        subject: `Transfer Initiated - $${amount.toLocaleString()} to ${recipientName}`,
+        html: emailHtml,
+        transaction: mainTransaction
+      });
+
+      console.log('[External Transfer] Email sent');
+    } catch (emailError) {
+      console.error('[External Transfer] Email failed:', emailError);
+    }
+
+    console.log('[External Transfer] Success:', {
+      reference: transferRef,
+      amount,
+      status: 'pending'
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Transfer initiated successfully. Awaiting verification.",
+      reference: transferRef,
+      transferReference: transferRef,
+      transfer: {
+        reference: transferRef,
+        amount,
+        fee,
+        totalAmount,
+        recipientName,
+        recipientBank,
+        status: 'pending',
+        estimatedDelivery: estimatedDelivery.toISOString()
+      }
+    }, { status: 200 });
+
   } catch (error: any) {
-    console.error('💥 Get external transfers error:', error);
+    console.error('[External Transfer] Error:', error);
     return NextResponse.json(
       { 
         success: false,
-        error: "Failed to fetch transfer history",
+        error: "Transfer failed. Please try again.",
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       },
       { status: 500 }

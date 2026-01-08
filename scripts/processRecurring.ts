@@ -125,7 +125,7 @@ async function processRecurringTransactions() {
   // Find users that have recurring rules
   const users = await User.find({ recurring: { $exists: true, $ne: [] } })
     .select("_id email name recurring")
-    .lean(); // lean to reduce memory
+    .lean();
 
   const today = new Date();
 
@@ -147,11 +147,7 @@ async function processRecurringTransactions() {
       const currency = normalizeCurrency(rule.currency);
       const accountType = normalizeAccountType(rule.accountType);
 
-      // Create as PENDING. Admin will complete/reject and posting logic will update balances.
-      const status: "pending" = "pending";
-
-      // Use your helper; payload casted to any to satisfy strict ITransaction typing.
-      // IMPORTANT: we include accountType/channel/origin so downstream logic/emails behave like the rest of the app.
+      // Create transaction (status defaults to 'pending' in createTransaction)
       const { transaction } = await db.createTransaction(
         String(user._id),
         {
@@ -162,8 +158,7 @@ async function processRecurringTransactions() {
           accountType,
           channel: "recurring",
           origin: "system_recurring",
-        } as any,
-        status
+        } as any
       );
 
       // Update lastRun on the in-memory rule so we can persist after loop

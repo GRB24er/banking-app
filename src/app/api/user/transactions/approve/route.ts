@@ -1,28 +1,34 @@
+// src/app/api/transactions/approve/route.ts
+// ADMIN APPROVAL - WHERE BALANCES GET UPDATED
+
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 import { sendTransactionEmail } from '@/lib/mail';
-import { generateCreditEmail, generateDebitEmail } from '@/lib/bankingEmailTemplates';
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest) {
   try {
     await connectDB();
     
-    // Await params for Next.js 15
-    const { id: transactionId } = await params;
-    
     const body = await req.json();
     const { 
+      transactionId,
       action, // 'approve' or 'reject'
       adminNotes,
       adminId 
     } = body;
     
-    // Validate action
+    console.log('[Approval] Processing:', { transactionId, action, adminId });
+    
+    if (!transactionId) {
+      return NextResponse.json(
+        { error: 'Transaction ID is required' },
+        { status: 400 }
+      );
+    }
+    
     if (!action || !['approve', 'reject'].includes(action)) {
       return NextResponse.json(
         { error: 'Invalid action. Must be "approve" or "reject"' },
@@ -30,7 +36,6 @@ export async function POST(
       );
     }
     
-    // Find the transaction
     const transaction = await Transaction.findById(transactionId);
     
     if (!transaction) {
@@ -40,7 +45,6 @@ export async function POST(
       );
     }
     
-    // Check if transaction is already processed
     if (transaction.status !== 'pending') {
       return NextResponse.json(
         { error: `Transaction already ${transaction.status}` },
@@ -48,7 +52,6 @@ export async function POST(
       );
     }
     
-    // Find the user
     const user = await User.findById(transaction.userId);
     
     if (!user) {
@@ -58,77 +61,47 @@ export async function POST(
       );
     }
     
-    // Determine the balance field based on account type
-    const balanceField = transaction.accountType === 'savings' 
-      ? 'savingsBalance' 
-      : transaction.accountType === 'investment' 
-      ? 'investmentBalance' 
-      : 'checkingBalance';
-    
     if (action === 'approve') {
-      // Process approval
-      const isCredit = ['deposit', 'transfer-in', 'interest', 'adjustment-credit'].includes(transaction.type);
-      const balanceChange = isCredit ? transaction.amount : -transaction.amount;
-      const currentBalance = user[balanceField] || 0;
-      const newBalance = currentBalance + balanceChange;
+      console.log('[Approval] ✅ Approving transaction');
       
-      // Check for insufficient funds on debit transactions
-      if (!isCredit && newBalance < 0) {
-        return NextResponse.json(
-          { error: 'Insufficient funds to approve this transaction' },
-          { status: 400 }
-        );
+      // Update transaction status to 'approved'
+      // The Transaction model middleware will automatically:
+      // 1. Update the user's balance
+      // 2. Mark posted = true
+      transaction.status = 'approved';
+      transaction.reviewedBy = adminId ? new mongoose.Types.ObjectId(adminId) : null;
+      transaction.reviewedAt = new Date();
+      
+      if (adminNotes) {
+        if (!transaction.metadata) transaction.metadata = {};
+        transaction.metadata.adminNotes = adminNotes;
       }
-      
-      // Update user balance
-      user[balanceField] = newBalance;
-      await user.save();
-      
-      // Update transaction status
-      transaction.status = 'completed';
-      transaction.posted = true;
-      transaction.postedAt = new Date();
-      transaction.approvedBy = adminId;
-      transaction.approvedAt = new Date();
-      transaction.adminNotes = adminNotes;
       
       await transaction.save();
       
-      // Send email notification
+      // Get updated user with new balance
+      const updatedUser = await User.findById(user._id);
+      const balanceField = transaction.accountType === 'savings' 
+        ? 'savingsBalance' 
+        : transaction.accountType === 'investment' 
+        ? 'investmentBalance' 
+        : 'checkingBalance';
+      
+      const newBalance = updatedUser ? (updatedUser as any)[balanceField] : 0;
+      
+      console.log('[Approval] ✅ Transaction approved, balance updated to:', newBalance);
+      
+      // ✅ SEND EMAIL - Transaction Approved
       try {
         if (user.email) {
-          // FIXED: Added all missing required properties for BankingEmailData
-          const emailData = {
-            recipientName: user.name,
-            recipientEmail: user.email,
-            amount: transaction.amount,
-            currency: transaction.currency || 'USD',
-            transactionId: transaction._id.toString(),
-            transactionReference: transaction.reference || transaction._id.toString(),
-            transactionType: transaction.type,
-            accountType: transaction.accountType,
-            date: new Date(), // Changed from new Date().toLocaleString() to just new Date()
-            balance: newBalance,
-            balanceBefore: currentBalance,
-            balanceAfter: newBalance,
-            description: transaction.description,
-            status: 'completed' as 'completed' // Added type assertion to match literal type
-          };
-          
-          let emailHtml = '';
-          if (isCredit) {
-            emailHtml = generateCreditEmail(emailData);
-          } else {
-            emailHtml = generateDebitEmail(emailData);
-          }
-          
           await sendTransactionEmail(user.email, {
             name: user.name,
             transaction: transaction
           });
+          console.log(`[Approval] ✅ Email sent to: ${user.email}`);
         }
       } catch (emailError) {
-        console.error('Failed to send email:', emailError);
+        console.error('[Approval] ❌ Email failed:', emailError);
         // Continue even if email fails
       }
       
@@ -137,33 +110,42 @@ export async function POST(
         message: 'Transaction approved successfully',
         transaction: {
           _id: transaction._id,
-          status: 'completed',
+          status: 'approved',
           amount: transaction.amount,
           type: transaction.type,
           newBalance: newBalance,
-          approvedAt: transaction.approvedAt
+          approvedAt: transaction.reviewedAt,
+          posted: transaction.posted
         }
       });
       
     } else {
-      // Process rejection
+      // REJECT
+      console.log('[Approval] ❌ Rejecting transaction');
+      
       transaction.status = 'rejected';
-      transaction.rejectedBy = adminId;
-      transaction.rejectedAt = new Date();
-      transaction.adminNotes = adminNotes;
+      transaction.reviewedBy = adminId ? new mongoose.Types.ObjectId(adminId) : null;
+      transaction.reviewedAt = new Date();
+      
+      if (adminNotes) {
+        if (!transaction.metadata) transaction.metadata = {};
+        transaction.metadata.adminNotes = adminNotes;
+      }
       
       await transaction.save();
       
-      // Send rejection notification
+      console.log('[Approval] ❌ Transaction rejected');
+      
+      // ✅ SEND EMAIL - Transaction Rejected
       if (user.email) {
         try {
           await sendTransactionEmail(user.email, {
             name: user.name,
-            transaction: transaction,
-            type: 'rejection'
+            transaction: transaction
           });
+          console.log(`[Approval] ✅ Rejection email sent to: ${user.email}`);
         } catch (emailError) {
-          console.error('Failed to send rejection email:', emailError);
+          console.error('[Approval] ❌ Email failed:', emailError);
         }
       }
       
@@ -173,13 +155,13 @@ export async function POST(
         transaction: {
           _id: transaction._id,
           status: 'rejected',
-          rejectedAt: transaction.rejectedAt
+          rejectedAt: transaction.reviewedAt
         }
       });
     }
     
   } catch (error) {
-    console.error('Transaction approval error:', error);
+    console.error('[Approval] ❌ Error:', error);
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Failed to process transaction',
@@ -190,15 +172,19 @@ export async function POST(
   }
 }
 
-// GET endpoint to check transaction status
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest) {
   try {
     await connectDB();
     
-    const { id: transactionId } = await params;
+    const { searchParams } = new URL(req.url);
+    const transactionId = searchParams.get('id');
+    
+    if (!transactionId) {
+      return NextResponse.json(
+        { error: 'Transaction ID is required' },
+        { status: 400 }
+      );
+    }
     
     const transaction = await Transaction.findById(transactionId)
       .populate('userId', 'name email accountNumber');
@@ -216,7 +202,7 @@ export async function GET(
     });
     
   } catch (error) {
-    console.error('Error fetching transaction:', error);
+    console.error('[Approval] ❌ GET Error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch transaction details' },
       { status: 500 }

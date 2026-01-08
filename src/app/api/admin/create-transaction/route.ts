@@ -1,26 +1,35 @@
-// CREATE THIS FILE: src/app/api/admin/create-transaction/route.ts
-// This is a simpler approach without dynamic routing
+// src/app/api/admin/create-transaction/route.ts
+// ADMIN CREATE TRANSACTION - Can create PENDING or COMPLETED
 
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
+import { sendTransactionEmail } from '@/lib/mail';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log('Create transaction request:', body);
     
-    // Extract userId from body instead of params
     const { 
       userId,
       type, 
       amount, 
-      accountType, 
+      accountType = 'checking', 
       description, 
-      status = 'completed'
+      status = 'pending', // Admin can choose: 'pending' or 'completed'
+      currency = 'USD'
     } = body;
 
+    console.log('[Admin Create] 📝 Request:', { 
+      userId, 
+      type, 
+      amount, 
+      accountType, 
+      status 
+    });
+
+    // Validation
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },
@@ -28,10 +37,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Connect to database
+    if (!type || !amount) {
+      return NextResponse.json(
+        { error: 'Type and amount are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate transaction type
+    const validTypes = [
+      'deposit',
+      'withdraw',
+      'transfer-in',
+      'transfer-out',
+      'fee',
+      'interest',
+      'adjustment-credit',
+      'adjustment-debit'
+    ];
+
+    if (!validTypes.includes(type)) {
+      return NextResponse.json(
+        { error: `Invalid transaction type. Must be one of: ${validTypes.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate status
+    if (!['pending', 'completed', 'approved'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Status must be pending, completed, or approved' },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
     
-    // Find the user
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json(
@@ -40,106 +81,103 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`Processing ${type} for user: ${user.name}`);
+    // ALWAYS POSITIVE AMOUNT
+    const transactionAmount = Math.abs(Number(amount));
+    
+    if (isNaN(transactionAmount) || transactionAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid amount' },
+        { status: 400 }
+      );
+    }
 
-    // Determine which balance to update
     const balanceField = accountType === 'savings' 
       ? 'savingsBalance' 
       : accountType === 'investment' 
       ? 'investmentBalance' 
       : 'checkingBalance';
 
-    // Get current balance
-    const currentBalance = user[balanceField] || 0;
+    const currentBalance = (user as any)[balanceField] || 0;
 
-    // Calculate new balance
-    const isCredit = ['deposit', 'transfer-in', 'interest', 'adjustment-credit'].includes(type);
-    const balanceChange = isCredit ? Number(amount) : -Number(amount);
-    const newBalance = currentBalance + balanceChange;
+    const reference = `ADM-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    console.log(`Current balance: ${currentBalance}, Change: ${balanceChange}, New balance: ${newBalance}`);
+    // Determine final status
+    // If admin chooses 'completed' or 'approved', the middleware will update balances
+    const finalStatus = status === 'completed' ? 'approved' : status;
 
-    // Check for insufficient funds
-    if (!isCredit && newBalance < 0) {
-      return NextResponse.json(
-        { error: 'Insufficient funds' },
-        { status: 400 }
-      );
-    }
-
-    // Generate reference number
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const prefixMap: { [key: string]: string } = {
-      'deposit': 'DEP',
-      'withdraw': 'WTH',
-      'transfer-in': 'TRI',
-      'transfer-out': 'TRO',
-      'interest': 'INT',
-      'fee': 'FEE',
-      'adjustment-credit': 'ADC',
-      'adjustment-debit': 'ADD'
-    };
-    const prefix = prefixMap[type] || 'TRX';
-    const reference = `${prefix}-${timestamp}-${random}`;
-
-    // Create the transaction
+    // Create transaction
     const transaction = await Transaction.create({
       userId: user._id,
       type,
-      amount: Number(amount),
+      amount: transactionAmount, // POSITIVE
       description: description || `Admin ${type}`,
-      status,
+      status: finalStatus,
       accountType,
       reference,
-      currency: 'USD',
-      posted: status === 'completed',
-      postedAt: status === 'completed' ? new Date() : null,
+      currency,
+      posted: false, // Middleware will set to true if approved
+      postedAt: null,
       date: new Date(),
       channel: 'admin',
       origin: 'admin_panel'
     });
 
-    console.log('Transaction created:', reference);
+    console.log('[Admin Create] 💾 Transaction created:', transaction._id);
 
-    // Update user balance if completed
-    if (status === 'completed') {
-      user[balanceField] = newBalance;
-      await user.save();
-      console.log('User balance updated successfully');
+    // Get potentially updated balance (if status was approved/completed)
+    const updatedUser = await User.findById(user._id);
+    const newBalance = (updatedUser as any)[balanceField] || currentBalance;
+
+    const balanceChanged = newBalance !== currentBalance;
+
+    console.log('[Admin Create] 💰 Balance:', {
+      previous: currentBalance,
+      new: newBalance,
+      changed: balanceChanged
+    });
+
+    // ✅ SEND EMAIL
+    try {
+      await sendTransactionEmail(user.email, {
+        name: user.name || 'Customer',
+        transaction
+      });
+      console.log('[Admin Create] ✅ Email sent to:', user.email);
+    } catch (emailError) {
+      console.error('[Admin Create] ❌ Email failed:', emailError);
     }
 
-    // Return success
     return NextResponse.json({
       success: true,
-      message: `Successfully processed ${type} of $${amount} for ${user.name}`,
+      message: `Successfully ${finalStatus === 'approved' ? 'processed' : 'created'} ${type} transaction`,
       transaction: {
-        _id: transaction._id.toString(),
+        _id: transaction._id,
         reference: transaction.reference,
         type: transaction.type,
         amount: transaction.amount,
-        description: transaction.description,
         status: transaction.status,
         accountType: transaction.accountType,
-        date: transaction.date
+        posted: transaction.posted
       },
       user: {
-        _id: user._id.toString(),
+        _id: user._id,
         name: user.name,
         email: user.email,
         [balanceField]: newBalance
       },
-      previousBalance: currentBalance,
-      newBalance: newBalance
+      balanceChange: balanceChanged ? {
+        previous: currentBalance,
+        new: newBalance,
+        change: newBalance - currentBalance
+      } : null
     });
 
   } catch (error: any) {
-    console.error('Transaction creation error:', error);
+    console.error('[Admin Create] ❌ Error:', error);
     return NextResponse.json(
       { 
-        success: false,
-        error: 'Failed to process transaction', 
-        details: error.message 
+        error: 'Failed to process transaction',
+        details: error.message
       },
       { status: 500 }
     );
