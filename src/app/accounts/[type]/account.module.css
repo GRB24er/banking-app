@@ -588,10 +588,6 @@
   color: white;
 }
 
-/* Transactions Tab */
-.transactionsTab {
-  /* Inherits TransactionTable styles */
-}
 
 /* Responsive */
 @media (max-width: 1024px) {

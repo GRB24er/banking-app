@@ -1,7 +1,6 @@
-// src/components/AdminSidebar.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -13,59 +12,38 @@ interface NavItem {
   href: string;
   icon: string;
   badge?: number;
+  children?: NavItem[];
 }
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard/admin", icon: "📊" },
+  { label: "Credit Cards", href: "/dashboard/admin/credit-cards", icon: "💳" },
   { 
-    label: "Admin Dashboard", 
-    href: "/dashboard/admin", 
-    icon: "📊"
-  },
-  { 
-    label: "Credit Cards", 
-    href: "/dashboard/admin/credit-cards", 
-    icon: "💳"
-  },
-  { 
-    label: "Email Statements", 
+    label: "Statements", 
     href: "/dashboard/admin/statements", 
-    icon: "📧"
+    icon: "📧",
+    badge: 3
   },
-  { 
-    label: "Support Chats", 
-    href: "/dashboard/admin/chats", 
-    icon: "💬"
-  },
+  { label: "Support Chats", href: "/dashboard/admin/chats", icon: "💬", badge: 7 },
   { 
     label: "User Management", 
     href: "/dashboard/admin/users", 
-    icon: "👥"
+    icon: "👥",
+    children: [
+      { label: "All Users", href: "/dashboard/admin/users/all", icon: "👤" },
+      { label: "Pending", href: "/dashboard/admin/users/pending", icon: "⏳" }
+    ]
   },
-  { 
-    label: "Transactions", 
-    href: "/dashboard/admin/transactions", 
-    icon: "💸"
-  },
+  { label: "Transactions", href: "/dashboard/admin/transactions", icon: "💸" },
   { 
     label: "KYC Verification", 
     href: "/dashboard/admin/kyc", 
-    icon: "✅"
+    icon: "✅",
+    badge: 12
   },
-  { 
-    label: "Reports", 
-    href: "/dashboard/admin/reports", 
-    icon: "📈"
-  },
-  { 
-    label: "System Settings", 
-    href: "/dashboard/admin/settings", 
-    icon: "⚙️"
-  },
-  { 
-    label: "Back to User Dashboard", 
-    href: "/dashboard", 
-    icon: "🔙"
-  }
+  { label: "Reports", href: "/dashboard/admin/reports", icon: "📈" },
+  { label: "Settings", href: "/dashboard/admin/settings", icon: "⚙️" },
+  { label: "User Dashboard", href: "/dashboard", icon: "🏠" }
 ];
 
 export default function AdminSidebar() {
@@ -74,6 +52,25 @@ export default function AdminSidebar() {
   const { data: session } = useSession();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  const toggleSubmenu = (label: string) => {
+    const newSet = new Set(openSubmenus);
+    if (newSet.has(label)) {
+      newSet.delete(label);
+    } else {
+      newSet.add(label);
+    }
+    setOpenSubmenus(newSet);
+  };
 
   return (
     <>
@@ -92,9 +89,10 @@ export default function AdminSidebar() {
       <button
         className={styles.mobileToggle}
         onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label="Toggle menu"
+        aria-label="Toggle admin menu"
+        aria-expanded={mobileOpen}
       >
-        <span className={styles.hamburger}>
+        <span className={styles.hamburger} aria-hidden="true">
           <span></span>
           <span></span>
           <span></span>
@@ -105,110 +103,150 @@ export default function AdminSidebar() {
         className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}
         initial={false}
         animate={{
-          width: collapsed ? 80 : 280,
-          transition: { duration: 0.3, ease: "easeInOut" }
+          width: collapsed ? 72 : 280,
+          x: mobileOpen ? 0 : undefined
         }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        {/* Logo Section */}
-        <div className={styles.logoSection}>
+        {/* Logo & Controls */}
+        <div className={styles.header}>
           <div className={styles.logo}>
-            <span className={styles.logoIcon}>🦁</span>
+            <div className={styles.logoIcon}>🏦</div>
             {!collapsed && (
               <div className={styles.logoText}>
-                <span className={styles.bankName}>ZentriBank</span>
-                <span className={styles.bankTagline}>Admin Panel</span>
+                <div className={styles.logoName}>Horizon Bank</div>
+                <div className={styles.logoSubtitle}>Admin Portal</div>
               </div>
             )}
           </div>
-          <button
-            className={styles.collapseBtn}
+          <motion.button
+            className={styles.collapseToggle}
             onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            whileTap={{ scale: 0.95 }}
+            aria-label={collapsed ? "Expand menu" : "Collapse menu"}
           >
-            {collapsed ? "→" : "←"}
-          </button>
+            <span className={styles.collapseIcon}>
+              {collapsed ? "→" : "←"}
+            </span>
+          </motion.button>
         </div>
 
-        {/* Admin Info Card */}
+        {/* User Card */}
         {!collapsed && (
-          <div className={styles.quickBalanceCard}>
-            <div className={styles.balanceHeader}>
-              <span className={styles.balanceTitle}>Administrator</span>
-              <span style={{ fontSize: '1.25rem' }}>⚡</span>
-            </div>
-            <div style={{
-              marginTop: '0.75rem',
-              paddingTop: '0.75rem',
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-              fontSize: '0.875rem',
-              color: '#cbd5e1'
-            }}>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <strong style={{ color: '#fff' }}>{session?.user?.name || 'Admin'}</strong>
+          <motion.div 
+            className={styles.userCard}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className={styles.userAvatar}>👨‍💼</div>
+            <div className={styles.userInfo}>
+              <div className={styles.userName}>
+                {session?.user?.name || "System Admin"}
               </div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                {session?.user?.email}
+              <div className={styles.userRole}>Super Administrator</div>
+              <div className={styles.userEmail}>
+                {session?.user?.email || "admin@horizonbank.com"}
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Navigation Items */}
-        <div className={styles.navSection}>
-          {ADMIN_NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
+        {/* Navigation */}
+        <nav className={styles.navContainer} role="navigation" aria-label="Admin navigation">
+          <div className={styles.navItems}>
+            {ADMIN_NAV_ITEMS.map((item) => {
+              const isActive = pathname === item.href;
+              const hasChildren = item.children && item.children.length > 0;
+              const isSubmenuOpen = openSubmenus.has(item.label);
 
-            return (
-              <div key={item.label} className={styles.navItemWrapper}>
-                <div
-                  className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-                  onClick={() => router.push(item.href)}
-                >
-                  <div className={styles.navItemContent}>
-                    <span className={styles.navIcon}>{item.icon}</span>
+              return (
+                <div key={item.href} className={styles.navGroup}>
+                  <motion.div
+                    className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                    onClick={() => {
+                      if (!hasChildren) router.push(item.href);
+                      else toggleSubmenu(item.label);
+                    }}
+                    whileHover={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+                    whileTap={{ scale: 0.98 }}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={hasChildren ? isSubmenuOpen : undefined}
+                  >
+                    <div className={styles.navIcon}>{item.icon}</div>
                     {!collapsed && (
                       <>
                         <span className={styles.navLabel}>{item.label}</span>
                         {item.badge && item.badge > 0 && (
-                          <span className={styles.navBadge}>{item.badge}</span>
+                          <motion.span 
+                            className={styles.badge}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                          >
+                            {item.badge > 99 ? '99+' : item.badge}
+                          </motion.span>
+                        )}
+                        {hasChildren && (
+                          <motion.div 
+                            className={`${styles.expandIcon} ${isSubmenuOpen ? styles.rotated : ''}`}
+                            animate={{ rotate: isSubmenuOpen ? 90 : 0 }}
+                          >
+                            ▶
+                          </motion.div>
                         )}
                       </>
                     )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  </motion.div>
 
-        {/* Bottom Section */}
+                  {/* Submenu */}
+                  {hasChildren && !collapsed && isSubmenuOpen && (
+                    <motion.div 
+                      className={styles.submenu}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                    >
+                      {item.children!.map((child) => (
+                        <motion.div
+                          key={child.href}
+                          className={`${styles.navItem} ${styles.subItem} ${pathname === child.href ? styles.active : ''}`}
+                          onClick={() => router.push(child.href)}
+                          whileHover={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <span className={styles.navIcon}>{child.icon}</span>
+                          <span className={styles.navLabel}>{child.label}</span>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Footer Section */}
         {!collapsed && (
-          <div className={styles.bottomSection}>
-            <div className={styles.securityStatus} style={{ 
-              background: 'rgba(239, 68, 68, 0.1)',
-              borderColor: 'rgba(239, 68, 68, 0.3)'
-            }}>
-              <span className={styles.securityIcon}>🛡️</span>
-              <div className={styles.securityText}>
-                <span className={styles.securityLabel} style={{ color: '#fca5a5' }}>
-                  Admin Mode
-                </span>
-                <span className={styles.securityDetail} style={{ color: '#fecaca' }}>
-                  Full Access
-                </span>
+          <div className={styles.footerSection}>
+            <div className={styles.statusCard}>
+              <div className={styles.statusHeader}>
+                <div className={styles.statusIcon}>🔒</div>
+                <span className={styles.statusLabel}>Admin Mode Active</span>
+              </div>
+              <div className={styles.statusDetails}>
+                <div className={styles.statusTime}>
+                  Active since {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </div>
               </div>
             </div>
             
-            <div className={styles.lastLogin}>
-              <span className={styles.lastLoginLabel}>Current Time</span>
-              <span className={styles.lastLoginTime}>
-                {new Date().toLocaleString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </span>
+            <div className={styles.logoutSection}>
+              <button className={styles.logoutBtn}>
+                <span>🚪</span>
+                <span>Sign Out</span>
+              </button>
             </div>
           </div>
         )}

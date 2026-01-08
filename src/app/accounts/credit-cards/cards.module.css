@@ -1,405 +1,399 @@
+/* Layout Styles - NO SIDEBAR OVERLAP */
 .wrapper {
   display: flex;
   min-height: 100vh;
-  background: #f7f8fa;
+  background: #f8f9fa;
 }
 
 .main {
   flex: 1;
-  margin-left: 230px;
-  display: flex;
-  flex-direction: column;
+  margin-left: 280px; /* Sidebar width */
+  transition: margin-left 0.3s ease;
 }
 
 .content {
-  flex: 1;
-  padding: 2rem;
-  max-width: 1400px;
+  padding: 40px;
+  max-width: 1600px;
   margin: 0 auto;
-  width: 100%;
 }
 
 /* Page Header */
 .pageHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  align-items: flex-start;
+  margin-bottom: 40px;
 }
 
 .headerInfo h1 {
-  font-size: 2rem;
+  font-size: 32px;
   font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 0.5rem 0;
+  color: #1e293b;
+  margin: 0 0 8px 0;
 }
 
 .headerInfo p {
-  font-size: 0.95rem;
   color: #64748b;
+  font-size: 16px;
   margin: 0;
 }
 
-/* Continue cards.module.css */
 .requestCardBtn {
- display: flex;
- align-items: center;
- gap: 0.5rem;
- padding: 0.875rem 1.5rem;
- background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
- color: white;
- border: none;
- border-radius: 10px;
- font-weight: 600;
- cursor: pointer;
- transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #D4AF37 0%, #B8941F 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }
 
 .requestCardBtn:hover {
- transform: translateY(-2px);
- box-shadow: 0 10px 20px rgba(99, 102, 241, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+}
+
+.requestCardBtn span {
+  font-size: 20px;
 }
 
 /* Card Section */
 .cardSection {
- background: white;
- border-radius: 16px;
- padding: 2rem;
- margin-bottom: 2rem;
- box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
- border: 1px solid #e2e8f0;
+  margin-bottom: 40px;
 }
 
 .cardDisplay {
- display: grid;
- grid-template-columns: 1fr 1fr;
- gap: 3rem;
+  display: grid;
+  grid-template-columns: 500px 1fr;
+  gap: 40px;
+  align-items: start;
 }
 
-/* Card Visual */
-.cardVisualContainer {
- display: flex;
- flex-direction: column;
- gap: 1.5rem;
+/* Enterprise Credit Card Styles */
+.creditCard {
+  width: 450px;
+  height: 280px;
+  border-radius: 20px;
+  padding: 32px;
+  position: relative;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.3),
+    0 0 80px rgba(255, 255, 255, 0.1) inset;
+  overflow: hidden;
+  transition: transform 0.3s ease;
 }
 
-.cardVisual {
- aspect-ratio: 1.586;
- max-width: 400px;
- width: 100%;
- border-radius: 16px;
- padding: 2rem;
- color: white;
- display: flex;
- flex-direction: column;
- justify-content: space-between;
- box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
- position: relative;
- overflow: hidden;
+.creditCard:hover {
+  transform: translateY(-8px) rotateX(5deg);
 }
 
-.cardVisual::before {
- content: '';
- position: absolute;
- top: -50%;
- right: -50%;
- width: 200%;
- height: 200%;
- background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
- animation: shimmer 3s infinite;
+.creditCard::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 70%
+  );
+  animation: shimmer 3s infinite;
 }
 
 @keyframes shimmer {
- 0%, 100% { transform: rotate(0deg); }
- 50% { transform: rotate(180deg); }
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(20px) translateY(20px); }
 }
 
-.cardTop {
- display: flex;
- justify-content: space-between;
- align-items: center;
+.cardFront {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.cardLogo {
- font-size: 1.25rem;
- font-weight: 700;
- letter-spacing: 0.1em;
+.cardHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
-.cardType {
- font-size: 0.875rem;
- text-transform: uppercase;
- letter-spacing: 0.05em;
- opacity: 0.9;
+.bankName {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
 }
 
-.cardChip {
- width: 50px;
- height: 40px;
- background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
- border-radius: 8px;
- margin: 1rem 0;
+.networkLogo {
+  width: 60px;
+  height: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.95;
 }
 
-.cardNumber {
- font-size: 1.5rem;
- letter-spacing: 0.1em;
- margin: 1rem 0;
- font-family: 'SF Mono', monospace;
+.cardChipReal {
+  width: 50px;
+  height: 40px;
+  background: linear-gradient(135deg, #d4af37 0%, #f4d03f 50%, #c9a436 100%);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  padding: 6px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  position: relative;
+  margin-top: 20px;
 }
 
-.cardBottom {
- display: flex;
- justify-content: space-between;
+.chipLine {
+  height: 2px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 1px;
 }
 
-.cardLabel {
- font-size: 0.625rem;
- opacity: 0.8;
- margin-bottom: 0.25rem;
- text-transform: uppercase;
- letter-spacing: 0.05em;
+.contactless {
+  position: absolute;
+  right: 32px;
+  top: 100px;
+  opacity: 0.6;
 }
 
-.cardValue {
- font-size: 0.875rem;
- font-weight: 600;
+.cardNumberReal {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 4px;
+  color: white;
+  font-family: 'Courier New', 'Consolas', monospace;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin-top: 20px;
 }
 
-/* Card Selector */
+.cardDetailsRow {
+  display: flex;
+  gap: 32px;
+  margin-top: auto;
+}
+
+.cardDetail {
+  flex: 1;
+}
+
+.cardDetailLabel {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.cardDetailValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  font-family: 'Courier New', 'Consolas', monospace;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.cardTypeBadge {
+  position: absolute;
+  bottom: 32px;
+  right: 32px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cardVisualContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
 .cardSelector {
- display: flex;
- gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 450px;
 }
 
 .selectorBtn {
- flex: 1;
- padding: 0.875rem;
- background: #f8fafc;
- border: 2px solid #e2e8f0;
- border-radius: 8px;
- cursor: pointer;
- transition: all 0.2s;
- display: flex;
- align-items: center;
- gap: 0.5rem;
- font-weight: 500;
- color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.selectorBtn:hover {
+  border-color: #D4AF37;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
 }
 
 .selectorBtn.selected {
- background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
- color: white;
- border-color: transparent;
+  border-color: #D4AF37;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(212, 175, 55, 0.1) 100%);
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
 }
 
 .selectorDot {
- width: 8px;
- height: 8px;
- border-radius: 50%;
- background: currentColor;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #d1d5db;
+  transition: all 0.3s ease;
 }
 
-/* Card Info */
+.selectorBtn.selected .selectorDot {
+  background: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+/* Card Info Section */
 .cardInfo {
- display: flex;
- flex-direction: column;
- gap: 1.5rem;
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .cardInfo h3 {
- font-size: 1.25rem;
- color: #0f172a;
- margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 24px 0;
 }
 
 .infoGrid {
- display: grid;
- grid-template-columns: 1fr 1fr;
- gap: 1rem;
- padding: 1.5rem;
- background: #f8fafc;
- border-radius: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
 .infoItem {
- display: flex;
- flex-direction: column;
- gap: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .infoLabel {
- font-size: 0.75rem;
- color: #64748b;
- text-transform: uppercase;
- letter-spacing: 0.05em;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .infoValue {
- font-size: 1rem;
- font-weight: 600;
- color: #0f172a;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .statusActive {
- color: #10b981 !important;
+  color: #10b981;
 }
 
 /* Card Actions */
 .cardActions {
- display: grid;
- grid-template-columns: repeat(2, 1fr);
- gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .actionBtn {
- display: flex;
- align-items: center;
- justify-content: center;
- gap: 0.5rem;
- padding: 0.875rem;
- background: white;
- border: 2px solid #e2e8f0;
- border-radius: 8px;
- font-weight: 500;
- cursor: pointer;
- transition: all 0.2s;
- color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  background: #f8f9fa;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .actionBtn:hover {
- background: #f8fafc;
- border-color: #6366f1;
- color: #6366f1;
+  background: white;
+  border-color: #D4AF37;
+  color: #D4AF37;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
 }
 
-/* Activity Section */
-.activitySection {
- background: white;
- border-radius: 16px;
- padding: 2rem;
- box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
- border: 1px solid #e2e8f0;
+.actionBtn span {
+  font-size: 18px;
 }
 
-.sectionHeader {
- display: flex;
- justify-content: space-between;
- align-items: center;
- margin-bottom: 1.5rem;
-}
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .cardDisplay {
+    grid-template-columns: 1fr;
+  }
 
-.sectionHeader h2 {
- font-size: 1.25rem;
- font-weight: 700;
- color: #0f172a;
- margin: 0;
-}
-
-.viewAllBtn {
- padding: 0.5rem 1rem;
- background: white;
- border: 1px solid #e2e8f0;
- border-radius: 6px;
- color: #6366f1;
- font-size: 0.875rem;
- font-weight: 600;
- cursor: pointer;
- transition: all 0.2s;
-}
-
-.viewAllBtn:hover {
- background: #f8fafc;
- border-color: #6366f1;
-}
-
-/* Activity Table */
-.activityTable {
- overflow-x: auto;
-}
-
-.activityTable table {
- width: 100%;
- border-collapse: collapse;
-}
-
-.activityTable thead {
- background: #f8fafc;
-}
-
-.activityTable th {
- padding: 0.75rem;
- text-align: left;
- font-size: 0.75rem;
- font-weight: 700;
- color: #64748b;
- text-transform: uppercase;
- letter-spacing: 0.05em;
- border-bottom: 2px solid #e2e8f0;
-}
-
-.activityTable tbody tr {
- border-bottom: 1px solid #f1f5f9;
- transition: all 0.2s;
-}
-
-.activityTable tbody tr:hover {
- background: #f8fafc;
-}
-
-.activityTable td {
- padding: 1rem 0.75rem;
- font-size: 0.875rem;
- color: #334155;
-}
-
-.merchantInfo {
- display: flex;
- align-items: center;
- gap: 0.75rem;
-}
-
-.merchantIcon {
- font-size: 1.25rem;
-}
-
-.debit {
- color: #dc2626;
- font-weight: 600;
-}
-
-.credit {
- color: #10b981;
- font-weight: 600;
-}
-
-.statusBadge {
- padding: 0.25rem 0.75rem;
- background: #dcfce7;
- color: #16a34a;
- border-radius: 12px;
- font-size: 0.75rem;
- font-weight: 600;
+  .creditCard {
+    width: 100%;
+    max-width: 450px;
+  }
 }
 
 @media (max-width: 1024px) {
- .cardDisplay {
-   grid-template-columns: 1fr;
- }
+  .main {
+    margin-left: 0;
+  }
 }
 
 @media (max-width: 768px) {
- .main {
-   margin-left: 0;
- }
- 
- .cardActions {
-   grid-template-columns: 1fr;
- }
- 
- .infoGrid {
-   grid-template-columns: 1fr;
- }
+  .content {
+    padding: 20px;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .creditCard {
+    width: 100%;
+    max-width: 380px;
+    height: 240px;
+  }
+
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardActions {
+    grid-template-columns: 1fr;
+  }
 }

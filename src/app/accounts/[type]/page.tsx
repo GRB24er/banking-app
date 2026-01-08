@@ -289,10 +289,7 @@ export default function AccountDetailPage() {
                           tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                         />
                         <Tooltip 
-                          formatter={(value) => {
-                            const numValue = Number(value) || 0;
-                            return [formatCurrency(numValue), 'Balance'];
-                          }}
+                          formatter={(value) => [formatCurrency(Number(value) || 0), 'Balance']}
                           contentStyle={{
                             background: 'white',
                             border: '1px solid #e2e8f0',
