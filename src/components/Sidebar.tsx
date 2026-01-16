@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import styles from "./Sidebar.module.css";
@@ -17,11 +18,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { 
-    label: "Overview", 
-    href: "/dashboard", 
-    icon: "◆"
-  },
+  { label: "Overview", href: "/dashboard", icon: "◆" },
   { 
     label: "Accounts", 
     href: "/accounts", 
@@ -43,12 +40,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Scheduled", href: "/transfers/scheduled" }
     ]
   },
-  { 
-    label: "Activity", 
-    href: "/transactions", 
-    icon: "≋",
-    badge: 0
-  },
+  { label: "Activity", href: "/transactions", icon: "≋", badge: 0 },
   { 
     label: "Cards", 
     href: "/accounts/credit-cards", 
@@ -70,22 +62,9 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Watchlist", href: "/investments/watchlist" }
     ]
   },
-  { 
-    label: "Bills", 
-    href: "/bills", 
-    icon: "◐",
-    badge: 0
-  },
-  { 
-    label: "Statements", 
-    href: "/accounts/statements", 
-    icon: "▤"
-  },
-  { 
-    label: "Analytics", 
-    href: "/reports", 
-    icon: "◓"
-  },
+  { label: "Bills", href: "/bills", icon: "◐", badge: 0 },
+  { label: "Statements", href: "/accounts/statements", icon: "▤" },
+  { label: "Analytics", href: "/reports", icon: "◓" },
   { 
     label: "Admin", 
     href: "/dashboard/admin", 
@@ -128,20 +107,13 @@ export default function Sidebar() {
           const response = await fetch('/api/user/dashboard');
           if (response.ok) {
             const data = await response.json();
-            
-            const checking = data.balances?.checking || 0;
-            const savings = data.balances?.savings || 0;
-            const investment = data.balances?.investment || 0;
-            
             setQuickBalance({
-              checking: checking,
-              savings: savings,
-              investment: investment
+              checking: data.balances?.checking || 0,
+              savings: data.balances?.savings || 0,
+              investment: data.balances?.investment || 0
             });
-            
             setUserName(data.user?.name || session.user.name || "User");
             setUserEmail(data.user?.email || session.user.email || "");
-            
             const pending = data.recent?.filter((t: any) => 
               t.rawStatus === "pending" || t.status === "Pending"
             ).length || 0;
@@ -179,9 +151,7 @@ export default function Sidebar() {
 
   const toggleExpand = (label: string) => {
     setExpandedItems(prev =>
-      prev.includes(label)
-        ? prev.filter(item => item !== label)
-        : [...prev, label]
+      prev.includes(label) ? prev.filter(item => item !== label) : [...prev, label]
     );
   };
 
@@ -190,32 +160,18 @@ export default function Sidebar() {
   }, [pathname]);
 
   const formatCurrency = (amount: number) => {
-    if (amount >= 1000000) {
-      return `$${(amount / 1000000).toFixed(2)}M`;
-    }
-    if (amount >= 1000) {
-      return `$${(amount / 1000).toFixed(1)}K`;
-    }
+    if (amount >= 1000000) return `$${(amount / 1000000).toFixed(2)}M`;
+    if (amount >= 1000) return `$${(amount / 1000).toFixed(1)}K`;
     return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
-  // Cash balance = Checking + Savings only (NO investments)
   const cashBalance = quickBalance.checking + quickBalance.savings;
 
   return (
     <>
-      {mobileOpen && (
-        <div 
-          className={styles.mobileOverlay}
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+      {mobileOpen && <div className={styles.mobileOverlay} onClick={() => setMobileOpen(false)} />}
 
-      <button
-        className={styles.mobileToggle}
-        onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label="Toggle menu"
-      >
+      <button className={styles.mobileToggle} onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
         <span className={styles.hamburger}>
           <span></span>
           <span></span>
@@ -224,64 +180,46 @@ export default function Sidebar() {
       </button>
 
       <nav className={`${styles.sidebar} ${mobileOpen ? styles.mobileOpen : ''}`}>
-        {/* Header Section */}
+        {/* Header with Logo Image */}
         <div className={styles.sidebarHeader}>
           <div className={styles.logo}>
-            <div className={styles.logoIcon}>
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L2 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" 
-                      fill="currentColor" opacity="0.2"/>
-                <path d="M12 2L2 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" 
-                      stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </div>
-            <div className={styles.logoText}>
-              <span className={styles.logoTitle}>Horizon Bank</span>
-              <span className={styles.logoSubtitle}>Private Banking</span>
-            </div>
+            <Image
+              src="/images/Logo.png"
+              alt="Horizon Global Capital"
+              width={180}
+              height={60}
+              className={styles.logoImage}
+              priority
+            />
           </div>
         </div>
 
-        {/* Cash Balance Card - Checking + Savings ONLY */}
         <div className={styles.balanceCard}>
           <div className={styles.balanceHeader}>
             <span className={styles.balanceLabel}>Cash Balance</span>
-            <button 
-              className={styles.refreshButton}
-              onClick={() => window.location.reload()}
-              aria-label="Refresh"
-            >
+            <button className={styles.refreshButton} onClick={() => window.location.reload()} aria-label="Refresh">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M1 4v6h6M23 20v-6h-6"/>
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
               </svg>
             </button>
           </div>
-          <div className={styles.balanceAmount}>
-            {formatCurrency(cashBalance)}
-          </div>
+          <div className={styles.balanceAmount}>{formatCurrency(cashBalance)}</div>
           
           <div className={styles.balanceBreakdown}>
             <div className={styles.breakdownItem}>
-              <span className={styles.breakdownDot} style={{background: '#6366f1'}}></span>
+              <span className={styles.breakdownDot} style={{background: '#D4AF37'}}></span>
               <span className={styles.breakdownLabel}>Checking</span>
-              <span className={styles.breakdownValue}>
-                {formatCurrency(quickBalance.checking)}
-              </span>
+              <span className={styles.breakdownValue}>{formatCurrency(quickBalance.checking)}</span>
             </div>
             <div className={styles.breakdownItem}>
-              <span className={styles.breakdownDot} style={{background: '#10b981'}}></span>
+              <span className={styles.breakdownDot} style={{background: '#F4D03F'}}></span>
               <span className={styles.breakdownLabel}>Savings</span>
-              <span className={styles.breakdownValue}>
-                {formatCurrency(quickBalance.savings)}
-              </span>
+              <span className={styles.breakdownValue}>{formatCurrency(quickBalance.savings)}</span>
             </div>
           </div>
 
-          <button 
-            className={styles.quickTransferButton}
-            onClick={() => router.push('/transfers/internal')}
-          >
+          <button className={styles.quickTransferButton} onClick={() => router.push('/transfers/internal')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -289,20 +227,13 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* Investments Card - Separate from Cash */}
         {quickBalance.investment > 0 && (
-          <div className={styles.balanceCard} style={{ marginTop: '0.75rem', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%)' }}>
+          <div className={styles.investmentCard}>
             <div className={styles.balanceHeader}>
               <span className={styles.balanceLabel}>Investments</span>
             </div>
-            <div className={styles.balanceAmount} style={{ fontSize: '1.25rem' }}>
-              {formatCurrency(quickBalance.investment)}
-            </div>
-            <button 
-              className={styles.quickTransferButton}
-              onClick={() => router.push('/investments/portfolio')}
-              style={{ marginTop: '0.75rem' }}
-            >
+            <div className={styles.investmentAmount}>{formatCurrency(quickBalance.investment)}</div>
+            <button className={styles.portfolioButton} onClick={() => router.push('/investments/portfolio')}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
@@ -311,12 +242,10 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Navigation */}
         <div className={styles.navigation}>
           <div className={styles.navLabel}>NAVIGATE</div>
           {filteredNavItems.map((item) => {
-            const isActive = pathname === item.href || 
-                           pathname.startsWith(item.href + '/');
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             const isExpanded = expandedItems.includes(item.label);
             const hasSubItems = item.subItems && item.subItems.length > 0;
 
@@ -324,29 +253,13 @@ export default function Sidebar() {
               <div key={item.label} className={styles.navItemWrapper}>
                 <div
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-                  onClick={() => {
-                    if (hasSubItems) {
-                      toggleExpand(item.label);
-                    } else {
-                      router.push(item.href);
-                    }
-                  }}
+                  onClick={() => hasSubItems ? toggleExpand(item.label) : router.push(item.href)}
                 >
                   <span className={styles.navIcon}>{item.icon}</span>
                   <span className={styles.navText}>{item.label}</span>
-                  
-                  {item.badge && item.badge > 0 && (
-                    <span className={styles.navBadge}>{item.badge}</span>
-                  )}
-                  
+                  {item.badge && item.badge > 0 && <span className={styles.navBadge}>{item.badge}</span>}
                   {hasSubItems && (
-                    <svg 
-                      className={`${styles.expandIcon} ${isExpanded ? styles.expandIconOpen : ''}`}
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2"
-                    >
+                    <svg className={`${styles.expandIcon} ${isExpanded ? styles.expandIconOpen : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 18l6-6-6-6"/>
                     </svg>
                   )}
@@ -355,13 +268,7 @@ export default function Sidebar() {
                 {hasSubItems && isExpanded && (
                   <div className={styles.subItems}>
                     {item.subItems!.map((subItem) => (
-                      <Link
-                        key={subItem.href}
-                        href={subItem.href}
-                        className={`${styles.subItem} ${
-                          pathname === subItem.href ? styles.subItemActive : ''
-                        }`}
-                      >
+                      <Link key={subItem.href} href={subItem.href} className={`${styles.subItem} ${pathname === subItem.href ? styles.subItemActive : ''}`}>
                         {subItem.label}
                       </Link>
                     ))}
@@ -372,24 +279,17 @@ export default function Sidebar() {
           })}
         </div>
 
-        {/* User Profile Section */}
         <div className={styles.userSection}>
           <div className={styles.userCard}>
-            <div className={styles.userAvatar}>
-              {userName.charAt(0).toUpperCase()}
-            </div>
+            <div className={styles.userAvatar}>{userName.charAt(0).toUpperCase()}</div>
             <div className={styles.userInfo}>
               <div className={styles.userName}>{userName}</div>
               <div className={styles.userEmail}>{userEmail}</div>
             </div>
-            <button 
-              className={styles.userMenu}
-              onClick={() => router.push('/settings')}
-              aria-label="Settings"
-            >
+            <button className={styles.userMenu} onClick={() => router.push('/settings')} aria-label="Settings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </button>
           </div>

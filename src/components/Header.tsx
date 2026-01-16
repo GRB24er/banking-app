@@ -28,16 +28,14 @@ export default function Header() {
           const response = await fetch('/api/user/dashboard');
           if (response.ok) {
             const data = await response.json();
-            
-            const cashBalance = (data.balances?.checking || 0) + 
-                               (data.balances?.savings || 0);
+            const cashBalance = (data.balances?.checking || 0) + (data.balances?.savings || 0);
             const investmentBalance = data.balances?.investment || 0;
             
             setUserData({
               name: data.user?.name || session.user.name || "User",
               email: session.user.email,
-              cashBalance: cashBalance,
-              investmentBalance: investmentBalance
+              cashBalance,
+              investmentBalance
             });
             
             const pendingTx = data.recent?.filter((t: any) => 
@@ -80,9 +78,7 @@ export default function Header() {
   }, [session]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -99,19 +95,14 @@ export default function Header() {
   };
 
   const formatCurrency = (amount: number) => {
-    if (amount >= 1000000) {
-      return `$${(amount / 1000000).toFixed(2)}M`;
-    }
-    if (amount >= 1000) {
-      return `$${(amount / 1000).toFixed(0)}K`;
-    }
+    if (amount >= 1000000) return `$${(amount / 1000000).toFixed(2)}M`;
+    if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
     return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   return (
     <header className={styles.header}>
       <div className={styles.headerContent}>
-        {/* Search Bar */}
         <form onSubmit={handleSearch} className={styles.searchForm}>
           <div className={styles.searchContainer}>
             <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -129,53 +120,32 @@ export default function Header() {
           </div>
         </form>
 
-        {/* Right Section */}
         <div className={styles.rightSection}>
-          {/* Balance Display */}
           <div className={styles.balanceDisplay}>
             <span className={styles.balanceLabel}>Cash</span>
-            <span className={styles.balanceValue}>
-              {formatCurrency(userData.cashBalance)}
-            </span>
+            <span className={styles.balanceValue}>{formatCurrency(userData.cashBalance)}</span>
           </div>
 
-          {/* Quick Actions */}
           <div className={styles.quickActions}>
-            <button 
-              className={styles.actionButton} 
-              title="Quick Transfer"
-              onClick={() => router.push('/transfers/internal')}
-            >
+            <button className={styles.actionButton} title="Quick Transfer" onClick={() => router.push('/transfers/internal')}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
-            <button 
-              className={styles.actionButton} 
-              title="Support"
-              onClick={() => router.push('/support')}
-            >
+            <button className={styles.actionButton} title="Support" onClick={() => router.push('/support')}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </button>
           </div>
 
-          {/* Notifications */}
           <div className={styles.notificationWrapper}>
-            <button 
-              className={styles.notificationButton}
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
+            <button className={styles.notificationButton} onClick={() => setShowNotifications(!showNotifications)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
-              {notifications.length > 0 && (
-                <span className={styles.notificationBadge}>
-                  {notifications.length}
-                </span>
-              )}
+              {notifications.length > 0 && <span className={styles.notificationBadge}>{notifications.length}</span>}
             </button>
 
             {showNotifications && (
@@ -186,10 +156,7 @@ export default function Header() {
                 </div>
                 <div className={styles.notificationList}>
                   {notifications.map(notif => (
-                    <div 
-                      key={notif.id} 
-                      className={`${styles.notificationItem} ${styles[`notif${notif.type}`]}`}
-                    >
+                    <div key={notif.id} className={`${styles.notificationItem} ${styles[`notif${notif.type}`]}`}>
                       <span className={styles.notifIcon}>{notif.icon}</span>
                       <div className={styles.notifContent}>
                         <p className={styles.notifTitle}>{notif.title}</p>
@@ -205,30 +172,14 @@ export default function Header() {
             )}
           </div>
 
-          {/* Profile */}
           <div className={styles.profileWrapper}>
-            <button 
-              className={styles.profileButton}
-              onClick={() => setShowProfile(!showProfile)}
-            >
-              <div className={styles.profileAvatar}>
-                {userData.name.charAt(0).toUpperCase()}
-              </div>
+            <button className={styles.profileButton} onClick={() => setShowProfile(!showProfile)}>
+              <div className={styles.profileAvatar}>{userData.name.charAt(0).toUpperCase()}</div>
               <div className={styles.profileInfo}>
-                <span className={styles.profileName}>
-                  {userData.name}
-                </span>
-                <span className={styles.profileRole}>
-                  {session?.user?.role === 'admin' ? 'Administrator' : 'Member'}
-                </span>
+                <span className={styles.profileName}>{userData.name}</span>
+                <span className={styles.profileRole}>{session?.user?.role === 'admin' ? 'Administrator' : 'Member'}</span>
               </div>
-              <svg 
-                className={`${styles.profileArrow} ${showProfile ? styles.profileArrowOpen : ''}`}
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
-              >
+              <svg className={`${styles.profileArrow} ${showProfile ? styles.profileArrowOpen : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M6 9l6 6 6-6"/>
               </svg>
             </button>
@@ -236,28 +187,18 @@ export default function Header() {
             {showProfile && (
               <div className={styles.profileDropdown}>
                 <div className={styles.profileHeader}>
-                  <div className={styles.profileLarge}>
-                    {userData.name.charAt(0).toUpperCase()}
-                  </div>
+                  <div className={styles.profileLarge}>{userData.name.charAt(0).toUpperCase()}</div>
                   <div className={styles.profileDetails}>
-                    <p className={styles.profileFullName}>
-                      {userData.name}
-                    </p>
-                    <p className={styles.profileEmail}>
-                      {userData.email || session?.user?.email || ""}
-                    </p>
+                    <p className={styles.profileFullName}>{userData.name}</p>
+                    <p className={styles.profileEmail}>{userData.email || session?.user?.email || ""}</p>
                     {(userData.cashBalance > 0 || userData.investmentBalance > 0) && (
                       <div className={styles.profileBalance}>
                         <span className={styles.profileBalanceLabel}>Cash Balance</span>
-                        <span className={styles.profileBalanceValue}>
-                          {formatCurrency(userData.cashBalance)}
-                        </span>
+                        <span className={styles.profileBalanceValue}>{formatCurrency(userData.cashBalance)}</span>
                         {userData.investmentBalance > 0 && (
                           <>
                             <span className={styles.profileBalanceLabel}>Investments</span>
-                            <span className={styles.profileBalanceValue}>
-                              {formatCurrency(userData.investmentBalance)}
-                            </span>
+                            <span className={styles.profileBalanceValue}>{formatCurrency(userData.investmentBalance)}</span>
                           </>
                         )}
                       </div>
@@ -276,7 +217,7 @@ export default function Header() {
                   <a href="/settings" className={styles.profileMenuItem}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="3"/>
-                      <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                     </svg>
                     Settings
                   </a>
@@ -312,7 +253,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Status Bar */}
       <div className={styles.statusBar}>
         <div className={styles.statusLeft}>
           <div className={styles.statusItem}>
@@ -324,16 +264,9 @@ export default function Header() {
         </div>
         <div className={styles.statusRight}>
           <div className={styles.timeDisplay}>
-            {currentTime.toLocaleDateString('en-US', { 
-              weekday: 'short',
-              month: 'short', 
-              day: 'numeric'
-            })}
+            {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             <span className={styles.timeSeparator}>•</span>
-            {currentTime.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit'
-            })}
+            {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
       </div>

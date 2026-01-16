@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import styles from "./landing.module.css";
 
 export default function LandingPage() {
   const [showModal, setShowModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeNav, setActiveNav] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowModal(true), 2000);
+    const timer = setTimeout(() => setShowModal(true), 2500);
     
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -25,100 +25,197 @@ export default function LandingPage() {
     };
   }, []);
 
-  const features = [
-  {
-    icon: "🔒",
-    title: "Advanced Security",
-    description: "Two-factor authentication, biometric login, and real-time fraud monitoring protect your accounts 24/7."
-  },
-  {
-    icon: "📧",
-    title: "Smart Notifications",
-    description: "Instant email alerts for every transaction, security event, and account activity to keep you informed."
-  },
-  {
-    icon: "💸",
-    title: "Instant Transfers",
-    description: "Send money instantly to anyone, anywhere with our secure, real-time transfer system."
-  },
-  {
-    icon: "📊",
-    title: "Financial Insights",
-    description: "AI-powered analytics and personalized recommendations to help you achieve your financial goals."
-  }
-];
-
-  const stats = [
-    { value: "100K+", label: "Trusted Customers" },
-    { value: "$45.46M", label: "Assets Under Management" },
-    { value: "99.9%", label: "Uptime Guarantee" },
-    { value: "24/7", label: "Customer Support" }
+  const products = [
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'40px',height:'40px'}}>
+          <rect x="2" y="5" width="20" height="14" rx="2"/>
+          <path d="M2 10h20"/>
+        </svg>
+      ),
+      title: "Premier Checking",
+      description: "Elite checking with unlimited transfers, premium rates, and dedicated concierge support"
+    },
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'40px',height:'40px'}}>
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      ),
+      title: "High-Yield Savings",
+      description: "Competitive rates with flexible access and compound growth strategies"
+    },
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'40px',height:'40px'}}>
+          <path d="M3 3v18h18"/>
+          <path d="M18 17V9"/>
+          <path d="M13 17V5"/>
+          <path d="M8 17v-3"/>
+        </svg>
+      ),
+      title: "Investment Portfolio",
+      description: "Diversified investment solutions managed by expert advisors"
+    },
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'40px',height:'40px'}}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+      ),
+      title: "Wealth Protection",
+      description: "Trust services and estate planning for generational wealth preservation"
+    }
   ];
 
-  const testimonials = [
+  const features = [
     {
-      name: "Sarah Johnson",
-      role: "Business Owner",
-      content: "Horizon Global Capital has transformed how I manage my business finances. The security features give me complete peace of mind.",
-      rating: 5,
-      avatar: "https://i.imgur.com/MqtsC2A_d.webp?maxwidth=760&fidelity=grand"
+      image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=600&h=400&fit=crop",
+      title: "Private Banking Excellence",
+      description: "Bespoke financial solutions tailored to sophisticated investors. Experience banking designed for your lifestyle.",
+      cta: "Apply Now",
+      link: "/auth/signup"
     },
     {
-      name: "Michael Chen",
-      role: "Investment Manager", 
-      content: "The real-time analytics and instant notifications have made managing my portfolio incredibly efficient.",
-      rating: 5,
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face"
+      image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop",
+      title: "Institutional-Grade Security",
+      description: "256-bit encryption, biometric authentication, and 24/7 fraud monitoring protect your assets.",
+      cta: "Learn More",
+      link: "#security"
     },
     {
-      name: "Emily Rodriguez",
-      role: "Tech Entrepreneur",
-      content: "Best banking experience I've ever had. The two-factor authentication and email alerts keep me informed at all times.",
-      rating: 5,
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=60&h=60&fit=crop&crop=face"
+      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=400&fit=crop",
+      title: "Global Market Access",
+      description: "Multi-currency accounts and international wire transfers with preferential exchange rates.",
+      cta: "Explore",
+      link: "#features"
+    }
+  ];
+
+  const services = [
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'40px',height:'40px'}}>
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <path d="M12 18h.01"/>
+        </svg>
+      ),
+      title: "Digital Banking Suite",
+      description: "Full-featured mobile and web platform with real-time portfolio tracking",
+      link: "/banking/online"
+    },
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'40px',height:'40px'}}>
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      ),
+      title: "Private Client Services",
+      description: "Dedicated relationship manager available around the clock",
+      link: "/contact"
+    },
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'40px',height:'40px'}}>
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      ),
+      title: "Global Presence",
+      description: "Access your accounts from anywhere with worldwide ATM network",
+      link: "/locations"
+    },
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'40px',height:'40px'}}>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      ),
+      title: "Advisory Consultation",
+      description: "Schedule a private consultation with our wealth advisors",
+      link: "/appointments"
     }
   ];
 
   return (
     <div className={styles.landingPage}>
-      {/* Modal */}
+      {/* Welcome Modal */}
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeModal} onClick={() => setShowModal(false)}>×</button>
             
             <div className={styles.modalHeader}>
-              <div className={styles.modalIcon}>🎉</div>
+              <div className={styles.modalIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'48px',height:'48px',color:'#c9a962'}}>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <polyline points="9 12 11 14 15 10"/>
+                </svg>
+              </div>
               <h2 className={styles.modalTitle}>Welcome to Horizon Global Capital</h2>
+              <p className={styles.modalSubtitle}>European Capital • Private Banking</p>
             </div>
             
             <div className={styles.modalBody}>
-              <div className={styles.announcement}>
-                <h3>🌟 Special Launch Offer</h3>
-                <p>Experience premium banking with our exclusive benefits:</p>
-                <ul>
-                  <li>✓ No monthly fees on Premier accounts</li>
-                  <li>✓ Advanced two-factor authentication</li>
-                  <li>✓ Real-time email notifications</li>
-                  <li>✓ 24/7 priority customer support</li>
+              <div className={styles.welcomeMessage}>
+                <h3>Experience Elite Private Banking</h3>
+                <ul className={styles.benefitsList}>
+                  <li>
+                    <span className={styles.checkIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" style={{width:'16px',height:'16px'}}><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    Dedicated relationship manager
+                  </li>
+                  <li>
+                    <span className={styles.checkIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" style={{width:'16px',height:'16px'}}><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    Institutional-grade security
+                  </li>
+                  <li>
+                    <span className={styles.checkIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" style={{width:'16px',height:'16px'}}><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    Preferential rates & terms
+                  </li>
+                  <li>
+                    <span className={styles.checkIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" style={{width:'16px',height:'16px'}}><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    24/7 concierge support
+                  </li>
+                  <li>
+                    <span className={styles.checkIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" style={{width:'16px',height:'16px'}}><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    Global portfolio access
+                  </li>
+                  <li>
+                    <span className={styles.checkIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#c9a962" strokeWidth="2" style={{width:'16px',height:'16px'}}><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    Wealth preservation strategies
+                  </li>
                 </ul>
               </div>
 
-              <div className={styles.branchHours}>
-                <h3>🏦 Digital Banking</h3>
-                <div className={styles.hoursGrid}>
-                  <div>
-                    <strong>Online Banking</strong>
-                    <p>Available 24/7</p>
-                  </div>
-                  <div>
-                    <strong>Customer Support</strong>
-                    <p>Mon-Fri 8AM-8PM</p>
-                  </div>
-                  <div>
-                    <strong>Mobile App</strong>
-                    <p>iOS & Android</p>
-                  </div>
+              <div className={styles.modalInfo}>
+                <div className={styles.infoItem}>
+                  <strong>Private Banking</strong>
+                  <p>By invitation</p>
+                </div>
+                <div className={styles.infoItem}>
+                  <strong>Concierge</strong>
+                  <p>24/7 Available</p>
+                </div>
+                <div className={styles.infoItem}>
+                  <strong>Global Access</strong>
+                  <p>180+ Countries</p>
                 </div>
               </div>
             </div>
@@ -127,10 +224,10 @@ export default function LandingPage() {
               <button onClick={() => {
                 setShowModal(false);
                 router.push('/auth/signup');
-              }} className={styles.modalPrimary}>
-                Open Account
+              }} className={styles.btnModalPrimary}>
+                Apply for Membership
               </button>
-              <button onClick={() => setShowModal(false)} className={styles.modalSecondary}>
+              <button onClick={() => setShowModal(false)} className={styles.btnModalSecondary}>
                 Continue Browsing
               </button>
             </div>
@@ -140,87 +237,169 @@ export default function LandingPage() {
 
       {/* Header */}
       <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}>
-        <div className={styles.headerContent}>
-          <div className={styles.brand}>
-            <div className={styles.logoWrapper}>
-              <span className={styles.logoIcon}>🏦</span>
-            </div>
-            <div className={styles.brandText}>
-              <span className={styles.brandName}>Horizon</span>
-              <span className={styles.brandTagline}>Global Capital</span>
+        {/* Top Bar */}
+        <div className={styles.topBar}>
+          <div className={styles.container}>
+            <div className={styles.topBarContent}>
+              <div className={styles.topBarLeft}>
+                <span className={styles.statusIndicator}>
+                  <span className={styles.statusDot}></span>
+                  All Systems Operational
+                </span>
+              </div>
+              <nav className={styles.utilityNav}>
+                <Link href="/locations">Global Offices</Link>
+                <Link href="/contact">Private Client Services</Link>
+              </nav>
             </div>
           </div>
+        </div>
 
-          <nav className={styles.nav}>
-            <div className={styles.navItem}>
-              <Link href="#personal">Personal</Link>
-            </div>
-            <div className={styles.navItem}>
-              <Link href="#business">Business</Link>
-            </div>
-            <div className={styles.navItem}>
-              <Link href="#wealth">Wealth</Link>
-            </div>
-            <Link href="#about">About</Link>
-          </nav>
+        {/* Main Header */}
+        <div className={styles.mainHeader}>
+          <div className={styles.container}>
+            <div className={styles.headerContent}>
+              <Link href="/" className={styles.logo}>
+                <img
+                  src="/images/Logo.png"
+                  alt="Horizon Global Capital"
+                  className={styles.logoImage}
+                />
+              </Link>
 
-          <div className={styles.authButtons}>
-            <Link href="/auth/signin" className={styles.loginButton}>
-              🔐 Sign In
-            </Link>
-            <Link href="/auth/signup" className={styles.signupButton}>
-              Get Started
-            </Link>
+              <nav className={styles.primaryNav}>
+                <div 
+                  className={styles.navItem}
+                  onMouseEnter={() => setActiveNav('personal')}
+                  onMouseLeave={() => setActiveNav(null)}
+                >
+                  <button className={styles.navLink}>Private Banking</button>
+                  {activeNav === 'personal' && (
+                    <div className={styles.dropdown}>
+                      <Link href="/checking">Premier Checking</Link>
+                      <Link href="/savings">High-Yield Savings</Link>
+                      <Link href="/credit-cards">Elite Cards</Link>
+                      <Link href="/loans">Private Credit</Link>
+                      <Link href="/mortgages">Property Finance</Link>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className={styles.navItem}
+                  onMouseEnter={() => setActiveNav('wealth')}
+                  onMouseLeave={() => setActiveNav(null)}
+                >
+                  <button className={styles.navLink}>Wealth Management</button>
+                  {activeNav === 'wealth' && (
+                    <div className={styles.dropdown}>
+                      <Link href="/wealth/advisory">Investment Advisory</Link>
+                      <Link href="/wealth/retirement">Retirement Planning</Link>
+                      <Link href="/wealth/trust">Trust & Estate</Link>
+                      <Link href="/wealth/private">Family Office</Link>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className={styles.navItem}
+                  onMouseEnter={() => setActiveNav('markets')}
+                  onMouseLeave={() => setActiveNav(null)}
+                >
+                  <button className={styles.navLink}>Markets</button>
+                  {activeNav === 'markets' && (
+                    <div className={styles.dropdown}>
+                      <Link href="/markets/forex">Foreign Exchange</Link>
+                      <Link href="/markets/commodities">Commodities</Link>
+                      <Link href="/markets/fixed-income">Fixed Income</Link>
+                      <Link href="/markets/equities">Equities</Link>
+                    </div>
+                  )}
+                </div>
+
+                <Link href="/about" className={styles.navLink}>About</Link>
+              </nav>
+
+              <div className={styles.headerActions}>
+                <Link href="/auth/signin" className={styles.btnLogin}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:'16px',height:'16px'}}>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  Client Portal
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className={styles.hero}>
-        <div className={styles.heroSlider}>
-          <div className={styles.heroSlide}>
-            <div className={styles.heroContent}>
-              <div className={styles.heroText}>
-                <h1 className={styles.heroTitle}>
-                  Transform Your <span>Financial Future</span>
-                </h1>
-                <p className={styles.heroSubtitle}>
-                  Experience premium banking with advanced security, real-time notifications, 
-                  and seamless digital transactions designed for modern life.
-                </p>
-                <div className={styles.heroActions}>
-                  <Link href="/auth/signup" className={styles.heroPrimary}>
-                    Open Premium Account
-                  </Link>
-                  <Link href="/auth/signin" className={styles.heroSecondary}>
-                    Access Your Account
-                  </Link>
+        <div className={styles.heroBackground}>
+          <div className={styles.heroPattern}></div>
+          <div className={styles.heroGlow}></div>
+        </div>
+        <div className={styles.container}>
+          <div className={styles.heroContent}>
+            <div className={styles.heroText}>
+              <div className={styles.heroBadge}>
+                <span>European Private Banking</span>
+              </div>
+              <h1 className={styles.heroTitle}>
+                <span className={styles.heroHighlight}>Private</span> Banking
+                <br />Excellence
+              </h1>
+              <p className={styles.heroDescription}>
+                Discreet wealth management for sophisticated investors. 
+                Experience precision-engineered financial solutions designed 
+                for optimal control and performance.
+              </p>
+              <div className={styles.heroActions}>
+                <Link href="/auth/signup" className={styles.btnPrimary}>
+                  Apply for Membership
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:'18px',height:'18px'}}>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </Link>
+                <Link href="/about" className={styles.btnSecondary}>
+                  Learn More
+                </Link>
+              </div>
+              <div className={styles.heroStats}>
+                <div className={styles.stat}>
+                  <span className={styles.statValue}>$48B+</span>
+                  <span className={styles.statLabel}>Assets Under Management</span>
                 </div>
-                <div className={styles.heroStats}>
-                  <div className={styles.stat}>
-                    <span className={styles.statValue}>100K+</span>
-                    <span className={styles.statLabel}>Trusted Customers</span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statValue}>$45.46M</span>
-                    <span className={styles.statLabel}>Assets Managed</span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statValue}>99.9%</span>
-                    <span className={styles.statLabel}>Uptime</span>
-                  </div>
+                <div className={styles.statDivider}></div>
+                <div className={styles.stat}>
+                  <span className={styles.statValue}>180+</span>
+                  <span className={styles.statLabel}>Countries Served</span>
+                </div>
+                <div className={styles.statDivider}></div>
+                <div className={styles.stat}>
+                  <span className={styles.statValue}>1897</span>
+                  <span className={styles.statLabel}>Established</span>
                 </div>
               </div>
-              <div className={styles.heroVisual}>
-                <div className={styles.heroImageContainer}>
-                  <Image
-                    src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&h=600&fit=crop"
-                    alt="Professional using modern banking dashboard"
-                    width={800}
-                    height={600}
-                    className={styles.heroImage}
-                    priority
-                  />
+            </div>
+            <div className={styles.heroVisual}>
+              <div className={styles.heroCard}>
+                <div className={styles.cardHeader}>
+                  <span className={styles.cardChip}></span>
+                  <span className={styles.cardLogo}>Horizon</span>
+                </div>
+                <div className={styles.cardNumber}>•••• •••• •••• 4589</div>
+                <div className={styles.cardFooter}>
+                  <div>
+                    <span className={styles.cardLabel}>Card Holder</span>
+                    <span className={styles.cardName}>PLATINUM MEMBER</span>
+                  </div>
+                  <div>
+                    <span className={styles.cardLabel}>Valid Thru</span>
+                    <span className={styles.cardName}>12/28</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -228,210 +407,129 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust Section */}
-      <section className={styles.trustSection}>
+      {/* Quick Products Grid */}
+      <section className={styles.productsGrid}>
         <div className={styles.container}>
-          <div className={styles.trustGrid}>
-            <div className={styles.trustItem}>
-              <div className={styles.trustBadge}>
-                <div className={styles.trustIcon}>🏛️</div>
-                <div>
-                  <div className={styles.trustTitle}>FDIC</div>
-                  <div className={styles.trustSubtitle}>Insured</div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.trustItem}>
-              <div className={styles.trustBadge}>
-                <div className={styles.trustIcon}>🔒</div>
-                <div>
-                  <div className={styles.trustTitle}>256-bit</div>
-                  <div className={styles.trustSubtitle}>SSL Secured</div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.trustItem}>
-              <div className={styles.trustBadge}>
-                <div className={styles.trustIcon}>✅</div>
-                <div>
-                  <div className={styles.trustTitle}>SOC 2</div>
-                  <div className={styles.trustSubtitle}>Compliant</div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.trustItem}>
-              <div className={styles.trustBadge}>
-                <div className={styles.trustIcon}>💳</div>
-                <div>
-                  <div className={styles.trustTitle}>PCI DSS</div>
-                  <div className={styles.trustSubtitle}>Certified</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-     {/* Features Section */}
-<section className={styles.features}>
-  <div className={styles.container}>
-    <div className={styles.sectionHeader}>
-      <h2>Why Choose Horizon Global Capital</h2>
-      <p>Experience banking reimagined with cutting-edge technology and personalized service</p>
-    </div>
-    
-    <div className={styles.featuresGrid}>
-      {features.map((feature, index) => (
-        <div key={index} className={styles.featureCard}>
-          <div className={styles.featureIcon}>
-            <span className={styles.iconEmoji}>{feature.icon}</span>
-          </div>
-          <h3>{feature.title}</h3>
-          <p>{feature.description}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-</section>
-
-      {/* Stats Section */}
-      <section className={styles.statsSection}>
-        <div className={styles.container}>
-          <div className={styles.statsGrid}>
-            {stats.map((stat, index) => (
-              <div key={index} className={styles.statCard}>
-                <div className={styles.statNumber}>{stat.value}</div>
-                <div className={styles.statDescription}>{stat.label}</div>
+          <div className={styles.gridRow}>
+            {products.map((product, index) => (
+              <div key={index} className={styles.productCard}>
+                <div className={styles.productIcon}>{product.icon}</div>
+                <h3 className={styles.productTitle}>{product.title}</h3>
+                <p className={styles.productDesc}>{product.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Security Section */}
-      <section className={styles.security}>
+      {/* Featured Offers */}
+      <section className={styles.featuredSection}>
         <div className={styles.container}>
-          <div className={styles.securityContent}>
-            <div className={styles.securityText}>
-              <h2>Bank-Grade Security</h2>
-              <p>
-                Your security is our top priority. We use military-grade encryption and cutting-edge 
-                security protocols to protect your financial data.
-              </p>
-              <ul className={styles.securityFeatures}>
-                <li>256-bit SSL encryption</li>
-                <li>Two-factor authentication</li>
-                <li>Real-time fraud monitoring</li>
-                <li>Biometric authentication</li>
-                <li>Secure email notifications</li>
-                <li>24/7 security monitoring</li>
-              </ul>
-            </div>
-            
-            <div className={styles.securityVisual}>
-              <div className={styles.securityImage}>
-                <div className={styles.shieldContainer}>
-                  <div className={styles.shield}>🛡️</div>
-                  <div className={styles.securityText}>SECURE</div>
+          <div className={styles.sectionHeader}>
+            <h2>Exceptional Service, Exceptional Results</h2>
+            <p>Discover the Horizon Global Capital advantage</p>
+          </div>
+          <div className={styles.featuresRow}>
+            {features.map((feature, index) => (
+              <div key={index} className={styles.featureCard}>
+                <div className={styles.featureImage}>
+                  <img
+                    src={feature.image}
+                    alt={feature.title}
+                    className={styles.featImg}
+                  />
                 </div>
+                <div className={styles.featureContent}>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                  <Link href={feature.link} className={styles.featureLink}>
+                    {feature.cta}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:'16px',height:'16px'}}>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                      <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Indicators */}
+      <section className={styles.trustSection}>
+        <div className={styles.container}>
+          <div className={styles.trustGrid}>
+            <div className={styles.trustBadge}>
+              <span className={styles.trustIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'28px',height:'28px'}}>
+                  <path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4M5 21V10.85M19 21V10.85M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/>
+                </svg>
+              </span>
+              <div>
+                <div className={styles.trustTitle}>FCA</div>
+                <div className={styles.trustLabel}>Regulated</div>
+              </div>
+            </div>
+            <div className={styles.trustBadge}>
+              <span className={styles.trustIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'28px',height:'28px'}}>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </span>
+              <div>
+                <div className={styles.trustTitle}>256-bit</div>
+                <div className={styles.trustLabel}>Encrypted</div>
+              </div>
+            </div>
+            <div className={styles.trustBadge}>
+              <span className={styles.trustIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'28px',height:'28px'}}>
+                  <polyline points="9 11 12 14 22 4"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </span>
+              <div>
+                <div className={styles.trustTitle}>SOC 2</div>
+                <div className={styles.trustLabel}>Compliant</div>
+              </div>
+            </div>
+            <div className={styles.trustBadge}>
+              <span className={styles.trustIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:'28px',height:'28px'}}>
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </span>
+              <div>
+                <div className={styles.trustTitle}>24/7</div>
+                <div className={styles.trustLabel}>Support</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-     {/* Mobile App Section */}
-<section className={styles.appShowcase}>
-  <div className={styles.container}>
-    <div className={styles.appContent}>
-      <div className={styles.appText}>
-        <h2>Banking in Your Pocket</h2>
-        <p>
-          Access your accounts, make transfers, and manage your finances anywhere 
-          with our secure mobile banking app.
-        </p>
-        <div className={styles.appFeatures}>
-          <div className={styles.appFeature}>
-            <span className={styles.featureIcon}>🔐</span>
-            <span>Bank-grade security</span>
-          </div>
-          <div className={styles.appFeature}>
-            <span className={styles.featureIcon}>📧</span>
-            <span>Instant notifications</span>
-          </div>
-          <div className={styles.appFeature}>
-            <span className={styles.featureIcon}>📱</span>
-            <span>Biometric login</span>
-          </div>
-        </div>
-        <div className={styles.appButtons}>
-          <div className={styles.downloadBtn}>
-            <div className={styles.storeBadge}>
-              <span>📱</span>
-              <div>
-                <div className={styles.downloadText}>Download on the</div>
-                <div className={styles.storeName}>App Store</div>
-              </div>
-            </div>
-          </div>
-          <div className={styles.downloadBtn}>
-            <div className={styles.storeBadge}>
-              <span>📱</span>
-              <div>
-                <div className={styles.downloadText}>Get it on</div>
-                <div className={styles.storeName}>Google Play</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className={styles.phoneContainer}>
-        <div className={styles.phoneFrame}>
-          <div className={styles.phoneScreen}>
-            <Image
-              src="/images/app/mobile-app-screenshot.png"
-              alt="Horizon Banking Mobile App"
-              width={280}
-              height={560}
-              className={styles.mobileAppImage}
-              priority
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-      {/* Testimonials */}
-      <section className={styles.testimonials}>
+      {/* Services Section */}
+      <section className={styles.servicesSection}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <h2>What Our Clients Say</h2>
-            <p>Join thousands of satisfied customers who trust us with their financial future</p>
+            <h2>White-Glove Service</h2>
+            <p>Concierge banking at your fingertips</p>
           </div>
-          
-          <div className={styles.testimonialsGrid}>
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className={styles.testimonialCard}>
-                <div className={styles.testimonialHeader}>
-                  <Image
-                    src={testimonial.avatar}
-                    alt={`${testimonial.name} avatar`}
-                    width={60}
-                    height={60}
-                    className={styles.testimonialAvatar}
-                  />
-                  <div className={styles.testimonialInfo}>
-                    <strong>{testimonial.name}</strong>
-                    <span>{testimonial.role}</span>
-                  </div>
-                </div>
-                <div className={styles.stars}>
-                  {'★'.repeat(testimonial.rating)}
-                </div>
-                <p>"{testimonial.content}"</p>
+          <div className={styles.servicesGrid}>
+            {services.map((service, index) => (
+              <div key={index} className={styles.serviceCard}>
+                <div className={styles.serviceIcon}>{service.icon}</div>
+                <h3>{service.title}</h3>
+                <p>{service.description}</p>
+                <Link href={service.link} className={styles.serviceLink}>
+                  Learn More
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:'14px',height:'14px'}}>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </Link>
               </div>
             ))}
           </div>
@@ -439,17 +537,17 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className={styles.cta}>
+      <section className={styles.ctaSection}>
         <div className={styles.container}>
           <div className={styles.ctaContent}>
-            <h2>Ready to Start Your Financial Journey?</h2>
-            <p>Join Horizon Global Capital today and experience banking excellence with advanced security and smart notifications</p>
-            <div className={styles.ctaButtons}>
-              <Link href="/auth/signup" className={styles.ctaPrimary}>
-                Open Your Account
+            <h2>Ready to Experience Elite Banking?</h2>
+            <p>Join a select group of clients who demand excellence</p>
+            <div className={styles.ctaActions}>
+              <Link href="/auth/signup" className={styles.btnCtaPrimary}>
+                Apply for Membership
               </Link>
-              <Link href="/auth/signin" className={styles.ctaSecondary}>
-                Sign In to Banking
+              <Link href="/contact" className={styles.btnCtaSecondary}>
+                Schedule Consultation
               </Link>
             </div>
           </div>
@@ -459,54 +557,66 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className={styles.footer}>
         <div className={styles.container}>
-          <div className={styles.footerContent}>
-            <div className={styles.footerSection}>
-              <div className={styles.footerBrand}>
-                <div className={styles.footerLogo}>🏦</div>
-                <h4>Horizon Global Capital</h4>
+          <div className={styles.footerMain}>
+            <div className={styles.footerBrand}>
+              <div className={styles.footerLogo}>
+                <img
+                  src="/images/Logo.png"
+                  alt="Horizon Global Capital"
+                  className={styles.footerLogoImage}
+                />
               </div>
-              <p>Premier digital banking with cutting-edge security, two-factor authentication, and real-time notifications.</p>
-              <div className={styles.socialLinks}>
-                <a href="#">📘</a>
-                <a href="#">🐦</a>
-                <a href="#">💼</a>
-                <a href="#">📷</a>
+              <p className={styles.footerTagline}>
+                European Private Banking Excellence Since 1897
+              </p>
+              <div className={styles.footerSocial}>
+                <a href="#" aria-label="LinkedIn">
+                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:'20px',height:'20px'}}>
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                  </svg>
+                </a>
+                <a href="#" aria-label="Twitter">
+                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:'20px',height:'20px'}}>
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </a>
               </div>
             </div>
-            
-            <div className={styles.footerSection}>
-              <h4>Banking Services</h4>
-              <Link href="/accounts/checking">Checking Accounts</Link>
-              <Link href="/accounts/savings">Savings Accounts</Link>
-              <Link href="/loans">Loans & Credit</Link>
-              <Link href="/cards">Credit Cards</Link>
-              <Link href="/business">Business Banking</Link>
+
+            <div className={styles.footerColumn}>
+              <h4>Private Banking</h4>
+              <Link href="/checking">Premier Checking</Link>
+              <Link href="/savings">High-Yield Savings</Link>
+              <Link href="/credit-cards">Elite Cards</Link>
+              <Link href="/loans">Private Credit</Link>
             </div>
-            
-            <div className={styles.footerSection}>
-              <h4>Security & Support</h4>
-              <Link href="/security">Security Center</Link>
-              <Link href="/two-factor-auth">Two-Factor Auth</Link>
-              <Link href="/notifications">Email Notifications</Link>
-              <Link href="/support">Help Center</Link>
-              <Link href="/contact">Contact Us</Link>
+
+            <div className={styles.footerColumn}>
+              <h4>Wealth Management</h4>
+              <Link href="/wealth/advisory">Investment Advisory</Link>
+              <Link href="/wealth/retirement">Retirement Planning</Link>
+              <Link href="/wealth/trust">Trust Services</Link>
+              <Link href="/wealth/private">Family Office</Link>
             </div>
-            
-            <div className={styles.footerSection}>
+
+            <div className={styles.footerColumn}>
               <h4>Company</h4>
               <Link href="/about">About Us</Link>
               <Link href="/careers">Careers</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
-              <Link href="/accessibility">Accessibility</Link>
+              <Link href="/contact">Contact</Link>
+              <Link href="/security">Security</Link>
             </div>
           </div>
-          
+
           <div className={styles.footerBottom}>
-            <p>© 2024 Horizon Global Capital. All rights reserved. Member FDIC. Equal Housing Lender.</p>
-            <div className={styles.footerCertifications}>
-              <span className={styles.certBadge}>🏛️ FDIC</span>
-              <span className={styles.certBadge}>🔒 SSL</span>
+            <div className={styles.footerLinks}>
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/security">Security</Link>
+              <Link href="/disclosures">Disclosures</Link>
+            </div>
+            <div className={styles.footerCopy}>
+              <p>© 2024 Horizon Global Capital. All rights reserved. Authorised and regulated by the Financial Conduct Authority.</p>
             </div>
           </div>
         </div>

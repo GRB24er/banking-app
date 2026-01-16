@@ -1,10 +1,9 @@
-/* dashboard.module.css - Enterprise Banking Dashboard */
+/* dashboard.module.css - Horizon Global Capital - Dark Premium Gold */
 
-/* ===== BASE LAYOUT ===== */
 .wrapper {
   display: flex;
   min-height: 100vh;
-  background: #f8fafc;
+  background: #0D0D0D;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
 }
 
@@ -12,8 +11,9 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin-left: 260px;
+  margin-left: 280px;
   min-height: 100vh;
+  background: #0D0D0D;
 }
 
 .dashboard {
@@ -24,14 +24,13 @@
   margin: 0 auto;
 }
 
-/* ===== LOADING SCREEN ===== */
 .loadingScreen {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(135deg, #0D0D0D 0%, #1A1A1A 100%);
 }
 
 .loadingContent {
@@ -48,14 +47,14 @@
 .loadingLogoIcon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
   font-weight: 800;
-  color: white;
+  color: #0D0D0D;
   position: relative;
   z-index: 2;
 }
@@ -63,7 +62,7 @@
 .loadingPulse {
   position: absolute;
   inset: -10px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
   border-radius: 24px;
   opacity: 0.3;
   animation: pulse 2s ease-in-out infinite;
@@ -75,7 +74,7 @@
 }
 
 .loadingText {
-  color: #94a3b8;
+  color: #A0A0A0;
   font-size: 1.125rem;
   font-weight: 500;
   margin-bottom: 1rem;
@@ -90,7 +89,7 @@
 .loadingDots span {
   width: 8px;
   height: 8px;
-  background: #10b981;
+  background: #D4AF37;
   border-radius: 50%;
   animation: bounce 1.4s infinite ease-in-out both;
 }
@@ -103,25 +102,24 @@
   40% { transform: scale(1); }
 }
 
-/* ===== ERROR SCREEN ===== */
 .errorScreen {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   width: 100%;
-  background: #f8fafc;
+  background: #0D0D0D;
   padding: 2rem;
 }
 
 .errorCard {
-  background: white;
+  background: #1A1A1A;
   border-radius: 24px;
   padding: 3rem;
   max-width: 420px;
   text-align: center;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(212, 175, 55, 0.15);
 }
 
 .errorIcon {
@@ -132,23 +130,23 @@
 .errorTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #FFFFFF;
   margin: 0 0 0.75rem;
 }
 
 .errorMessage {
-  color: #64748b;
+  color: #A0A0A0;
   margin: 0 0 2rem;
   line-height: 1.6;
 }
 
 .retryBtn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
+  color: #0D0D0D;
   padding: 0.875rem 2rem;
   border-radius: 12px;
   border: none;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -156,12 +154,12 @@
 
 .retryBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
 }
 
-/* ===== HERO SECTION ===== */
 .hero {
-  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  background: linear-gradient(135deg, #1A1A1A 0%, #252525 50%, #1A1A1A 100%);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 24px;
   padding: 2.5rem;
   margin-bottom: 2rem;
@@ -171,17 +169,27 @@
   align-items: center;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 20px 40px -12px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+}
+
+.hero::after {
   content: '';
   position: absolute;
   top: -100%;
   right: -50%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -199,7 +207,7 @@
   display: block;
   font-size: 1rem;
   font-weight: 500;
-  opacity: 0.9;
+  color: #A0A0A0;
   margin-bottom: 0.25rem;
 }
 
@@ -208,6 +216,10 @@
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #FFFFFF 0%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .heroBalance {
@@ -217,9 +229,9 @@
 .balanceLabel {
   font-size: 0.875rem;
   font-weight: 500;
-  opacity: 0.85;
+  color: #D4AF37;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   margin-bottom: 0.5rem;
 }
 
@@ -228,6 +240,7 @@
   font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
+  color: #FFFFFF;
 }
 
 .balanceBreakdown {
@@ -235,7 +248,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9375rem;
-  opacity: 0.9;
+  color: #A0A0A0;
 }
 
 .breakdownDivider {
@@ -247,7 +260,7 @@
   align-items: center;
   gap: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(255,255,255,0.2);
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 .statItem {
@@ -257,11 +270,12 @@
 .statValue {
   font-size: 1.5rem;
   font-weight: 700;
+  color: #D4AF37;
 }
 
 .statLabel {
   font-size: 0.75rem;
-  opacity: 0.8;
+  color: #A0A0A0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 0.25rem;
@@ -270,7 +284,7 @@
 .statDivider {
   width: 1px;
   height: 40px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(212, 175, 55, 0.2);
 }
 
 .heroChart {
@@ -278,7 +292,6 @@
   z-index: 1;
 }
 
-/* ===== QUICK ACTIONS ===== */
 .quickActions {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -290,8 +303,8 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: #1A1A1A;
+  border: 1px solid rgba(212, 175, 55, 0.15);
   border-radius: 16px;
   padding: 1.25rem;
   cursor: pointer;
@@ -301,8 +314,8 @@
 
 .actionCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
-  border-color: var(--action-color, #10b981);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border-color: var(--action-color, #D4AF37);
 }
 
 .actionIcon {
@@ -311,7 +324,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  background: rgba(212, 175, 55, 0.1);
   border-radius: 12px;
   font-size: 1.5rem;
 }
@@ -324,19 +337,19 @@
   display: block;
   font-size: 1rem;
   font-weight: 600;
-  color: #0f172a;
+  color: #FFFFFF;
 }
 
 .actionDesc {
   display: block;
   font-size: 0.8125rem;
-  color: #64748b;
+  color: #A0A0A0;
   margin-top: 0.125rem;
 }
 
 .actionArrow {
   font-size: 1.25rem;
-  color: #94a3b8;
+  color: #A0A0A0;
   opacity: 0;
   transform: translateX(-8px);
   transition: all 0.2s;
@@ -345,10 +358,9 @@
 .actionCard:hover .actionArrow {
   opacity: 1;
   transform: translateX(0);
-  color: var(--action-color, #10b981);
+  color: var(--action-color, #D4AF37);
 }
 
-/* ===== SECTION HEADERS ===== */
 .sectionHeader {
   display: flex;
   justify-content: space-between;
@@ -365,12 +377,12 @@
 .sectionTitle {
   font-size: 1.375rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #FFFFFF;
   margin: 0;
 }
 
 .sectionLink {
-  color: #10b981;
+  color: #D4AF37;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.9375rem;
@@ -378,19 +390,18 @@
 }
 
 .sectionLink:hover {
-  color: #059669;
+  color: #F4D03F;
 }
 
 .processingBadge {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #92400e;
+  background: rgba(251, 191, 36, 0.15);
+  color: #FBBF24;
   padding: 0.375rem 0.875rem;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 600;
 }
 
-/* ===== ACCOUNTS SECTION ===== */
 .accountsSection {
   margin-bottom: 2rem;
 }
@@ -402,10 +413,10 @@
 }
 
 .accountCard {
-  background: white;
+  background: #1A1A1A;
   border-radius: 20px;
   padding: 1.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(212, 175, 55, 0.15);
   transition: all 0.3s;
   position: relative;
   overflow: hidden;
@@ -417,14 +428,14 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: var(--card-color, #10b981);
+  height: 3px;
+  background: var(--card-color, #D4AF37);
 }
 
 .accountCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
-  border-color: transparent;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  border-color: rgba(212, 175, 55, 0.25);
 }
 
 .cardHeader {
@@ -440,7 +451,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: rgba(212, 175, 55, 0.1);
   border-radius: 12px;
   font-size: 1.5rem;
 }
@@ -452,19 +463,19 @@
 .cardName {
   font-size: 1rem;
   font-weight: 600;
-  color: #0f172a;
+  color: #FFFFFF;
 }
 
 .cardNumber {
   font-size: 0.8125rem;
-  color: #64748b;
+  color: #A0A0A0;
   font-family: 'SF Mono', Monaco, monospace;
   margin-top: 0.125rem;
 }
 
 .cardBadge {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-  color: #166534;
+  background: rgba(212, 175, 55, 0.15);
+  color: #D4AF37;
   padding: 0.25rem 0.625rem;
   border-radius: 6px;
   font-size: 0.6875rem;
@@ -479,7 +490,7 @@
 
 .cardBalanceLabel {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #A0A0A0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
@@ -489,13 +500,13 @@
 .cardBalanceValue {
   font-size: 1.75rem;
   font-weight: 800;
-  color: #0f172a;
+  color: #FFFFFF;
   letter-spacing: -0.02em;
 }
 
 .cardAvailable {
   font-size: 0.8125rem;
-  color: #64748b;
+  color: #A0A0A0;
   margin-top: 0.25rem;
 }
 
@@ -507,45 +518,43 @@
   display: flex;
   gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .cardAction {
   flex: 1;
   padding: 0.625rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #475569;
+  color: #D4AF37;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .cardAction:hover {
-  background: var(--card-color, #10b981);
-  color: white;
+  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
+  color: #0D0D0D;
   border-color: transparent;
 }
 
-/* ===== ACTIVITY SECTION ===== */
 .activitySection {
   margin-bottom: 2rem;
 }
 
 .transactionsCard {
-  background: white;
+  background: #1A1A1A;
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(212, 175, 55, 0.15);
   overflow: hidden;
 }
 
-/* ===== EMPTY STATE ===== */
 .emptyState {
-  background: white;
+  background: #1A1A1A;
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(212, 175, 55, 0.15);
   padding: 4rem 2rem;
   text-align: center;
 }
@@ -559,26 +568,25 @@
 .emptyTitle {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #FFFFFF;
   margin: 0 0 0.5rem;
 }
 
 .emptyText {
-  color: #64748b;
+  color: #A0A0A0;
   margin: 0;
 }
 
-/* ===== SECURITY BANNER ===== */
 .securityBanner {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
   padding: 1rem;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  border: 1px solid #bbf7d0;
+  background: rgba(0, 196, 140, 0.1);
+  border: 1px solid rgba(0, 196, 140, 0.2);
   border-radius: 12px;
-  color: #166534;
+  color: #00C48C;
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -589,76 +597,34 @@
   flex-shrink: 0;
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 1280px) {
-  .accountsGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .accountsGrid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 1024px) {
-  .mainContent {
-    margin-left: 0;
-  }
-  
-  .quickActions {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .hero {
-    grid-template-columns: 1fr;
-  }
-  
-  .heroChart {
-    display: none;
-  }
+  .mainContent { margin-left: 0; }
+  .quickActions { grid-template-columns: repeat(2, 1fr); }
+  .hero { grid-template-columns: 1fr; }
+  .heroChart { display: none; }
 }
 
 @media (max-width: 768px) {
-  .dashboard {
-    padding: 1.5rem;
-  }
-  
-  .hero {
-    padding: 2rem;
-  }
-  
-  .heroName {
-    font-size: 2rem;
-  }
-  
-  .balanceValue {
-    font-size: 2.25rem;
-  }
-  
-  .heroStats {
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-  
-  .statDivider {
-    display: none;
-  }
-  
-  .quickActions {
-    grid-template-columns: 1fr;
-  }
-  
-  .accountsGrid {
-    grid-template-columns: 1fr;
-  }
+  .dashboard { padding: 1.5rem; }
+  .hero { padding: 2rem; }
+  .heroName { font-size: 2rem; }
+  .balanceValue { font-size: 2.25rem; }
+  .heroStats { flex-wrap: wrap; gap: 1rem; }
+  .statDivider { display: none; }
+  .quickActions { grid-template-columns: 1fr; }
+  .accountsGrid { grid-template-columns: 1fr; }
 }
 
-/* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.hero,
-.quickActions,
-.accountsSection,
-.activitySection {
+.hero, .quickActions, .accountsSection, .activitySection {
   animation: fadeIn 0.5s ease-out;
 }
 

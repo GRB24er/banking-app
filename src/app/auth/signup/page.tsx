@@ -1,7 +1,10 @@
-"use client";
+// app/(auth)/signup/page.tsx
+'use client';
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import styles from "./signup.module.css";
 
 type FormData = {
@@ -28,25 +31,26 @@ type FormData = {
 };
 
 const countries = [
-  "United Kingdom", "Germany", "France", "Netherlands", "Switzerland", "Austria",
-  "Belgium", "Luxembourg", "Ireland", "Italy", "Spain", "Portugal", "Sweden",
-  "Norway", "Denmark", "Finland", "Japan", "Singapore", "Hong Kong", "South Korea",
-  "Taiwan", "Malaysia", "Thailand", "Philippines", "Indonesia", "Vietnam"
+  "United Kingdom", "Germany", "France", "Switzerland", "Austria",
+  "Netherlands", "Belgium", "Luxembourg", "Ireland", "Italy", "Spain", 
+  "Portugal", "Sweden", "Norway", "Denmark", "Finland", "United States",
+  "Canada", "Japan", "Singapore", "Hong Kong", "South Korea",
+  "Australia", "New Zealand", "United Arab Emirates","United States of America"
 ];
 
 const employmentOptions = [
-  "Employed Full-time", "Employed Part-time", "Self-employed", "Unemployed",
-  "Student", "Retired", "Other"
+  "Executive/CEO", "Director/VP", "Senior Manager", "Professional",
+  "Self-employed", "Entrepreneur", "Investor", "Retired", "Other"
 ];
 
 const incomeRanges = [
-  "Under €25,000", "€25,000 - €50,000", "€50,000 - €75,000", 
-  "€75,000 - €100,000", "€100,000 - €150,000", "Over €150,000"
+  "Under €50,000", "€50,000 - €100,000", "€100,000 - €250,000", 
+  "€250,000 - €500,000", "€500,000 - €1,000,000", "€1,000,000 - €5,000,000", "Over €5,000,000"
 ];
 
 const accountPurposes = [
-  "Personal Banking", "Business Banking", "Investment", "Savings", 
-  "International Transfers", "Other"
+  "Private Banking", "Wealth Management", "Investment Portfolio", 
+  "Corporate Banking", "International Banking", "Family Office", "Other"
 ];
 
 export default function SignUpPage() {
@@ -80,26 +84,27 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
 
-  // Password strength calculator
+  // Logo URL from Imgur
+  const LOGO_SRC = "/images/Logo.png";
+
   useEffect(() => {
     const calculateStrength = (password: string) => {
       let strength = 0;
-      if (password.length >= 8) strength += 1;
+      if (password.length >= 12) strength += 1;
       if (/[a-z]/.test(password)) strength += 1;
       if (/[A-Z]/.test(password)) strength += 1;
       if (/[0-9]/.test(password)) strength += 1;
       if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+      if (password.length >= 16) strength += 1;
       return strength;
     };
     setPasswordStrength(calculateStrength(form.password));
   }, [form.password]);
 
-  // Email validation with debounce
   useEffect(() => {
     const checkEmail = async () => {
       if (form.email.includes('@')) {
-        // Simulate email check
-        const exists = form.email === 'test@test.com';
+        const exists = form.email === 'test@aldwychcapital.com';
         setEmailExists(exists);
       }
     };
@@ -145,11 +150,15 @@ export default function SignUpPage() {
           return false;
         }
         if (!form.email || emailExists) {
-          setErrorMsg(emailExists ? "Email already registered" : "Valid email is required");
+          setErrorMsg(emailExists ? "This email is already associated with an existing account" : "Valid email is required");
           return false;
         }
-        if (passwordStrength < 3) {
-          setErrorMsg("Password must be stronger (use uppercase, lowercase, numbers, and symbols)");
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+          setErrorMsg("Please enter a valid email address");
+          return false;
+        }
+        if (passwordStrength < 4) {
+          setErrorMsg("Password must meet all security requirements");
           return false;
         }
         if (form.password !== form.confirmPassword) {
@@ -160,8 +169,8 @@ export default function SignUpPage() {
         
       case 2:
         const age = calculateAge(form.dob);
-        if (age < 18) {
-          setErrorMsg("You must be at least 18 years old");
+        if (age < 21) {
+          setErrorMsg("You must be at least 21 years old to open an account");
           return false;
         }
         if (!form.nationality) {
@@ -169,14 +178,14 @@ export default function SignUpPage() {
           return false;
         }
         if (!form.idNumber.trim()) {
-          setErrorMsg("ID number is required");
+          setErrorMsg("Government-issued ID number is required");
           return false;
         }
         break;
         
       case 3:
         if (!form.address.trim() || !form.city.trim() || !form.postalCode.trim() || !form.country) {
-          setErrorMsg("All address fields are required");
+          setErrorMsg("All residential address fields are required");
           return false;
         }
         if (!/^\+\d{10,15}$/.test(form.phone)) {
@@ -187,7 +196,7 @@ export default function SignUpPage() {
         
       case 4:
         if (!form.employmentStatus || !form.monthlyIncome || !form.purpose) {
-          setErrorMsg("Please complete all fields");
+          setErrorMsg("Please complete all financial profile fields");
           return false;
         }
         if (!form.terms || !form.privacy) {
@@ -202,12 +211,14 @@ export default function SignUpPage() {
   const nextStep = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(currentStep + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const prevStep = () => {
     setCurrentStep(currentStep - 1);
     setErrorMsg("");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -217,8 +228,8 @@ export default function SignUpPage() {
     
     setLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 2500));
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -234,23 +245,24 @@ export default function SignUpPage() {
       return;
     }
 
+    // Successful registration
     router.push("/auth/signin?registered=1");
   };
 
   const getPasswordStrengthColor = () => {
-    if (passwordStrength <= 1) return "#ef4444";
-    if (passwordStrength <= 2) return "#f59e0b";
-    if (passwordStrength <= 3) return "#eab308";
-    if (passwordStrength <= 4) return "#22c55e";
+    if (passwordStrength <= 2) return "#ef4444";
+    if (passwordStrength <= 3) return "#f59e0b";
+    if (passwordStrength <= 4) return "#eab308";
+    if (passwordStrength <= 5) return "#22c55e";
     return "#10b981";
   };
 
   const getPasswordStrengthText = () => {
-    if (passwordStrength <= 1) return "Weak";
-    if (passwordStrength <= 2) return "Fair";
-    if (passwordStrength <= 3) return "Good";
+    if (passwordStrength <= 2) return "Inadequate";
+    if (passwordStrength <= 3) return "Fair";
     if (passwordStrength <= 4) return "Strong";
-    return "Very Strong";
+    if (passwordStrength <= 5) return "Excellent";
+    return "Exceptional";
   };
 
   const renderStep = () => {
@@ -258,57 +270,73 @@ export default function SignUpPage() {
       case 1:
         return (
           <div className={styles.stepContent}>
-            <h2 className={styles.stepTitle}>Personal Information</h2>
+            <div className={styles.stepHeader}>
+              <div className={styles.stepNumber}>01</div>
+              <h2 className={styles.stepTitle}>Personal Details</h2>
+              <p className={styles.stepSubtitle}>Begin your private banking journey</p>
+            </div>
             
-            <div className={styles.formRow}>
+            <div className={styles.formGrid}>
               <div className={styles.formField}>
-                <label htmlFor="firstName">First Name *</label>
-                <input
-                  id="firstName"
-                  type="text"
-                  name="firstName"
-                  value={form.firstName}
-                  onChange={handleChange}
-                  required
-                  placeholder="John"
-                  autoComplete="given-name"
-                />
+                <label htmlFor="firstName">First Name</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>👤</span>
+                  <input
+                    id="firstName"
+                    type="text"
+                    name="firstName"
+                    value={form.firstName}
+                    onChange={handleChange}
+                    required
+                    placeholder="John"
+                    autoComplete="given-name"
+                    className={styles.input}
+                  />
+                </div>
               </div>
               
               <div className={styles.formField}>
-                <label htmlFor="lastName">Last Name *</label>
-                <input
-                  id="lastName"
-                  type="text"
-                  name="lastName"
-                  value={form.lastName}
-                  onChange={handleChange}
-                  required
-                  placeholder="Smith"
-                  autoComplete="family-name"
-                />
+                <label htmlFor="lastName">Last Name</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>👤</span>
+                  <input
+                    id="lastName"
+                    type="text"
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={handleChange}
+                    required
+                    placeholder="Smith"
+                    autoComplete="family-name"
+                    className={styles.input}
+                  />
+                </div>
               </div>
             </div>
 
             <div className={styles.formField}>
-              <label htmlFor="email">Email Address *</label>
-              <input
-                id="email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-                placeholder="john.smith@example.com"
-                autoComplete="email"
-                className={emailExists ? styles.inputError : ''}
-              />
-              {emailExists && <span className={styles.fieldError}>Email already registered</span>}
+              <label htmlFor="email">Email Address</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>✉️</span>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="john.smith@aldwychcapital.com"
+                  autoComplete="email"
+                  className={`${styles.input} ${emailExists ? styles.inputError : ''}`}
+                />
+              </div>
+              {emailExists && <span className={styles.fieldError}>⚠️ This email is already associated with an existing account</span>}
             </div>
 
             <div className={styles.formField}>
-              <label htmlFor="password">Password *</label>
-              <div className={styles.passwordWrapper}>
+              <label htmlFor="password">Create Secure Password</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>🔐</span>
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -316,65 +344,95 @@ export default function SignUpPage() {
                   value={form.password}
                   onChange={handleChange}
                   required
-                  placeholder="Create a strong password"
+                  placeholder="Minimum 12 characters with mixed case, numbers, and symbols"
                   autoComplete="new-password"
+                  className={styles.input}
                 />
                 <button
                   type="button"
                   className={styles.passwordToggle}
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? "🙈" : "👁️"}
+                  {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
               
               {form.password && (
                 <div className={styles.passwordStrength}>
-                  <div className={styles.strengthBar}>
-                    <div 
-                      className={styles.strengthFill}
-                      style={{ 
-                        width: `${(passwordStrength / 5) * 100}%`,
-                        backgroundColor: getPasswordStrengthColor()
-                      }}
-                    />
+                  <div className={styles.strengthLabel}>
+                    Security Level: <strong style={{ color: getPasswordStrengthColor() }}>
+                      {getPasswordStrengthText()}
+                    </strong>
                   </div>
-                  <span 
-                    className={styles.strengthText}
-                    style={{ color: getPasswordStrengthColor() }}
-                  >
-                    {getPasswordStrengthText()}
-                  </span>
+                  <div className={styles.strengthBars}>
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div 
+                        key={i}
+                        className={`${styles.strengthBar} ${i <= passwordStrength ? styles.strengthBarActive : ''}`}
+                        style={{ 
+                          backgroundColor: i <= passwordStrength ? getPasswordStrengthColor() : undefined 
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
               
-              <div className={styles.passwordHints}>
-                <small>Password must contain:</small>
-                <ul>
-                  <li className={form.password.length >= 8 ? styles.valid : ''}>8+ characters</li>
-                  <li className={/[a-z]/.test(form.password) ? styles.valid : ''}>Lowercase letter</li>
-                  <li className={/[A-Z]/.test(form.password) ? styles.valid : ''}>Uppercase letter</li>
-                  <li className={/[0-9]/.test(form.password) ? styles.valid : ''}>Number</li>
-                  <li className={/[^A-Za-z0-9]/.test(form.password) ? styles.valid : ''}>Special character</li>
-                </ul>
+              <div className={styles.passwordReqs}>
+                <div className={`${styles.reqItem} ${form.password.length >= 12 ? styles.reqMet : ''}`}>
+                  <span className={styles.reqIcon}>
+                    {form.password.length >= 12 ? '✓' : '○'}
+                  </span>
+                  Minimum 12 characters
+                </div>
+                <div className={`${styles.reqItem} ${/[a-z]/.test(form.password) ? styles.reqMet : ''}`}>
+                  <span className={styles.reqIcon}>
+                    {/[a-z]/.test(form.password) ? '✓' : '○'}
+                  </span>
+                  Lowercase letter
+                </div>
+                <div className={`${styles.reqItem} ${/[A-Z]/.test(form.password) ? styles.reqMet : ''}`}>
+                  <span className={styles.reqIcon}>
+                    {/[A-Z]/.test(form.password) ? '✓' : '○'}
+                  </span>
+                  Uppercase letter
+                </div>
+                <div className={`${styles.reqItem} ${/[0-9]/.test(form.password) ? styles.reqMet : ''}`}>
+                  <span className={styles.reqIcon}>
+                    {/[0-9]/.test(form.password) ? '✓' : '○'}
+                  </span>
+                  Number
+                </div>
+                <div className={`${styles.reqItem} ${/[^A-Za-z0-9]/.test(form.password) ? styles.reqMet : ''}`}>
+                  <span className={styles.reqIcon}>
+                    {/[^A-Za-z0-9]/.test(form.password) ? '✓' : '○'}
+                  </span>
+                  Special character
+                </div>
               </div>
             </div>
 
             <div className={styles.formField}>
-              <label htmlFor="confirmPassword">Confirm Password *</label>
-              <input
-                id="confirmPassword"
-                type="password"
-                name="confirmPassword"
-                value={form.confirmPassword}
-                onChange={handleChange}
-                required
-                placeholder="Confirm your password"
-                autoComplete="new-password"
-                className={form.confirmPassword && form.password !== form.confirmPassword ? styles.inputError : ''}
-              />
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>✅</span>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  placeholder="Re-enter your password"
+                  autoComplete="new-password"
+                  className={`${styles.input} ${form.confirmPassword && form.password !== form.confirmPassword ? styles.inputError : ''}`}
+                />
+              </div>
               {form.confirmPassword && form.password !== form.confirmPassword && (
-                <span className={styles.fieldError}>Passwords do not match</span>
+                <span className={styles.fieldError}>⚠️ Passwords do not match</span>
+              )}
+              {form.confirmPassword && form.password === form.confirmPassword && (
+                <span className={styles.fieldSuccess}>✓ Passwords match</span>
               )}
             </div>
           </div>
@@ -383,75 +441,102 @@ export default function SignUpPage() {
       case 2:
         return (
           <div className={styles.stepContent}>
-            <h2 className={styles.stepTitle}>Identity Verification</h2>
+            <div className={styles.stepHeader}>
+              <div className={styles.stepNumber}>02</div>
+              <h2 className={styles.stepTitle}>Identity Verification</h2>
+              <p className={styles.stepSubtitle}>Regulatory compliance and security</p>
+            </div>
             
             <div className={styles.formField}>
-              <label htmlFor="dob">Date of Birth *</label>
-              <input
-                id="dob"
-                type="date"
-                name="dob"
-                value={form.dob}
-                onChange={handleChange}
-                required
-                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-              />
-              {form.dob && calculateAge(form.dob) < 18 && (
-                <span className={styles.fieldError}>Must be 18 or older</span>
+              <label htmlFor="dob">Date of Birth</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>📅</span>
+                <input
+                  id="dob"
+                  type="date"
+                  name="dob"
+                  value={form.dob}
+                  onChange={handleChange}
+                  required
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 21)).toISOString().split('T')[0]}
+                  className={styles.input}
+                />
+              </div>
+              {form.dob && calculateAge(form.dob) < 21 && (
+                <span className={styles.fieldError}>⚠️ Must be 21 or older to open a private banking account</span>
+              )}
+              {form.dob && calculateAge(form.dob) >= 21 && (
+                <span className={styles.fieldSuccess}>✓ Age verified ({calculateAge(form.dob)} years old)</span>
               )}
             </div>
 
             <div className={styles.formField}>
-              <label htmlFor="nationality">Nationality *</label>
-              <select
-                id="nationality"
-                name="nationality"
-                value={form.nationality}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select your nationality</option>
-                {countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.formRow}>
-              <div className={styles.formField}>
-                <label htmlFor="idType">ID Type *</label>
+              <label htmlFor="nationality">Nationality</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>🌍</span>
                 <select
-                  id="idType"
-                  name="idType"
-                  value={form.idType}
+                  id="nationality"
+                  name="nationality"
+                  value={form.nationality}
                   onChange={handleChange}
                   required
+                  className={styles.input}
                 >
-                  <option value="passport">Passport</option>
-                  <option value="national_id">National ID</option>
-                  <option value="driving_license">Driving License</option>
+                  <option value="">Select your nationality</option>
+                  {countries.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
                 </select>
               </div>
+            </div>
+
+            <div className={styles.formGrid}>
+              <div className={styles.formField}>
+                <label htmlFor="idType">Document Type</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>📄</span>
+                  <select
+                    id="idType"
+                    name="idType"
+                    value={form.idType}
+                    onChange={handleChange}
+                    required
+                    className={styles.input}
+                  >
+                    <option value="passport">Passport</option>
+                    <option value="national_id">National ID</option>
+                    <option value="driving_license">Driving License</option>
+                    <option value="residence_permit">Residence Permit</option>
+                  </select>
+                </div>
+              </div>
 
               <div className={styles.formField}>
-                <label htmlFor="idNumber">ID Number *</label>
-                <input
-                  id="idNumber"
-                  type="text"
-                  name="idNumber"
-                  value={form.idNumber}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your ID number"
-                />
+                <label htmlFor="idNumber">Document Number</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>🔢</span>
+                  <input
+                    id="idNumber"
+                    type="text"
+                    name="idNumber"
+                    value={form.idNumber}
+                    onChange={handleChange}
+                    required
+                    placeholder="Enter government-issued ID number"
+                    className={styles.input}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className={styles.securityNote}>
-              <div className={styles.securityIcon}>🔒</div>
-              <div>
-                <strong>Your information is secure</strong>
-                <p>We use bank-level encryption to protect your personal data. This information is required for regulatory compliance.</p>
+            <div className={styles.infoCard}>
+              <div className={styles.infoIcon}>🏛️</div>
+              <div className={styles.infoContent}>
+                <h4 className={styles.infoTitle}>Regulatory Compliance</h4>
+                <p className={styles.infoText}>
+                  All information is encrypted and processed in compliance with global banking regulations.
+                  Your privacy and security are our highest priorities.
+                </p>
               </div>
             </div>
           </div>
@@ -460,81 +545,107 @@ export default function SignUpPage() {
       case 3:
         return (
           <div className={styles.stepContent}>
-            <h2 className={styles.stepTitle}>Address & Contact</h2>
+            <div className={styles.stepHeader}>
+              <div className={styles.stepNumber}>03</div>
+              <h2 className={styles.stepTitle}>Contact Information</h2>
+              <p className={styles.stepSubtitle}>Where we'll reach you</p>
+            </div>
             
             <div className={styles.formField}>
-              <label htmlFor="address">Street Address *</label>
-              <input
-                id="address"
-                type="text"
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                required
-                placeholder="123 High Street, Apartment 4B"
-                autoComplete="street-address"
-              />
-            </div>
-
-            <div className={styles.formRow}>
-              <div className={styles.formField}>
-                <label htmlFor="city">City *</label>
+              <label htmlFor="address">Residential Address</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>🏠</span>
                 <input
-                  id="city"
+                  id="address"
                   type="text"
-                  name="city"
-                  value={form.city}
+                  name="address"
+                  value={form.address}
                   onChange={handleChange}
                   required
-                  placeholder="London"
-                  autoComplete="address-level2"
-                />
-              </div>
-
-              <div className={styles.formField}>
-                <label htmlFor="postalCode">Postal Code *</label>
-                <input
-                  id="postalCode"
-                  type="text"
-                  name="postalCode"
-                  value={form.postalCode}
-                  onChange={handleChange}
-                  required
-                  placeholder="SW1A 1AA"
-                  autoComplete="postal-code"
+                  placeholder="123 Park Avenue, Apt 4B"
+                  autoComplete="street-address"
+                  className={styles.input}
                 />
               </div>
             </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="country">Country *</label>
-              <select
-                id="country"
-                name="country"
-                value={form.country}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select your country</option>
-                {countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
-              </select>
+            <div className={styles.formGrid}>
+              <div className={styles.formField}>
+                <label htmlFor="city">City</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>🏙️</span>
+                  <input
+                    id="city"
+                    type="text"
+                    name="city"
+                    value={form.city}
+                    onChange={handleChange}
+                    required
+                    placeholder="London"
+                    autoComplete="address-level2"
+                    className={styles.input}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formField}>
+                <label htmlFor="postalCode">Postal Code</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>📮</span>
+                  <input
+                    id="postalCode"
+                    type="text"
+                    name="postalCode"
+                    value={form.postalCode}
+                    onChange={handleChange}
+                    required
+                    placeholder="SW1A 1AA"
+                    autoComplete="postal-code"
+                    className={styles.input}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className={styles.formField}>
-              <label htmlFor="phone">Mobile Phone *</label>
-              <input
-                id="phone"
-                type="tel"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                required
-                placeholder="+44 7700 900000"
-                autoComplete="tel"
-              />
-              <small className={styles.fieldHint}>Include country code (e.g., +44 for UK, +49 for Germany)</small>
+              <label htmlFor="country">Country of Residence</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>📍</span>
+                <select
+                  id="country"
+                  name="country"
+                  value={form.country}
+                  onChange={handleChange}
+                  required
+                  className={styles.input}
+                >
+                  <option value="">Select your country</option>
+                  {countries.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className={styles.formField}>
+              <label htmlFor="phone">Mobile Phone</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>📱</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="+44 7700 900000"
+                  autoComplete="tel"
+                  className={styles.input}
+                />
+              </div>
+              <p className={styles.fieldHint}>
+                Include country code. This number will be used for two-factor authentication and security alerts.
+              </p>
             </div>
           </div>
         );
@@ -542,105 +653,117 @@ export default function SignUpPage() {
       case 4:
         return (
           <div className={styles.stepContent}>
-            <h2 className={styles.stepTitle}>Financial Information & Agreements</h2>
+            <div className={styles.stepHeader}>
+              <div className={styles.stepNumber}>04</div>
+              <h2 className={styles.stepTitle}>Financial Profile</h2>
+              <p className={styles.stepSubtitle}>Final step to activate your account</p>
+            </div>
             
             <div className={styles.formField}>
-              <label htmlFor="employmentStatus">Employment Status *</label>
-              <select
-                id="employmentStatus"
-                name="employmentStatus"
-                value={form.employmentStatus}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select employment status</option>
-                {employmentOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              <label htmlFor="employmentStatus">Employment Status</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>💼</span>
+                <select
+                  id="employmentStatus"
+                  name="employmentStatus"
+                  value={form.employmentStatus}
+                  onChange={handleChange}
+                  required
+                  className={styles.input}
+                >
+                  <option value="">Select employment status</option>
+                  {employmentOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className={styles.formField}>
-              <label htmlFor="monthlyIncome">Monthly Income *</label>
-              <select
-                id="monthlyIncome"
-                name="monthlyIncome"
-                value={form.monthlyIncome}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select income range</option>
-                {incomeRanges.map(range => (
-                  <option key={range} value={range}>{range}</option>
-                ))}
-              </select>
+              <label htmlFor="monthlyIncome">Annual Income Range</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>💰</span>
+                <select
+                  id="monthlyIncome"
+                  name="monthlyIncome"
+                  value={form.monthlyIncome}
+                  onChange={handleChange}
+                  required
+                  className={styles.input}
+                >
+                  <option value="">Select income range</option>
+                  {incomeRanges.map(range => (
+                    <option key={range} value={range}>{range}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className={styles.formField}>
-              <label htmlFor="purpose">Account Purpose *</label>
-              <select
-                id="purpose"
-                name="purpose"
-                value={form.purpose}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select account purpose</option>
-                {accountPurposes.map(purpose => (
-                  <option key={purpose} value={purpose}>{purpose}</option>
-                ))}
-              </select>
+              <label htmlFor="purpose">Primary Account Purpose</label>
+              <div className={styles.inputWrapper}>
+                <span className={styles.inputIcon}>🎯</span>
+                <select
+                  id="purpose"
+                  name="purpose"
+                  value={form.purpose}
+                  onChange={handleChange}
+                  required
+                  className={styles.input}
+                >
+                  <option value="">Select primary purpose</option>
+                  {accountPurposes.map(purpose => (
+                    <option key={purpose} value={purpose}>{purpose}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className={styles.agreements}>
-              <div className={styles.checkbox}>
+              <h3 className={styles.agreementsTitle}>Legal Agreements</h3>
+              
+              <label className={styles.checkbox}>
                 <input
                   type="checkbox"
-                  id="terms"
                   name="terms"
                   checked={form.terms}
                   onChange={handleChange}
                   required
                 />
-                <label htmlFor="terms">
-                  I agree to the <a href="/terms" target="_blank">Terms and Conditions</a> *
-                </label>
-              </div>
+                <span className={styles.checkmark}></span>
+                <span className={styles.checkboxLabel}>
+                  I accept the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</a> and 
+                  acknowledge that this is a legally binding agreement.
+                </span>
+              </label>
 
-              <div className={styles.checkbox}>
+              <label className={styles.checkbox}>
                 <input
                   type="checkbox"
-                  id="privacy"
                   name="privacy"
                   checked={form.privacy}
                   onChange={handleChange}
                   required
                 />
-                <label htmlFor="privacy">
-                  I agree to the <a href="/privacy" target="_blank">Privacy Policy</a> *
-                </label>
-              </div>
+                <span className={styles.checkmark}></span>
+                <span className={styles.checkboxLabel}>
+                  I accept the <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and 
+                  consent to the processing of my personal data for account management and regulatory compliance.
+                </span>
+              </label>
 
-              <div className={styles.checkbox}>
+              <label className={styles.checkbox}>
                 <input
                   type="checkbox"
-                  id="marketing"
                   name="marketing"
                   checked={form.marketing}
                   onChange={handleChange}
                 />
-                <label htmlFor="marketing">
-                  I agree to receive marketing communications (optional)
-                </label>
-              </div>
-            </div>
-
-            <div className={styles.regulatoryInfo}>
-              <h3>Regulatory Information</h3>
-              <p>
-                By opening an account, you confirm that you are opening this account for yourself and not on behalf of a third party. 
-                Horizon Global Capital is authorized and regulated by financial authorities in your jurisdiction.
-              </p>
+                <span className={styles.checkmark}></span>
+                <span className={styles.checkboxLabel}>
+                  I would like to receive updates, market insights, and exclusive offers from Aldwych Capital.
+                </span>
+              </label>
             </div>
           </div>
         );
@@ -653,84 +776,174 @@ export default function SignUpPage() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <div className={styles.logo}>
-            <div className={styles.logoIcon}>🏦</div>
-            <span className={styles.logoText}>Horizon Global Capital</span>
-          </div>
-          
-          <div className={styles.progressBar}>
-            {[1, 2, 3, 4].map(step => (
-              <div 
-                key={step} 
-                className={`${styles.progressStep} ${currentStep >= step ? styles.active : ''}`}
-              >
-                {currentStep > step ? '✓' : step}
+        {/* Sidebar */}
+        <div className={styles.sidebar}>
+          <div className={styles.sidebarContent}>
+            {/* Logo */}
+            <div className={styles.logoContainer}>
+              <Link href="/" className={styles.logoLink}>
+                <Image
+  src={LOGO_SRC}
+  alt="Horizon Global Capital"
+  width={580}
+  height={100}
+  className={styles.logoImage}
+  priority
+/>
+
+                
+              </Link>
+            </div>
+
+            {/* Progress Steps */}
+            <div className={styles.progressSteps}>
+              {[1, 2, 3, 4].map((step) => (
+                <div key={step} className={styles.progressStep}>
+                  <div className={`${styles.progressStepIcon} ${currentStep >= step ? styles.active : ''} ${currentStep === step ? styles.current : ''}`}>
+                    {step}
+                  </div>
+                  <div className={styles.progressStepInfo}>
+                    <div className={styles.progressStepTitle}>
+                      {step === 1 && "Personal Details"}
+                      {step === 2 && "Identity Verification"}
+                      {step === 3 && "Contact Information"}
+                      {step === 4 && "Financial Profile"}
+                    </div>
+                    <div className={styles.progressStepDesc}>
+                      {step === 1 && "Basic information"}
+                      {step === 2 && "Regulatory compliance"}
+                      {step === 3 && "Residential details"}
+                      {step === 4 && "Account purpose"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Benefits */}
+            <div className={styles.benefits}>
+              <h3 className={styles.benefitsTitle}>Why Choose Horizon Global Capital?</h3>
+              <div className={styles.benefitsGrid}>
+                <div className={styles.benefit}>
+                  <div className={styles.benefitIcon}>🏛️</div>
+                  <div className={styles.benefitContent}>
+                    <h4>Private Banking</h4>
+                    <p>Exclusive services for discerning clients</p>
+                  </div>
+                </div>
+                <div className={styles.benefit}>
+                  <div className={styles.benefitIcon}>🌍</div>
+                  <div className={styles.benefitContent}>
+                    <h4>Global Access</h4>
+                    <p>Banking services across 25+ countries</p>
+                  </div>
+                </div>
+                <div className={styles.benefit}>
+                  <div className={styles.benefitIcon}>🔐</div>
+                  <div className={styles.benefitContent}>
+                    <h4>Bank-Grade Security</h4>
+                    <p>256-bit AES encryption</p>
+                  </div>
+                </div>
+                <div className={styles.benefit}>
+                  <div className={styles.benefitIcon}>⚡</div>
+                  <div className={styles.benefitContent}>
+                    <h4>24/7 Relationship Manager</h4>
+                    <p>Dedicated personal support</p>
+                  </div>
+                </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
-        <div className={styles.title}>
-          <h1>Open Your Account</h1>
-          <p>Join over 100,000 customers across Europe and Asia</p>
-        </div>
+        {/* Main Form */}
+        <div className={styles.main}>
+          <div className={styles.mainHeader}>
+            <div className={styles.headerContent}>
+              <h1 className={styles.pageTitle}>Private Account Application</h1>
+              <p className={styles.pageSubtitle}>
+                Complete this form to begin your journey with Aldwych Capital. 
+                Estimated completion time: 5-7 minutes.
+              </p>
+            </div>
+          </div>
 
-        {errorMsg && <div className={styles.error}>{errorMsg}</div>}
+          {/* Error Message */}
+          {errorMsg && (
+            <div className={`${styles.message} ${styles.errorMessage}`}>
+              <div className={styles.messageIcon}>⚠️</div>
+              <div className={styles.messageContent}>
+                <strong>Action Required</strong>
+                <p>{errorMsg}</p>
+              </div>
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {renderStep()}
-          
-          <div className={styles.navigation}>
-            {currentStep > 1 && (
-              <button
-                type="button"
-                onClick={prevStep}
-                className={styles.backBtn}
-              >
-                ← Back
-              </button>
-            )}
+          {/* Main Form */}
+          <form onSubmit={handleSubmit} className={styles.form}>
+            {renderStep()}
             
-            {currentStep < 4 ? (
-              <button
-                type="button"
-                onClick={nextStep}
-                className={styles.nextBtn}
-              >
-                Continue →
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={loading || !form.terms || !form.privacy}
-                className={styles.submitBtn}
-              >
-                {loading ? (
-                  <>
-                    <span className={styles.spinner}></span>
-                    Creating Account...
-                  </>
-                ) : (
-                  "Create Account"
-                )}
-              </button>
-            )}
-          </div>
-        </form>
+            <div className={styles.actions}>
+              {currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className={styles.backButton}
+                >
+                  ← Previous Step
+                </button>
+              )}
+              
+              {currentStep < 4 ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className={styles.nextButton}
+                >
+                  Continue to Step {currentStep + 1} →
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={loading || !form.terms || !form.privacy}
+                  className={`${styles.submitButton} ${loading ? styles.loading : ''}`}
+                >
+                  {loading ? (
+                    <>
+                      <span className={styles.spinner}></span>
+                      Processing Application...
+                    </>
+                  ) : (
+                    'Submit Application'
+                  )}
+                </button>
+              )}
+            </div>
+          </form>
 
-        <div className={styles.signInText}>
-          Already have an account?{" "}
-          <a href="/auth/signin" className={styles.signInLink}>
-            Sign In
-          </a>
-        </div>
-
-        <div className={styles.securityFooter}>
-          <div className={styles.securityBadges}>
-            <span>🔒 256-bit SSL</span>
-            <span>🛡️ GDPR Compliant</span>
-            <span>🏛️ Regulated Bank</span>
+          {/* Footer */}
+          <div className={styles.footer}>
+            <p className={styles.footerText}>
+              Already have an account?{' '}
+              <Link href="/auth/signin" className={styles.signInLink}>
+                Access your account →
+              </Link>
+            </p>
+            <div className={styles.securityBadges}>
+              <div className={styles.badge}>
+                <span className={styles.badgeIcon}>🛡️</span>
+                <span className={styles.badgeText}>256-bit SSL</span>
+              </div>
+              <div className={styles.badge}>
+                <span className={styles.badgeIcon}>✅</span>
+                <span className={styles.badgeText}>SOC 2 Type II</span>
+              </div>
+              <div className={styles.badge}>
+                <span className={styles.badgeIcon}>🔐</span>
+                <span className={styles.badgeText}>2FA Required</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

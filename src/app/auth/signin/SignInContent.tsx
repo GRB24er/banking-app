@@ -37,10 +37,9 @@ export default function SignInContent() {
     }
   }, [lockoutTime, isLocked]);
 
-  // Redirect on authentication - improved version
+  // Redirect on authentication
   useEffect(() => {
     if (status === 'authenticated' && session) {
-      // Small delay to ensure session is fully loaded
       const timer = setTimeout(() => {
         router.push('/dashboard');
       }, 100);
@@ -68,7 +67,6 @@ export default function SignInContent() {
     setLoading(true);
 
     try {
-      // Simulate network delay for realism
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       const res = await signIn("credentials", {
@@ -96,15 +94,7 @@ export default function SignInContent() {
       if (res?.ok) {
         setAttempts(0);
         setErrorMsg('');
-        
-        // Force a complete page reload to ensure session is properly established
         window.location.href = '/dashboard';
-        
-        // Alternative approach with router (uncomment if you prefer):
-        // setTimeout(() => {
-        //   router.push('/dashboard');
-        //   router.refresh();
-        // }, 200);
       }
     } catch (error) {
       setLoading(false);
@@ -114,14 +104,14 @@ export default function SignInContent() {
   }
 
   const handleForgotPassword = () => {
-    // In real app, this would trigger password reset flow
     alert('Password reset link would be sent to your email address.');
   };
 
+  // Dark/Gold Theme Styles
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     minHeight: '100vh',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#0D0D0D',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   };
 
@@ -131,19 +121,31 @@ export default function SignInContent() {
     flexDirection: 'column',
     justifyContent: 'center',
     padding: '0 32px',
-    backgroundColor: '#FFFFFF',
-    boxShadow: '0 0 40px rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#1A1A1A',
+    boxShadow: '0 0 60px rgba(0, 0, 0, 0.5)',
     position: 'relative',
     zIndex: 2,
+    borderRight: '1px solid #333333',
   };
 
   const rightColumnStyle: React.CSSProperties = {
     flex: 1,
     position: 'relative',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg, #1A1A1A 0%, #0D0D0D 50%, #252525 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  };
+
+  const rightOverlayStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'radial-gradient(circle at 30% 40%, rgba(212, 175, 55, 0.15) 0%, transparent 50%), radial-gradient(circle at 70% 60%, rgba(212, 175, 55, 0.1) 0%, transparent 50%)',
+    pointerEvents: 'none',
   };
 
   const formWrapperStyle: React.CSSProperties = {
@@ -162,26 +164,30 @@ export default function SignInContent() {
   const logoIconStyle: React.CSSProperties = {
     width: '48px',
     height: '48px',
-    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+    background: 'linear-gradient(135deg, #D4AF37 0%, #B8962E 100%)',
     borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '24px',
     marginRight: '12px',
+    boxShadow: '0 4px 15px rgba(212, 175, 55, 0.3)',
   };
 
   const logoTextStyle: React.CSSProperties = {
     fontSize: '28px',
     fontWeight: 700,
-    color: '#0F172A',
+    background: 'linear-gradient(135deg, #F4D03F 0%, #D4AF37 50%, #B8962E 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
     letterSpacing: '-0.025em',
   };
 
   const headingStyle: React.CSSProperties = {
     fontSize: '36px',
     fontWeight: 800,
-    color: '#0F172A',
+    color: '#FFFFFF',
     margin: '0 0 8px 0',
     textAlign: 'center',
     letterSpacing: '-0.025em',
@@ -189,7 +195,7 @@ export default function SignInContent() {
 
   const subtitleStyle: React.CSSProperties = {
     fontSize: '16px',
-    color: '#64748B',
+    color: '#A0A0A0',
     marginBottom: '32px',
     textAlign: 'center',
     lineHeight: '1.5',
@@ -203,7 +209,7 @@ export default function SignInContent() {
     display: 'block',
     fontSize: '14px',
     fontWeight: 600,
-    color: '#374151',
+    color: '#A0A0A0',
     marginBottom: '8px',
   };
 
@@ -215,18 +221,19 @@ export default function SignInContent() {
     width: '100%',
     padding: '14px 16px',
     fontSize: '16px',
-    color: '#111827',
-    border: '2px solid #E5E7EB',
+    color: '#FFFFFF',
+    border: '2px solid #333333',
     borderRadius: '12px',
     outline: 'none',
     boxSizing: 'border-box',
     transition: 'all 0.2s ease',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252525',
   };
 
   const inputFocusStyle: React.CSSProperties = {
-    borderColor: '#6366F1',
-    boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.1)',
+    borderColor: '#D4AF37',
+    boxShadow: '0 0 0 3px rgba(212, 175, 55, 0.15)',
+    backgroundColor: '#1A1A1A',
   };
 
   const passwordToggleStyle: React.CSSProperties = {
@@ -238,7 +245,7 @@ export default function SignInContent() {
     border: 'none',
     cursor: 'pointer',
     fontSize: '16px',
-    color: '#6B7280',
+    color: '#A0A0A0',
     padding: '4px',
   };
 
@@ -258,23 +265,24 @@ export default function SignInContent() {
   const checkboxStyle: React.CSSProperties = {
     width: '16px',
     height: '16px',
-    accentColor: '#6366F1',
+    accentColor: '#D4AF37',
   };
 
   const checkboxLabelStyle: React.CSSProperties = {
     fontSize: '14px',
-    color: '#374151',
+    color: '#A0A0A0',
     cursor: 'pointer',
   };
 
   const forgotPasswordStyle: React.CSSProperties = {
     fontSize: '14px',
-    color: '#6366F1',
+    color: '#D4AF37',
     textDecoration: 'none',
     fontWeight: 500,
     cursor: 'pointer',
     border: 'none',
     background: 'none',
+    transition: 'color 0.2s ease',
   };
 
   const buttonStyle: React.CSSProperties = {
@@ -282,44 +290,45 @@ export default function SignInContent() {
     padding: '16px 0',
     fontSize: '16px',
     fontWeight: 600,
-    color: '#FFFFFF',
+    color: '#0D0D0D',
     background: isLocked 
-      ? 'linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%)'
-      : 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+      ? 'linear-gradient(135deg, #4A4A4A 0%, #333333 100%)'
+      : 'linear-gradient(135deg, #D4AF37 0%, #B8962E 100%)',
     border: 'none',
     borderRadius: '12px',
     cursor: loading || isLocked ? 'not-allowed' : 'pointer',
     transition: 'all 0.3s ease',
     position: 'relative',
     overflow: 'hidden',
+    boxShadow: isLocked ? 'none' : '0 4px 15px rgba(212, 175, 55, 0.3)',
   };
 
   const buttonHoverStyle: React.CSSProperties = {
-    background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
-    transform: 'translateY(-1px)',
-    boxShadow: '0 10px 25px rgba(99, 102, 241, 0.3)',
+    background: 'linear-gradient(135deg, #F4D03F 0%, #D4AF37 100%)',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 25px rgba(212, 175, 55, 0.5)',
   };
 
   const errorTextStyle: React.CSSProperties = {
-    color: attempts >= 2 ? '#DC2626' : '#F59E0B',
+    color: attempts >= 2 ? '#FF4757' : '#F4D03F',
     fontSize: '14px',
     marginBottom: '16px',
     textAlign: 'center',
     padding: '12px',
-    backgroundColor: attempts >= 2 ? '#FEF2F2' : '#FFFBEB',
-    border: `1px solid ${attempts >= 2 ? '#FECACA' : '#FDE68A'}`,
+    backgroundColor: attempts >= 2 ? 'rgba(255, 71, 87, 0.1)' : 'rgba(244, 208, 63, 0.1)',
+    border: `1px solid ${attempts >= 2 ? 'rgba(255, 71, 87, 0.3)' : 'rgba(244, 208, 63, 0.3)'}`,
     borderRadius: '8px',
     fontWeight: 500,
   };
 
   const successTextStyle: React.CSSProperties = {
-    color: '#059669',
+    color: '#00C48C',
     fontSize: '14px',
     marginBottom: '16px',
     textAlign: 'center',
     padding: '12px',
-    backgroundColor: '#ECFDF5',
-    border: '1px solid #A7F3D0',
+    backgroundColor: 'rgba(0, 196, 140, 0.1)',
+    border: '1px solid rgba(0, 196, 140, 0.3)',
     borderRadius: '8px',
     fontWeight: 500,
   };
@@ -327,12 +336,12 @@ export default function SignInContent() {
   const footerTextStyle: React.CSSProperties = {
     marginTop: '32px',
     fontSize: '14px',
-    color: '#64748B',
+    color: '#A0A0A0',
     textAlign: 'center',
   };
 
   const footerLinkStyle: React.CSSProperties = {
-    color: '#6366F1',
+    color: '#D4AF37',
     textDecoration: 'none',
     fontWeight: 600,
   };
@@ -341,16 +350,17 @@ export default function SignInContent() {
     position: 'fixed',
     bottom: '20px',
     right: '20px',
-    background: '#1F2937',
+    background: 'linear-gradient(135deg, #252525 0%, #1A1A1A 100%)',
     color: 'white',
     padding: '16px 20px',
     borderRadius: '12px',
     fontSize: '14px',
     maxWidth: '300px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
     transform: showSecurityTip ? 'translateX(0)' : 'translateX(100%)',
     transition: 'transform 0.5s ease',
     zIndex: 1000,
+    border: '1px solid rgba(212, 175, 55, 0.3)',
   };
 
   const closeTipStyle: React.CSSProperties = {
@@ -359,7 +369,7 @@ export default function SignInContent() {
     right: '12px',
     background: 'none',
     border: 'none',
-    color: 'white',
+    color: '#A0A0A0',
     cursor: 'pointer',
     fontSize: '16px',
   };
@@ -369,6 +379,8 @@ export default function SignInContent() {
     color: 'white',
     padding: '40px',
     maxWidth: '500px',
+    position: 'relative',
+    zIndex: 1,
   };
 
   const rightHeadingStyle: React.CSSProperties = {
@@ -376,11 +388,15 @@ export default function SignInContent() {
     fontWeight: 800,
     marginBottom: '24px',
     lineHeight: '1.1',
+    background: 'linear-gradient(135deg, #F4D03F 0%, #D4AF37 50%, #B8962E 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   };
 
   const rightSubtitleStyle: React.CSSProperties = {
     fontSize: '20px',
-    opacity: 0.9,
+    color: '#A0A0A0',
     marginBottom: '32px',
     lineHeight: '1.5',
   };
@@ -397,15 +413,16 @@ export default function SignInContent() {
     marginBottom: '16px',
     fontSize: '16px',
     gap: '12px',
+    color: '#FFFFFF',
   };
 
   const loadingSpinnerStyle: React.CSSProperties = {
     display: 'inline-block',
     width: '20px',
     height: '20px',
-    border: '2px solid rgba(255, 255, 255, 0.3)',
+    border: '2px solid rgba(13, 13, 13, 0.3)',
     borderRadius: '50%',
-    borderTopColor: 'white',
+    borderTopColor: '#0D0D0D',
     animation: 'spin 0.8s linear infinite',
     marginRight: '8px',
   };
@@ -420,7 +437,7 @@ export default function SignInContent() {
           alignItems: 'center',
           width: '100%',
           fontSize: '18px',
-          color: '#6B7280'
+          color: '#D4AF37'
         }}>
           Redirecting to dashboard...
         </div>
@@ -433,10 +450,21 @@ export default function SignInContent() {
       <div style={containerStyle}>
         <div style={leftColumnStyle}>
           <div style={formWrapperStyle}>
-            <div style={logoContainerStyle}>
-              <div style={logoIconStyle}>🏦</div>
-              <span style={logoTextStyle}>Horizon</span>
-            </div>
+           <div style={logoContainerStyle}>
+  <Image
+    src="/images/Logo.png"
+    alt="Horizon Global Capital"
+    width={260}
+    height={80}
+    priority
+    style={{
+      height: 'auto',
+      width: '260px',
+      objectFit: 'contain',
+    }}
+  />
+</div>
+
 
             <h1 style={headingStyle}>Welcome Back</h1>
             <p style={subtitleStyle}>
@@ -560,13 +588,13 @@ export default function SignInContent() {
             <div style={{
               marginTop: '24px',
               padding: '16px',
-              backgroundColor: '#F8FAFC',
+              backgroundColor: '#252525',
               borderRadius: '8px',
-              border: '1px solid #E5E7EB',
+              border: '1px solid #333333',
             }}>
               <div style={{
                 fontSize: '12px',
-                color: '#6B7280',
+                color: '#A0A0A0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -582,6 +610,7 @@ export default function SignInContent() {
         </div>
 
         <div style={rightColumnStyle} className="hide-on-narrow">
+          <div style={rightOverlayStyle}></div>
           <div style={rightContentStyle}>
             <h2 style={rightHeadingStyle}>Secure Banking Made Simple</h2>
             <p style={rightSubtitleStyle}>
@@ -589,19 +618,19 @@ export default function SignInContent() {
             </p>
             <ul style={featureListStyle}>
               <li style={featureItemStyle}>
-                <span>✅</span>
+                <span style={{ color: '#D4AF37' }}>✅</span>
                 <span>Bank-grade security with 2FA</span>
               </li>
               <li style={featureItemStyle}>
-                <span>✅</span>
+                <span style={{ color: '#D4AF37' }}>✅</span>
                 <span>Real-time transaction notifications</span>
               </li>
               <li style={featureItemStyle}>
-                <span>✅</span>
+                <span style={{ color: '#D4AF37' }}>✅</span>
                 <span>24/7 customer support</span>
               </li>
               <li style={featureItemStyle}>
-                <span>✅</span>
+                <span style={{ color: '#D4AF37' }}>✅</span>
                 <span>FDIC insured up to $250,000</span>
               </li>
             </ul>
@@ -618,10 +647,10 @@ export default function SignInContent() {
           >
             ×
           </button>
-          <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#D4AF37' }}>
             🔐 Security Tip
           </div>
-          <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
+          <div style={{ fontSize: '13px', lineHeight: '1.4', color: '#A0A0A0' }}>
             Never share your login credentials. Horizon will never ask for your password via email or phone.
           </div>
         </div>
@@ -642,6 +671,10 @@ export default function SignInContent() {
           body {
             font-size: 14px;
           }
+        }
+        
+        input::placeholder {
+          color: #666666;
         }
       `}</style>
     </>

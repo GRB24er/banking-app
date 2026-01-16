@@ -1,27 +1,46 @@
 /* src/app/transfers/internal/sendMoney.module.css */
+/* Dark/Gold Luxury Banking Theme */
+
+:root {
+  --bg-primary: #0D0D0D;
+  --bg-secondary: #1A1A1A;
+  --bg-tertiary: #252525;
+  --gold-primary: #D4AF37;
+  --gold-light: #F4D03F;
+  --gold-dark: #B8962E;
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --success: #00C48C;
+  --error: #FF4757;
+  --border-color: #333333;
+  --border-gold: rgba(212, 175, 55, 0.3);
+}
 
 .wrapper {
   display: flex;
   min-height: 100vh;
-  background: #f5f6fa;
+  background: var(--bg-primary);
 }
 
 .sidebar {
   width: 250px;
-  background: white;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+  background: var(--bg-secondary);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid var(--border-color);
 }
 
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: var(--bg-primary);
 }
 
 .header {
-  background: white;
+  background: var(--bg-secondary);
   padding: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .content {
@@ -33,9 +52,10 @@
 }
 
 .footer {
-  background: white;
+  background: var(--bg-secondary);
   padding: 20px;
   margin-top: auto;
+  border-top: 1px solid var(--border-color);
 }
 
 /* Loading State */
@@ -46,13 +66,14 @@
   justify-content: center;
   min-height: 400px;
   gap: 20px;
+  color: var(--text-secondary);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #e0e0e0;
-  border-top-color: #4CAF50;
+  border: 4px solid var(--bg-tertiary);
+  border-top-color: var(--gold-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -72,21 +93,24 @@
 .pageHeader h1 {
   margin: 0;
   font-size: 28px;
-  color: #333;
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: -0.5px;
 }
 
 .pageHeader p {
   margin: 5px 0 0;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .balanceSummary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+  color: var(--bg-primary);
   padding: 12px 24px;
   border-radius: 25px;
   font-weight: 600;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
 }
 
 /* Transfer Type Selector */
@@ -94,32 +118,37 @@
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
-  background: white;
+  background: var(--bg-secondary);
   padding: 10px;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
 }
 
 .transferTypeSelector button {
   flex: 1;
   padding: 15px;
   border: 2px solid transparent;
-  background: #f8f9fa;
+  background: var(--bg-tertiary);
   border-radius: 8px;
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  color: var(--text-secondary);
 }
 
 .transferTypeSelector button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: #667eea;
+  background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+  color: var(--bg-primary);
+  border-color: var(--gold-primary);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
 }
 
 .transferTypeSelector button:hover:not(.active) {
-  background: #e9ecef;
+  background: var(--bg-primary);
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
 }
 
 /* Progress Steps */
@@ -129,9 +158,10 @@
   justify-content: center;
   margin-bottom: 30px;
   padding: 20px;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
 }
 
 .step {
@@ -145,53 +175,58 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #e9ecef;
-  color: #6c757d;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  border: 2px solid var(--border-color);
 }
 
 .step.active .stepNumber {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+  color: var(--bg-primary);
+  border-color: var(--gold-primary);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
 }
 
 .stepLabel {
   font-size: 12px;
-  color: #6c757d;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .step.active .stepLabel {
-  color: #333;
+  color: var(--gold-primary);
 }
 
 .stepLine {
   flex: 1;
   height: 2px;
-  background: #e9ecef;
+  background: var(--border-color);
   margin: 0 20px;
 }
 
 /* Form Card */
 .formCard {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
 }
 
 .stepContent h3 {
   margin: 0 0 10px 0;
   font-size: 24px;
-  color: #333;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .stepDescription {
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 30px;
 }
 
@@ -206,20 +241,24 @@
   align-items: center;
   gap: 20px;
   padding: 20px;
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--border-color);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  background: var(--bg-tertiary);
 }
 
 .accountOption:hover {
-  border-color: #667eea;
-  background: #f8f9fa;
+  border-color: var(--gold-primary);
+  background: var(--bg-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.15);
 }
 
 .accountOption.selected {
-  border-color: #667eea;
-  background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+  border-color: var(--gold-primary);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(184, 150, 46, 0.05) 100%);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
 }
 
 .accountIcon {
@@ -232,13 +271,13 @@
 
 .accountName {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .accountNumber {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .accountBalance {
@@ -247,14 +286,14 @@
 
 .balanceLabel {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 5px;
 }
 
 .balanceAmount {
   font-size: 20px;
   font-weight: 600;
-  color: #333;
+  color: var(--gold-primary);
 }
 
 /* Input Styles */
@@ -273,23 +312,32 @@
 .inputGroup label {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .input,
 .textarea {
   padding: 12px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 16px;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 .input:focus,
 .textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+  background: var(--bg-primary);
 }
 
 .textarea {
@@ -306,7 +354,7 @@
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-secondary);
   margin-bottom: 15px;
 }
 
@@ -318,20 +366,23 @@
 
 .speedOption {
   padding: 15px;
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--border-color);
   border-radius: 8px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  background: var(--bg-tertiary);
 }
 
 .speedOption:hover {
-  border-color: #667eea;
+  border-color: var(--gold-primary);
+  transform: translateY(-2px);
 }
 
 .speedOption.selected {
-  border-color: #667eea;
-  background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+  border-color: var(--gold-primary);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(184, 150, 46, 0.05) 100%);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
 }
 
 .speedIcon {
@@ -343,14 +394,14 @@
 .speedName {
   display: block;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .speedTime {
   display: block;
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 /* Amount Section */
@@ -364,17 +415,18 @@
   display: flex;
   justify-content: space-between;
   padding: 15px;
-  background: #f8f9fa;
+  background: var(--bg-tertiary);
   border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .availableBalance span {
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .availableBalance strong {
   font-size: 20px;
-  color: #333;
+  color: var(--gold-primary);
 }
 
 .amountInput {
@@ -387,407 +439,26 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 18px;
-  color: #666;
-}
-/* src/app/transfers/internal/sendMoney.module.css */
-
-.wrapper {
-  display: flex;
-  min-height: 100vh;
-  background: #f5f6fa;
-}
-
-.sidebar {
-  width: 250px;
-  background: white;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-}
-
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.header {
-  background: white;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.content {
-  flex: 1;
-  padding: 30px;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.footer {
-  background: white;
-  padding: 20px;
-  margin-top: auto;
-}
-
-/* Loading State */
-.loadingContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  gap: 20px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e0e0e0;
-  border-top-color: #4CAF50;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Page Header */
-.pageHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.pageHeader h1 {
-  margin: 0;
-  font-size: 28px;
-  color: #333;
-}
-
-.pageHeader p {
-  margin: 5px 0 0;
-  color: #666;
-  font-size: 14px;
-}
-
-.balanceSummary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 12px 24px;
-  border-radius: 25px;
+  color: var(--gold-primary);
   font-weight: 600;
-}
-
-/* Transfer Type Selector */
-.transferTypeSelector {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  background: white;
-  padding: 10px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.transferTypeSelector button {
-  flex: 1;
-  padding: 15px;
-  border: 2px solid transparent;
-  background: #f8f9fa;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.transferTypeSelector button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: #667eea;
-}
-
-.transferTypeSelector button:hover:not(.active) {
-  background: #e9ecef;
-}
-
-/* Progress Steps */
-.progressSteps {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.stepNumber {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #e9ecef;
-  color: #6c757d;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  transition: all 0.3s;
-}
-
-.step.active .stepNumber {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.stepLabel {
-  font-size: 12px;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.step.active .stepLabel {
-  color: #333;
-}
-
-.stepLine {
-  flex: 1;
-  height: 2px;
-  background: #e9ecef;
-  margin: 0 20px;
-}
-
-/* Form Card */
-.formCard {
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.stepContent h3 {
-  margin: 0 0 10px 0;
-  font-size: 24px;
-  color: #333;
-}
-
-.stepDescription {
-  color: #666;
-  margin-bottom: 30px;
-}
-
-/* Account Options */
-.accountOptions {
-  display: grid;
-  gap: 15px;
-}
-
-.accountOption {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.accountOption:hover {
-  border-color: #667eea;
-  background: #f8f9fa;
-}
-
-.accountOption.selected {
-  border-color: #667eea;
-  background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
-}
-
-.accountIcon {
-  font-size: 32px;
-}
-
-.accountInfo {
-  flex: 1;
-}
-
-.accountName {
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.accountNumber {
-  font-size: 14px;
-  color: #666;
-}
-
-.accountBalance {
-  text-align: right;
-}
-
-.balanceLabel {
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 5px;
-}
-
-.balanceAmount {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-/* Input Styles */
-.inputGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.inputGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.inputGroup label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-}
-
-.input,
-.textarea {
-  padding: 12px;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.3s;
-}
-
-.input:focus,
-.textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-}
-
-.textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-/* Transfer Speed */
-.transferSpeed {
-  margin-top: 30px;
-}
-
-.transferSpeed label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 15px;
-}
-
-.speedOptions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-}
-
-.speedOption {
-  padding: 15px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.speedOption:hover {
-  border-color: #667eea;
-}
-
-.speedOption.selected {
-  border-color: #667eea;
-  background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
-}
-
-.speedIcon {
-  font-size: 24px;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.speedName {
-  display: block;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.speedTime {
-  display: block;
-  font-size: 12px;
-  color: #666;
-}
-
-/* Amount Section */
-.amountSection {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.availableBalance {
-  display: flex;
-  justify-content: space-between;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.availableBalance span {
-  color: #666;
-}
-
-.availableBalance strong {
-  font-size: 20px;
-  color: #333;
-}
-
-.amountInput {
-  position: relative;
-}
-
-.currencySymbol {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 18px;
-  color: #666;
 }
 
 .amountField {
   width: 100%;
   padding: 12px 12px 12px 40px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 18px;
   font-weight: 600;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.amountField:focus {
+  outline: none;
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
 }
 
 .quickAmounts {
@@ -799,35 +470,38 @@
 .quickAmountBtn {
   flex: 1;
   padding: 10px;
-  border: 1px solid #dee2e6;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  color: var(--text-secondary);
 }
 
 .quickAmountBtn:hover:not(:disabled) {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
+  background: var(--gold-primary);
+  color: var(--bg-primary);
+  border-color: var(--gold-primary);
+  transform: translateY(-2px);
 }
 
 .quickAmountBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 /* Review Section */
 .reviewCard {
-  background: #f8f9fa;
+  background: var(--bg-tertiary);
   border-radius: 12px;
   padding: 20px;
+  border: 1px solid var(--border-color);
 }
 
 .reviewSection {
   padding: 20px 0;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .reviewSection:last-child {
@@ -836,7 +510,7 @@
 
 .reviewSection h4 {
   margin: 0 0 15px 0;
-  color: #666;
+  color: var(--gold-primary);
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -849,38 +523,40 @@
 }
 
 .reviewItem span {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .reviewItem strong {
-  color: #333;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .reviewAmount {
   font-size: 32px;
   font-weight: 700;
-  color: #333;
+  color: var(--gold-primary);
   margin: 20px 0;
   text-align: center;
+  text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
 }
 
 .reviewDescription {
   padding: 10px;
-  background: white;
+  background: var(--bg-primary);
   border-radius: 8px;
   font-style: italic;
-  color: #666;
+  color: var(--text-secondary);
   margin: 15px 0;
+  border: 1px solid var(--border-color);
 }
 
 .warningBox {
   display: flex;
   gap: 15px;
   padding: 15px;
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
+  background: rgba(244, 208, 63, 0.1);
+  border: 1px solid rgba(244, 208, 63, 0.3);
   border-radius: 8px;
   margin-top: 20px;
 }
@@ -891,7 +567,7 @@
 
 .warningBox p {
   margin: 0;
-  color: #856404;
+  color: var(--gold-light);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -902,7 +578,7 @@
   justify-content: space-between;
   margin-top: 30px;
   padding-top: 30px;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--border-color);
 }
 
 .backButton,
@@ -914,34 +590,36 @@
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .backButton {
-  background: white;
-  color: #666;
-  border: 2px solid #dee2e6;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
 }
 
 .backButton:hover:not(:disabled) {
-  background: #f8f9fa;
-  border-color: #adb5bd;
+  background: var(--bg-tertiary);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 .continueButton,
 .submitButton {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+  color: var(--bg-primary);
   margin-left: auto;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
 }
 
 .continueButton:hover:not(:disabled),
 .submitButton:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.5);
 }
 
 .backButton:disabled,
@@ -949,6 +627,7 @@
 .submitButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* Messages */
@@ -964,15 +643,15 @@
 }
 
 .error {
-  background: #fee;
-  color: #c00;
-  border: 1px solid #fcc;
+  background: rgba(255, 71, 87, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(255, 71, 87, 0.3);
 }
 
 .success {
-  background: #e7f5e7;
-  color: #2d7a2d;
-  border: 1px solid #c3e6c3;
+  background: rgba(0, 196, 140, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(0, 196, 140, 0.3);
 }
 
 /* Responsive Design */
