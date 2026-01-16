@@ -1,5 +1,5 @@
 // src/app/api/mobile/cards/[cardId]/freeze/route.ts
-// ADD THIS FILE TO YOUR WEB PROJECT: app/api/mobile/cards/[cardId]/freeze/route.ts
+// FIXED FOR NEXT.JS 15 APP ROUTER
 
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
@@ -27,9 +27,10 @@ async function verifyMobileToken(request: NextRequest) {
 // POST /api/mobile/cards/[cardId]/freeze - Freeze/Unfreeze card
 export async function POST(
   request: NextRequest,
-  { params }: { params: { cardId: string } }
+  { params }: { params: Promise<{ cardId: string }> }
 ) {
-  console.log('[Mobile Cards Freeze] POST request for card:', params.cardId);
+  const { cardId } = await params;
+  console.log('[Mobile Cards Freeze] POST request for card:', cardId);
   
   try {
     const decoded = await verifyMobileToken(request);
@@ -52,8 +53,6 @@ export async function POST(
       );
     }
 
-    const { cardId } = params;
-    
     // Determine card type from cardId
     const cardType = cardId.includes('debit') ? 'debit' : cardId.includes('virtual') ? 'virtual' : 'debit';
     
