@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import styles from "./deposit.module.css";
+import styles from "./fund.module.css";
 
 type FundingMethod = 'wire' | 'crypto' | null;
 type CryptoType = 'BTC' | 'ETH' | 'USDT' | 'USDC';
