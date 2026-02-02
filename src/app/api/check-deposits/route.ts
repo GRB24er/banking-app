@@ -8,30 +8,32 @@ const AUTH_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '30
 
 async function verifyToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
+  console.log('[Check Deposit] Auth header:', authHeader ? 'Present' : 'Missing');
+  
   if (!authHeader?.startsWith('Bearer ')) {
+    console.log('[Check Deposit] No Bearer token');
     return null;
   }
   
   try {
     const token = authHeader.split(' ')[1];
+    console.log('[Check Deposit] Token length:', token.length);
     const decoded = jwt.verify(token, AUTH_SECRET) as { userId: string; email: string };
+    console.log('[Check Deposit] Decoded userId:', decoded.userId);
     return decoded;
-  } catch {
+  } catch (err: any) {
+    console.log('[Check Deposit] JWT verify error:', err.message);
     return null;
   }
 }
 
-// POST - Submit new check deposit
 export async function POST(request: NextRequest) {
   console.log('[Check Deposit] POST - New deposit submission');
 
   try {
     const decoded = await verifyToken(request);
     if (!decoded) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     await dbConnect();
@@ -40,25 +42,12 @@ export async function POST(request: NextRequest) {
     const { accountType, amount, checkNumber, frontImage, backImage } = body;
 
     if (!accountType || !amount || !frontImage || !backImage) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    if (amount <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'Amount must be greater than 0' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
 
     const user = await User.findById(decoded.userId);
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
     const deposit = await CheckDeposit.create({
@@ -73,8 +62,6 @@ export async function POST(request: NextRequest) {
       status: 'pending',
     });
 
-    console.log('[Check Deposit] Created deposit:', deposit._id);
-
     return NextResponse.json({
       success: true,
       deposit: {
@@ -84,50 +71,27 @@ export async function POST(request: NextRequest) {
         status: deposit.status,
         createdAt: deposit.createdAt,
       },
-      message: 'Check deposit submitted successfully. It will be reviewed within 1-2 business days.',
+      message: 'Check deposit submitted successfully.',
     });
-
-  } catch (error) {
-    console.error('[Check Deposit] POST Error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to submit check deposit' },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error('[Check Deposit] POST Error:', error.message);
+    return NextResponse.json({ success: false, error: 'Failed to submit check deposit' }, { status: 500 });
   }
 }
 
-// GET - Get user's check deposits
 export async function GET(request: NextRequest) {
-  console.log('[Check Deposit] GET - Fetching deposits');
-
   try {
     const decoded = await verifyToken(request);
     if (!decoded) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     await dbConnect();
 
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-
-    const query: Record<string, string> = { userId: decoded.userId };
-    if (status) {
-      query.status = status;
-    }
-
-    const deposits = await CheckDeposit.find(query)
+    const deposits = await CheckDeposit.find({ userId: decoded.userId })
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .limit(20)
       .select('-frontImage -backImage');
-
-    const total = await CheckDeposit.countDocuments(query);
 
     return NextResponse.json({
       success: true,
@@ -141,19 +105,9 @@ export async function GET(request: NextRequest) {
         createdAt: d.createdAt,
         reviewedAt: d.reviewedAt,
       })),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
     });
-
   } catch (error) {
     console.error('[Check Deposit] GET Error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch deposits' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to fetch deposits' }, { status: 500 });
   }
 }
