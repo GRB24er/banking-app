@@ -1,15 +1,18 @@
+// app/api/admin/check-deposits/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/mongodb';
 import CheckDeposit from '@/models/CheckDeposit';
+import User from '@/models/User';
 
+// GET /api/admin/check-deposits - Get all deposits (admin only)
 export async function GET(request: NextRequest) {
   console.log('[Admin Check Deposits] GET');
 
   try {
     const session = await getServerSession(authOptions);
-
+    
     if (!session || session.user?.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -24,7 +27,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    const query: Record<string, string> = {};
+    const query: any = {};
     if (status && status !== 'all') {
       query.status = status;
     }
@@ -36,6 +39,7 @@ export async function GET(request: NextRequest) {
 
     const total = await CheckDeposit.countDocuments(query);
 
+    // Get counts by status
     const [pendingCount, approvedCount, rejectedCount] = await Promise.all([
       CheckDeposit.countDocuments({ status: 'pending' }),
       CheckDeposit.countDocuments({ status: 'approved' }),
@@ -73,7 +77,8 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error: unknown) {
+
+  } catch (error: any) {
     console.error('[Admin Check Deposits] GET Error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch deposits' },
