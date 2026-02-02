@@ -8,9 +8,11 @@ import User from '@/models/User';
 // GET single deposit
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const session = await getServerSession(authOptions);
     
     if (!session || session.user?.role !== 'admin') {
@@ -22,7 +24,7 @@ export async function GET(
 
     await dbConnect();
 
-    const deposit = await CheckDeposit.findById(params.id);
+    const deposit = await CheckDeposit.findById(id);
     
     if (!deposit) {
       return NextResponse.json(
@@ -63,11 +65,13 @@ export async function GET(
 // PATCH - Approve or Reject deposit
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   console.log('[Admin Check Deposit] PATCH - Update status');
 
   try {
+    const { id } = await params;
+    
     const session = await getServerSession(authOptions);
     
     if (!session || session.user?.role !== 'admin') {
@@ -96,7 +100,7 @@ export async function PATCH(
       );
     }
 
-    const deposit = await CheckDeposit.findById(params.id);
+    const deposit = await CheckDeposit.findById(id);
     
     if (!deposit) {
       return NextResponse.json(
