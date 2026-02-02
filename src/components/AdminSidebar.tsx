@@ -25,6 +25,8 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     badge: 3
   },
   { label: "Support Chats", href: "/dashboard/admin/chats", icon: "💬", badge: 7 },
+  // ADD THIS LINE:
+  { label: "Check Deposits", href: "/dashboard/admin/check-deposits", icon: "📸" },
   { 
     label: "User Management", 
     href: "/dashboard/admin/users", 
