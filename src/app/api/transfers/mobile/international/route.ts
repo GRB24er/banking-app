@@ -11,6 +11,19 @@ interface DecodedToken {
   email: string;
 }
 
+interface TransactionDoc {
+  _id: { toString: () => string };
+  reference: string;
+  amount: number;
+  status: string;
+  date: Date;
+  metadata?: {
+    recipientName?: string;
+    recipientCountry?: string;
+    totalFees?: number;
+  };
+}
+
 async function verifyToken(request: NextRequest): Promise<DecodedToken | null> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
@@ -135,13 +148,13 @@ export async function POST(request: NextRequest) {
     const intlRef = `INTL-${timestamp}-${random}`;
 
     // Create pending international transaction
-    const intlTransaction = await Transaction.create({
+    await Transaction.create({
       userId: user._id,
       type: 'transfer-out',
       currency: 'USD',
       amount: transferAmount,
       description: description?.trim() || `International transfer to ${recipientName} (${recipientCountry})`,
-      status: 'pending',
+      status: 'processing',
       accountType: fromAccount,
       posted: false,
       reference: intlRef,
@@ -175,7 +188,7 @@ export async function POST(request: NextRequest) {
         currency: 'USD',
         amount: totalFees,
         description: `International transfer fees`,
-        status: 'pending',
+        status: 'processing',
         accountType: fromAccount,
         posted: false,
         reference: `${intlRef}-FEE`,
@@ -190,7 +203,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'International transfer initiated. Awaiting admin approval.',
+      message: 'International transfer initiated successfully',
       reference: intlRef,
       transfer: {
         type: 'international',
@@ -209,7 +222,7 @@ export async function POST(request: NextRequest) {
           total: totalFees
         },
         total: totalAmount,
-        status: 'pending',
+        status: 'processing',
         estimatedCompletion: transferSpeed === 'express' ? '1-2 business days' : '3-5 business days',
         date: new Date().toISOString()
       }
@@ -238,7 +251,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      transfers: transfers.map(t => ({
+      transfers: transfers.map((t: TransactionDoc) => ({
         id: t._id.toString(),
         reference: t.reference,
         amount: t.amount,

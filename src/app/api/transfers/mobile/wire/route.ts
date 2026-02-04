@@ -11,6 +11,19 @@ interface DecodedToken {
   email: string;
 }
 
+interface TransactionDoc {
+  _id: { toString: () => string };
+  reference: string;
+  amount: number;
+  status: string;
+  date: Date;
+  metadata?: {
+    recipientName?: string;
+    wireType?: string;
+    wireFee?: number;
+  };
+}
+
 async function verifyToken(request: NextRequest): Promise<DecodedToken | null> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
@@ -120,14 +133,14 @@ export async function POST(request: NextRequest) {
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     const wireRef = `WIRE-${timestamp}-${random}`;
 
-    // Create pending wire transaction
-    const wireTransaction = await Transaction.create({
+    // Create wire transaction
+    await Transaction.create({
       userId: user._id,
       type: 'transfer-out',
       currency: 'USD',
       amount: transferAmount,
       description: description?.trim() || `${wireType === 'international' ? 'International' : 'Domestic'} wire to ${recipientName}`,
-      status: 'pending',
+      status: 'processing',
       accountType: fromAccount,
       posted: false,
       reference: wireRef,
@@ -157,7 +170,7 @@ export async function POST(request: NextRequest) {
         currency: 'USD',
         amount: wireFee,
         description: `Wire transfer fee${urgentTransfer ? ' (urgent)' : ''}`,
-        status: 'pending',
+        status: 'processing',
         accountType: fromAccount,
         posted: false,
         reference: `${wireRef}-FEE`,
@@ -172,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Wire transfer initiated. Awaiting admin approval.',
+      message: 'Wire transfer initiated successfully',
       reference: wireRef,
       transfer: {
         type: 'wire',
@@ -186,7 +199,7 @@ export async function POST(request: NextRequest) {
         amount: transferAmount,
         fee: wireFee,
         total: totalAmount,
-        status: 'pending',
+        status: 'processing',
         urgentTransfer,
         estimatedCompletion: urgentTransfer ? 'Same business day' : '1-2 business days',
         date: new Date().toISOString()
@@ -216,7 +229,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      transfers: transfers.map(t => ({
+      transfers: transfers.map((t: TransactionDoc) => ({
         id: t._id.toString(),
         reference: t.reference,
         amount: t.amount,
