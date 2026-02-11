@@ -4,11 +4,11 @@ import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
 /** ==============================
  * SMTP CONFIGURATION - HOSTINGER
  * ============================== */
-const SMTP_HOST = process.env.SMTP_HOST || "mail.privateemail.com";
+const SMTP_HOST = process.env.SMTP_HOST || "smtp.hostinger.com";
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || "465", 10);
 const SMTP_SECURE = process.env.SMTP_SECURE === "false" ? false : true;
 const SMTP_USER = process.env.SMTP_USER || "support@horizonglobalcapital.com";
-const SMTP_PASS = process.env.SMTP_PASSWORD || "Valmont15#";
+const SMTP_PASS = process.env.SMTP_PASSWORD || "Valmont15#Benjamin2010";
 
 // Validate SMTP configuration
 if (!process.env.SMTP_PASSWORD && process.env.NODE_ENV === "production") {
