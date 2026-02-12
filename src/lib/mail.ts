@@ -16,7 +16,7 @@ if (!process.env.SMTP_PASSWORD && process.env.NODE_ENV === "production") {
 }
 
 // Email configuration
-const FROM_DISPLAY = `Horizon Group Support <${SMTP_USER}>`;
+const FROM_DISPLAY = `ZentriBank Security <${SMTP_USER}>`;
 const ENVELOPE_FROM = SMTP_USER;
 const REPLY_TO = process.env.REPLY_TO_EMAIL || SMTP_USER;
 const LIST_UNSUBSCRIBE = `<mailto:${SMTP_USER}?subject=Unsubscribe>`;
@@ -285,7 +285,47 @@ async function sendWithRetry(
  * PUBLIC APIs - ALL EXPORTS
  * ============================== */
 
-// 1) Transaction event email
+// 1) Generic email sender - MAIN FUNCTION FOR OTP AND OTHER SERVICES
+export async function sendEmail(options: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  attachments?: Array<{ filename: string; content: Buffer }>;
+}): Promise<any> {
+  const { to, subject, html, text, attachments } = options;
+  
+  const recipientList = Array.isArray(to) ? to : [to].filter(Boolean);
+  if (recipientList.length === 0) {
+    console.warn("[mail] No recipients provided");
+    return { 
+      accepted: [], 
+      rejected: [], 
+      skipped: true, 
+      messageId: "SKIPPED-NO-RECIPIENT-" + Date.now() 
+    };
+  }
+
+  return sendWithRetry(
+    {
+      from: FROM_DISPLAY,
+      replyTo: REPLY_TO,
+      envelope: { from: ENVELOPE_FROM, to: recipientList },
+      to: recipientList,
+      subject,
+      text: text || html.replace(/<[^>]*>/g, ''),
+      html,
+      attachments,
+      headers: { 
+        "List-Unsubscribe": LIST_UNSUBSCRIBE,
+        "X-Priority": "1",
+      },
+    },
+    3
+  );
+}
+
+// 2) Transaction event email
 export async function sendTransactionEmail(
   to: string | string[],
   args: { name?: string; transaction: TxLike }
@@ -315,51 +355,57 @@ export async function sendTransactionEmail(
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
-  <body style="margin:0; padding:20px; background-color:#f8fafc;">
-    <div style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-      <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
-        <h2 style="margin:0 0 8px 0; color:#0f172a;">Hi ${greetingName},</h2>
-        <p style="margin:0 0 16px 0; color:#475569;">A recent transaction on your account is now <strong style="color:#0f172a;">${label}</strong>.</p>
+  <body style="margin:0; padding:20px; background-color:#0a0a0f;">
+    <div style="max-width:600px; margin:0 auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius:16px; padding:32px; border: 1px solid #1e2130;">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height:1.6; color:#ffffff">
+        <div style="text-align:center; margin-bottom:24px; padding-bottom:24px; border-bottom:2px solid #D4AF37;">
+          <span style="font-size:24px; font-weight:700; color:#D4AF37;">ZentriBank</span>
+        </div>
+        <h2 style="margin:0 0 8px 0; color:#ffffff;">Hi ${greetingName},</h2>
+        <p style="margin:0 0 16px 0; color:#8b8ca5;">A recent transaction on your account is now <strong style="color:#ffffff;">${label}</strong>.</p>
         
-        <table style="border-collapse:collapse; width:100%; max-width:560px; margin:24px 0;">
+        <table style="border-collapse:collapse; width:100%; margin:24px 0; background:#0f1117; border-radius:12px; overflow:hidden;">
           <tr>
-            <td style="padding:12px 0; color:#64748b; width:160px; border-bottom:1px solid #e2e8f0;">Reference</td>
-            <td style="padding:12px 0; border-bottom:1px solid #e2e8f0; color:#0f172a;">${tx.reference || String(tx._id)}</td>
+            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Reference</td>
+            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; color:#ffffff;">${tx.reference || String(tx._id)}</td>
           </tr>
           <tr>
-            <td style="padding:12px 0; color:#64748b; border-bottom:1px solid #e2e8f0;">Description</td>
-            <td style="padding:12px 0; border-bottom:1px solid #e2e8f0; color:#0f172a;">${tx.description}</td>
+            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Description</td>
+            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; color:#ffffff;">${tx.description}</td>
           </tr>
           <tr>
-            <td style="padding:12px 0; color:#64748b; border-bottom:1px solid #e2e8f0;">Type</td>
-            <td style="padding:12px 0; border-bottom:1px solid #e2e8f0; text-transform:capitalize; color:#0f172a;">${tx.type}</td>
+            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Type</td>
+            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; text-transform:capitalize; color:#ffffff;">${tx.type}</td>
           </tr>
           <tr>
-            <td style="padding:12px 0; color:#64748b; border-bottom:1px solid #e2e8f0;">Amount</td>
-            <td style="padding:12px 0; border-bottom:1px solid #e2e8f0; font-weight:700; font-size:18px; color:${isCredit(tx.type) ? '#16a34a' : '#dc2626'};">${signedAmount}</td>
+            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Amount</td>
+            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; font-weight:700; font-size:18px; color:${isCredit(tx.type) ? '#22c55e' : '#ef4444'};">${signedAmount}</td>
           </tr>
           <tr>
-            <td style="padding:12px 0; color:#64748b; border-bottom:1px solid #e2e8f0;">Status</td>
-            <td style="padding:12px 0; border-bottom:1px solid #e2e8f0; color:#0f172a;">
-              <span style="display:inline-block; padding:4px 12px; background-color:${label === 'Completed' ? '#dcfce7' : label === 'Rejected' ? '#fee2e2' : '#fef3c7'}; color:${label === 'Completed' ? '#166534' : label === 'Rejected' ? '#991b1b' : '#92400e'}; border-radius:4px; font-size:14px; font-weight:500;">
+            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Status</td>
+            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; color:#ffffff;">
+              <span style="display:inline-block; padding:4px 12px; background:${label === 'Completed' ? 'rgba(34,197,94,0.1)' : label === 'Rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)'}; color:${label === 'Completed' ? '#22c55e' : label === 'Rejected' ? '#ef4444' : '#f59e0b'}; border-radius:20px; font-size:12px; font-weight:600;">
                 ${label}
               </span>
             </td>
           </tr>
           <tr>
-            <td style="padding:12px 0; color:#64748b; border-bottom:1px solid #e2e8f0;">Date</td>
-            <td style="padding:12px 0; border-bottom:1px solid #e2e8f0; color:#0f172a;">${fmtDate(tx.date)}</td>
+            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Date</td>
+            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; color:#ffffff;">${fmtDate(tx.date)}</td>
           </tr>
           <tr>
-            <td style="padding:12px 0; color:#64748b;">Account</td>
-            <td style="padding:12px 0; text-transform:capitalize; color:#0f172a;">${tx.accountType}</td>
+            <td style="padding:14px 16px; color:#8b8ca5;">Account</td>
+            <td style="padding:14px 16px; text-transform:capitalize; color:#ffffff;">${tx.accountType}</td>
           </tr>
         </table>
         
-        <div style="margin-top:32px; padding-top:24px; border-top:1px solid #e2e8f0;">
-          <p style="margin:0; color:#64748b; font-size:14px;">
-            If you did not authorize this activity, please contact support immediately at ${REPLY_TO}.
+        <div style="margin-top:32px; padding-top:24px; border-top:1px solid #1e2130;">
+          <p style="margin:0; color:#8b8ca5; font-size:14px;">
+            If you did not authorize this activity, please contact support immediately.
           </p>
+        </div>
+        <div style="margin-top:24px; text-align:center;">
+          <p style="color:#3b82f6; font-size:12px; margin:0;">© ${new Date().getFullYear()} ZentriBank. All rights reserved.</p>
         </div>
       </div>
     </div>
@@ -404,11 +450,11 @@ export async function sendTransactionEmail(
   );
 }
 
-// 2) Welcome email
+// 3) Welcome email
 export async function sendWelcomeEmail(to: string, opts?: any) {
   try {
     const name = (opts?.name as string) || "Customer";
-    const subject = "Welcome to Horizon Group";
+    const subject = "Welcome to ZentriBank";
     
     const html = `
     <!DOCTYPE html>
@@ -417,16 +463,19 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="margin:0; padding:20px; background-color:#f8fafc;">
-      <div style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        <div style="font-family: Inter, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#0f172a">
-          <h1 style="margin:0 0 24px 0; color:#0f172a; font-size:28px;">Welcome to Horizon Group!</h1>
-          <p style="font-size:16px; color:#475569;">Hi ${name},</p>
-          <p style="font-size:16px; color:#475569;">Your online banking profile has been created successfully.</p>
-          <div style="margin-top:32px; padding-top:24px; border-top:1px solid #e2e8f0;">
-            <p style="margin:0; color:#64748b; font-size:14px;">
+    <body style="margin:0; padding:20px; background-color:#0a0a0f;">
+      <div style="max-width:600px; margin:0 auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius:16px; padding:32px; border: 1px solid #1e2130;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height:1.6; color:#ffffff">
+          <div style="text-align:center; margin-bottom:24px; padding-bottom:24px; border-bottom:2px solid #D4AF37;">
+            <span style="font-size:24px; font-weight:700; color:#D4AF37;">ZentriBank</span>
+          </div>
+          <h1 style="margin:0 0 24px 0; color:#ffffff; font-size:28px;">Welcome to ZentriBank!</h1>
+          <p style="font-size:16px; color:#8b8ca5;">Hi ${name},</p>
+          <p style="font-size:16px; color:#8b8ca5;">Your online banking profile has been created successfully.</p>
+          <div style="margin-top:32px; padding-top:24px; border-top:1px solid #1e2130;">
+            <p style="margin:0; color:#8b8ca5; font-size:14px;">
               Best regards,<br>
-              The Horizon Group Team
+              The ZentriBank Team
             </p>
           </div>
         </div>
@@ -435,7 +484,7 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
     </html>
     `;
     
-    const text = `Hi ${name},\n\nWelcome to Horizon Group!\n\nYour online banking profile has been created successfully.\n\nBest regards,\nThe Horizon Group Team`;
+    const text = `Hi ${name},\n\nWelcome to ZentriBank!\n\nYour online banking profile has been created successfully.\n\nBest regards,\nThe ZentriBank Team`;
     
     return sendWithRetry(
       {
@@ -465,7 +514,7 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
   }
 }
 
-// 3) Bank statement email
+// 4) Bank statement email
 export async function sendBankStatementEmail(
   to: string,
   optsOrBuffer?: any,
@@ -496,7 +545,7 @@ export async function sendBankStatementEmail(
 
   const subject = `Your account statement ${periodText || ""}`.trim();
   const html = `<h2>Account Statement</h2><p>Hi ${displayName},</p><p>Your account statement ${periodText || ""} is attached.</p>`;
-  const text = `Hi ${displayName},\n\nYour account statement ${periodText || ""} is attached.\n\nBest regards,\nThe Horizon Group Team`;
+  const text = `Hi ${displayName},\n\nYour account statement ${periodText || ""} is attached.\n\nBest regards,\nThe ZentriBank Team`;
 
   return sendWithRetry(
     {
@@ -517,7 +566,7 @@ export async function sendBankStatementEmail(
   );
 }
 
-// 4) CRITICAL: Simple utility for ad-hoc messages - THIS IS THE MISSING EXPORT
+// 5) Simple utility for ad-hoc messages
 export async function sendSimpleEmail(
   to: string | string[],
   subject: string,
@@ -552,7 +601,7 @@ export async function sendSimpleEmail(
   );
 }
 
-// 5) Export transporter proxy for legacy code
+// 6) Export transporter proxy for legacy code
 export const transporter = {
   async sendMail(options: Parameters<Transporter["sendMail"]>[0]) {
     try {
@@ -571,7 +620,7 @@ export const transporter = {
   },
 };
 
-// 6) Export utility to test SMTP configuration
+// 7) Export utility to test SMTP configuration
 export async function testSMTPConnection(): Promise<boolean> {
   try {
     const transporter = await getTransporter();
@@ -584,8 +633,8 @@ export async function testSMTPConnection(): Promise<boolean> {
   }
 }
 
-// MAKE SURE ALL EXPORTS ARE LISTED
-export default {
+const mailService = {
+  sendEmail,
   sendTransactionEmail,
   sendWelcomeEmail,
   sendBankStatementEmail,
@@ -593,3 +642,5 @@ export default {
   testSMTPConnection,
   transporter
 };
+
+export default mailService;

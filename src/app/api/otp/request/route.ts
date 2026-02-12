@@ -1,64 +1,69 @@
 // src/app/api/otp/request/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { createOTP, OTPType } from '@/lib/otpService';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
+import { createAndSendOTP } from '@/lib/otpService';
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
+    
     if (!session?.user?.email) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const body = await req.json();
-    const { type, metadata } = body;
+    const body = await request.json();
+    const { action, metadata } = body;
 
-    // Validate OTP type
-    if (!type || !Object.values(OTPType).includes(type)) {
+    const typeMap: Record<string, string> = {
+      'transfer': 'transfer',
+      'large_transfer': 'transfer',
+      'profile_update': 'profile_update',
+      'password_reset': 'password_reset',
+      'transaction': 'transaction',
+    };
+
+    const otpType = typeMap[action] || 'transaction';
+
+    await connectDB();
+
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
       return NextResponse.json(
-        { error: 'Invalid OTP type' },
-        { status: 400 }
+        { success: false, error: 'User not found' },
+        { status: 404 }
       );
     }
 
-    // Get user email from session
-    const email = session.user.email;
-    const userId = (session.user as any).id || session.user.email;
-
-    // Create OTP
-    const result = await createOTP(
-      userId,
-      email,
-      type as OTPType,
-      {
-        ...metadata,
-        ipAddress: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
-      }
+    const result = await createAndSendOTP(
+      user._id.toString(),
+      user.email,
+      otpType as any,
+      metadata
     );
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
+        { success: false, error: result.message },
+        { status: 429 }
       );
     }
 
     return NextResponse.json({
       success: true,
       message: 'Verification code sent to your email',
-      // In dev mode, return the code for testing
-      ...(process.env.NODE_ENV === 'development' && { code: result.code })
+      expiresIn: 600,
     });
 
   } catch (error: any) {
-    console.error('OTP request error:', error);
+    console.error('[OTP] Request error:', error);
     return NextResponse.json(
-      { error: 'Failed to send verification code' },
+      { success: false, error: 'Failed to send verification code' },
       { status: 500 }
     );
   }

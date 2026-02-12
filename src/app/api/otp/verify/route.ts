@@ -1,60 +1,75 @@
 // src/app/api/otp/verify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { verifyOTP, OTPType } from '@/lib/otpService';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
+import { verifyOTP } from '@/lib/otpService';
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
+    
     if (!session?.user?.email) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const body = await req.json();
-    const { code, type } = body;
+    const body = await request.json();
+    const { code, action } = body;
 
-    // Validate inputs
-    if (!code || !type) {
+    if (!code || !action) {
       return NextResponse.json(
-        { error: 'Code and type are required' },
+        { success: false, error: 'Code and action are required' },
         { status: 400 }
       );
     }
 
-    if (!Object.values(OTPType).includes(type)) {
+    const typeMap: Record<string, string> = {
+      'transfer': 'transfer',
+      'large_transfer': 'transfer',
+      'profile_update': 'profile_update',
+      'password_reset': 'password_reset',
+      'transaction': 'transaction',
+    };
+
+    const otpType = typeMap[action] || 'transaction';
+
+    await connectDB();
+
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
       return NextResponse.json(
-        { error: 'Invalid OTP type' },
-        { status: 400 }
+        { success: false, error: 'User not found' },
+        { status: 404 }
       );
     }
 
-    // Get user ID
-    const userId = (session.user as any).id || session.user.email;
-
-    // Verify OTP
-    const result = await verifyOTP(userId, code, type as OTPType);
+    const result = await verifyOTP(
+      user._id.toString(),
+      code,
+      otpType as any
+    );
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error },
+        { success: false, error: result.message },
         { status: 400 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Code verified successfully'
+      message: 'Verification successful',
+      verified: true,
     });
 
   } catch (error: any) {
-    console.error('OTP verification error:', error);
+    console.error('[OTP] Verify error:', error);
     return NextResponse.json(
-      { error: 'Verification failed' },
+      { success: false, error: 'Verification failed' },
       { status: 500 }
     );
   }
