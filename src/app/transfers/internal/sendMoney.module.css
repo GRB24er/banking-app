@@ -18,7 +18,7 @@
   font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
 }
 
-.mainContent {
+.mainContent, .main {
   flex: 1;
   margin-left: 260px;
   display: flex;
@@ -836,5 +836,43 @@
   .formCard {
     box-shadow: none;
     border: 1px solid #ccc;
+  }
+}
+/* Fix sidebar overlap */
+.main {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 260px;
+  height: 100vh;
+  z-index: 50;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: white;
+}
+
+.footer {
+  margin-top: auto;
+}
+
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+  }
+  
+  .sidebar {
+    display: none;
   }
 }
