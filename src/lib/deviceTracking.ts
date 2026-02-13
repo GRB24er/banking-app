@@ -334,3 +334,12 @@ export async function removeDevice(userId: string, deviceId: string): Promise<bo
   const result = await Device.deleteOne({ userId, deviceId });
   return result.deletedCount > 0;
 }
+
+export async function unblockDevice(userId: string, deviceId: string): Promise<boolean> {
+  await connectDB();
+  const result = await Device.updateOne(
+    { userId, deviceId },
+    { isBlocked: false }
+  );
+  return result.modifiedCount > 0;
+}

@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Loan ${action} successful`,
-      application: result.application,
+      application: (result as any).application,
     });
   } catch (error: any) {
     console.error('[Admin Loans] Error:', error);

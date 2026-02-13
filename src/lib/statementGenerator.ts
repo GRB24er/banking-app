@@ -1,380 +1,421 @@
 // src/lib/statementGenerator.ts
-import PDFDocument from 'pdfkit';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 import mail from '@/lib/mail';
 
-interface StatementOptions {
-  userId: string;
-  startDate: Date;
-  endDate: Date;
-  accountType?: 'checking' | 'savings' | 'investment' | 'all';
-  format?: 'pdf' | 'csv';
-}
-
-interface TransactionItem {
-  date: Date;
-  description: string;
-  type: string;
-  reference: string;
-  amount: number;
-  balance: number;
-  status: string;
-}
-
 // ============================================
-// GENERATE PDF STATEMENT
+// STATEMENT DATA INTERFACE
 // ============================================
-export async function generateStatement(options: StatementOptions): Promise<Buffer> {
-  await connectDB();
-
-  const { userId, startDate, endDate, accountType = 'all' } = options;
-
-  // Get user
-  const user = await User.findById(userId);
-  if (!user) throw new Error('User not found');
-
-  // Get transactions
-  const query: any = {
-    userId,
-    date: { $gte: startDate, $lte: endDate },
+interface StatementData {
+  user: {
+    name: string;
+    email: string;
+    accountNumber: string;
+    address?: string;
   };
-  if (accountType !== 'all') {
-    query.accountType = accountType;
-  }
-
-  const transactions = await Transaction.find(query).sort({ date: 1 });
-
-  // Calculate balances
-  const openingBalance = await calculateOpeningBalance(userId, startDate, accountType);
-  const closingBalance = calculateClosingBalance(openingBalance, transactions);
-
-  // Generate PDF
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
-    const chunks: Buffer[] = [];
-
-    doc.on('data', (chunk) => chunks.push(chunk));
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
-    doc.on('error', reject);
-
-    // ===== HEADER =====
-    doc.rect(0, 0, 595, 120).fill('#0f172a');
-    
-    // Logo
-    doc.fontSize(28).fillColor('#D4AF37').font('Helvetica-Bold')
-       .text('HORIZON', 50, 40);
-    doc.fontSize(10).fillColor('#94a3b8').font('Helvetica')
-       .text('GLOBAL CAPITAL', 50, 70);
-
-    // Statement Title
-    doc.fontSize(12).fillColor('#ffffff').font('Helvetica-Bold')
-       .text('ACCOUNT STATEMENT', 400, 40, { align: 'right' });
-    doc.fontSize(10).fillColor('#94a3b8').font('Helvetica')
-       .text(`${formatDate(startDate)} - ${formatDate(endDate)}`, 400, 58, { align: 'right' });
-
-    // ===== ACCOUNT INFO =====
-    doc.fillColor('#1e293b');
-    let y = 150;
-
-    // Left column - Account holder
-    doc.fontSize(10).fillColor('#64748b').text('ACCOUNT HOLDER', 50, y);
-    doc.fontSize(12).fillColor('#1e293b').font('Helvetica-Bold')
-       .text(user.name || 'Account Holder', 50, y + 15);
-    doc.fontSize(10).fillColor('#64748b').font('Helvetica')
-       .text(user.email, 50, y + 32);
-
-    // Right column - Account details
-    doc.fontSize(10).fillColor('#64748b').text('ACCOUNT NUMBER', 350, y);
-    doc.fontSize(12).fillColor('#1e293b').font('Helvetica-Bold')
-       .text(maskAccountNumber(user.accountNumber || 'N/A'), 350, y + 15);
-    
-    doc.fontSize(10).fillColor('#64748b').font('Helvetica')
-       .text('STATEMENT DATE', 350, y + 40);
-    doc.fontSize(10).fillColor('#1e293b')
-       .text(formatDate(new Date()), 350, y + 55);
-
-    // ===== SUMMARY BOX =====
-    y = 250;
-    doc.rect(50, y, 495, 80).fill('#f8fafc').stroke('#e2e8f0');
-    
-    // Opening Balance
-    doc.fontSize(9).fillColor('#64748b').text('OPENING BALANCE', 70, y + 15);
-    doc.fontSize(14).fillColor('#1e293b').font('Helvetica-Bold')
-       .text(formatCurrency(openingBalance), 70, y + 32);
-
-    // Total Credits
-    const totalCredits = transactions.filter(t => isCredit(t.type)).reduce((sum, t) => sum + t.amount, 0);
-    doc.fontSize(9).fillColor('#64748b').font('Helvetica').text('TOTAL CREDITS', 200, y + 15);
-    doc.fontSize(14).fillColor('#22c55e').font('Helvetica-Bold')
-       .text(`+${formatCurrency(totalCredits)}`, 200, y + 32);
-
-    // Total Debits
-    const totalDebits = transactions.filter(t => isDebit(t.type)).reduce((sum, t) => sum + t.amount, 0);
-    doc.fontSize(9).fillColor('#64748b').font('Helvetica').text('TOTAL DEBITS', 340, y + 15);
-    doc.fontSize(14).fillColor('#ef4444').font('Helvetica-Bold')
-       .text(`-${formatCurrency(totalDebits)}`, 340, y + 32);
-
-    // Closing Balance
-    doc.fontSize(9).fillColor('#64748b').font('Helvetica').text('CLOSING BALANCE', 470, y + 15);
-    doc.fontSize(14).fillColor('#1e293b').font('Helvetica-Bold')
-       .text(formatCurrency(closingBalance), 470, y + 32);
-
-    // ===== TRANSACTIONS TABLE =====
-    y = 360;
-    
-    // Table header
-    doc.rect(50, y, 495, 25).fill('#0f172a');
-    doc.fontSize(8).fillColor('#ffffff').font('Helvetica-Bold');
-    doc.text('DATE', 60, y + 8);
-    doc.text('DESCRIPTION', 130, y + 8);
-    doc.text('REFERENCE', 300, y + 8);
-    doc.text('AMOUNT', 400, y + 8);
-    doc.text('BALANCE', 480, y + 8);
-
-    y += 25;
-
-    // Table rows
-    let runningBalance = openingBalance;
-    transactions.forEach((tx, index) => {
-      if (y > 750) {
-        doc.addPage();
-        y = 50;
-        // Repeat header
-        doc.rect(50, y, 495, 25).fill('#0f172a');
-        doc.fontSize(8).fillColor('#ffffff').font('Helvetica-Bold');
-        doc.text('DATE', 60, y + 8);
-        doc.text('DESCRIPTION', 130, y + 8);
-        doc.text('REFERENCE', 300, y + 8);
-        doc.text('AMOUNT', 400, y + 8);
-        doc.text('BALANCE', 480, y + 8);
-        y += 25;
-      }
-
-      // Alternate row colors
-      if (index % 2 === 0) {
-        doc.rect(50, y, 495, 22).fill('#f8fafc');
-      }
-
-      const amount = isCredit(tx.type) ? tx.amount : -tx.amount;
-      runningBalance += amount;
-
-      doc.fontSize(8).fillColor('#1e293b').font('Helvetica');
-      doc.text(formatDate(tx.date), 60, y + 7);
-      doc.text(truncate(tx.description || tx.type, 30), 130, y + 7);
-      doc.text(tx.reference || '-', 300, y + 7);
-      
-      doc.fillColor(isCredit(tx.type) ? '#22c55e' : '#ef4444')
-         .text(`${isCredit(tx.type) ? '+' : '-'}${formatCurrency(tx.amount)}`, 400, y + 7);
-      
-      doc.fillColor('#1e293b')
-         .text(formatCurrency(runningBalance), 480, y + 7);
-
-      y += 22;
-    });
-
-    // ===== FOOTER =====
-    const footerY = 780;
-    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica');
-    doc.text('This is a computer-generated statement and does not require a signature.', 50, footerY, { align: 'center', width: 495 });
-    doc.text(`© ${new Date().getFullYear()} Horizon Global Capital Ltd. All rights reserved.`, 50, footerY + 12, { align: 'center', width: 495 });
-    doc.text(`Generated on ${new Date().toLocaleString()}`, 50, footerY + 24, { align: 'center', width: 495 });
-
-    doc.end();
-  });
-}
-
-// ============================================
-// GENERATE CSV STATEMENT
-// ============================================
-export async function generateCSVStatement(options: StatementOptions): Promise<string> {
-  await connectDB();
-
-  const { userId, startDate, endDate, accountType = 'all' } = options;
-
-  const query: any = {
-    userId,
-    date: { $gte: startDate, $lte: endDate },
+  period: {
+    start: Date;
+    end: Date;
   };
-  if (accountType !== 'all') {
-    query.accountType = accountType;
-  }
-
-  const transactions = await Transaction.find(query).sort({ date: 1 });
-  const openingBalance = await calculateOpeningBalance(userId, startDate, accountType);
-
-  let csv = 'Date,Description,Type,Reference,Debit,Credit,Balance\n';
-  let runningBalance = openingBalance;
-
-  // Opening balance row
-  csv += `${formatDate(startDate)},Opening Balance,,,,,${runningBalance.toFixed(2)}\n`;
-
-  transactions.forEach(tx => {
-    const amount = isCredit(tx.type) ? tx.amount : -tx.amount;
-    runningBalance += amount;
-    
-    const debit = isDebit(tx.type) ? tx.amount.toFixed(2) : '';
-    const credit = isCredit(tx.type) ? tx.amount.toFixed(2) : '';
-
-    csv += `${formatDate(tx.date)},"${tx.description || tx.type}",${tx.type},${tx.reference || ''},${debit},${credit},${runningBalance.toFixed(2)}\n`;
-  });
-
-  return csv;
+  accounts: {
+    type: string;
+    openingBalance: number;
+    closingBalance: number;
+    currency: string;
+  }[];
+  transactions: {
+    date: Date;
+    description: string;
+    type: string;
+    amount: number;
+    currency: string;
+    balance: number;
+    reference: string;
+  }[];
+  summary: {
+    totalCredits: number;
+    totalDebits: number;
+    totalFees: number;
+    netChange: number;
+  };
 }
 
 // ============================================
-// EMAIL STATEMENT
+// GENERATE STATEMENT DATA
 // ============================================
-export async function emailStatement(
+export async function generateStatementData(
   userId: string,
   startDate: Date,
   endDate: Date,
-  accountType: 'checking' | 'savings' | 'investment' | 'all' = 'all'
-): Promise<boolean> {
-  try {
-    await connectDB();
+  accountType?: 'checking' | 'savings' | 'investment' | 'all'
+): Promise<StatementData | null> {
+  await connectDB();
 
-    const user = await User.findById(userId);
-    if (!user) throw new Error('User not found');
+  const user = await User.findById(userId);
+  if (!user) return null;
 
-    const pdfBuffer = await generateStatement({ userId, startDate, endDate, accountType });
+  // Get transactions for period
+  const query: any = {
+    userId,
+    createdAt: { $gte: startDate, $lte: endDate },
+  };
+
+  if (accountType && accountType !== 'all') {
+    query.accountType = accountType;
+  }
+
+  const transactions = await Transaction.find(query).sort({ createdAt: 1 });
+
+  // Calculate summary
+  let totalCredits = 0;
+  let totalDebits = 0;
+  let totalFees = 0;
+
+  const formattedTransactions = transactions.map((tx: any) => {
+    const amount = parseFloat(tx.amount?.toString() || '0');
     
-    const periodText = `${formatDate(startDate)} to ${formatDate(endDate)}`;
-    const filename = `Horizon_Statement_${formatDate(startDate).replace(/\//g, '-')}_${formatDate(endDate).replace(/\//g, '-')}.pdf`;
+    if (tx.type?.includes('deposit') || tx.type?.includes('credit') || tx.type?.includes('transfer-in')) {
+      totalCredits += Math.abs(amount);
+    } else if (tx.type?.includes('fee')) {
+      totalFees += Math.abs(amount);
+      totalDebits += Math.abs(amount);
+    } else {
+      totalDebits += Math.abs(amount);
+    }
 
-    const html = `
+    return {
+      date: tx.createdAt || tx.date,
+      description: tx.description || tx.type,
+      type: tx.type,
+      amount: Math.abs(amount),
+      currency: tx.currency || 'USD',
+      balance: tx.balanceAfter || 0,
+      reference: tx.reference || tx._id.toString().slice(-8).toUpperCase(),
+    };
+  });
+
+  // Get account balances
+  const accounts = [];
+  
+  if (!accountType || accountType === 'all' || accountType === 'checking') {
+    accounts.push({
+      type: 'Checking',
+      openingBalance: (user.checkingBalance || 0) - (totalCredits - totalDebits),
+      closingBalance: user.checkingBalance || 0,
+      currency: 'USD',
+    });
+  }
+  
+  if (!accountType || accountType === 'all' || accountType === 'savings') {
+    accounts.push({
+      type: 'Savings',
+      openingBalance: user.savingsBalance || 0,
+      closingBalance: user.savingsBalance || 0,
+      currency: 'USD',
+    });
+  }
+
+  return {
+    user: {
+      name: user.name,
+      email: user.email,
+      accountNumber: user.accountNumber || 'N/A',
+      address: user.address,
+    },
+    period: {
+      start: startDate,
+      end: endDate,
+    },
+    accounts,
+    transactions: formattedTransactions,
+    summary: {
+      totalCredits,
+      totalDebits,
+      totalFees,
+      netChange: totalCredits - totalDebits,
+    },
+  };
+}
+
+// ============================================
+// GENERATE HTML STATEMENT
+// ============================================
+export function generateStatementHTML(data: StatementData): string {
+  const formatCurrency = (amount: number, currency: string = 'USD') => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+  };
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatShortDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const transactionRows = data.transactions.map(tx => `
+    <tr>
+      <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#475569;">${formatShortDate(tx.date)}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${tx.description}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;font-family:monospace;">${tx.reference}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;text-align:right;color:${tx.type.includes('deposit') || tx.type.includes('credit') ? '#16a34a' : '#dc2626'};font-weight:600;">
+        ${tx.type.includes('deposit') || tx.type.includes('credit') ? '+' : '-'}${formatCurrency(tx.amount, tx.currency)}
+      </td>
+      <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;text-align:right;color:#1e293b;font-weight:500;">${formatCurrency(tx.balance, tx.currency)}</td>
+    </tr>
+  `).join('');
+
+  return `
 <!DOCTYPE html>
-<html>
-<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" style="background:#f0f4f8;padding:40px 20px;">
-    <tr><td align="center">
-      <table width="560" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Statement - Horizon Global Capital</title>
+  <style>
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:800px;margin:0 auto;padding:40px 20px;">
+    
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#0f172a 100%);border-radius:16px 16px 0 0;padding:40px;color:#fff;">
+      <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td style="background:linear-gradient(135deg,#1a1a2e,#0f172a);padding:32px;text-align:center;">
-            <span style="font-size:24px;font-weight:800;color:#D4AF37;">HORIZON</span>
-            <div style="font-size:11px;color:#94a3b8;letter-spacing:2px;margin-top:4px;">GLOBAL CAPITAL</div>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:40px;">
-            <h2 style="color:#1e293b;margin:0 0 16px;">Your Account Statement</h2>
-            <p style="color:#64748b;line-height:1.6;margin:0 0 24px;">
-              Dear ${user.name || 'Valued Customer'},<br><br>
-              Please find attached your account statement for the period <strong>${periodText}</strong>.
-            </p>
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px;">
-              <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Statement Period</p>
-              <p style="margin:0;font-size:16px;color:#1e293b;font-weight:600;">${periodText}</p>
+          <td>
+            <div style="margin-bottom:8px;">
+              <span style="font-size:32px;font-weight:800;color:#D4AF37;">HORIZON</span>
             </div>
-            <p style="color:#64748b;font-size:14px;line-height:1.6;">
-              If you have any questions about your statement, please contact our support team.
-            </p>
+            <div>
+              <span style="font-size:12px;font-weight:600;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;">Global Capital</span>
+            </div>
           </td>
-        </tr>
-        <tr>
-          <td style="background:#f8fafc;padding:24px;text-align:center;border-top:1px solid #e2e8f0;">
-            <p style="margin:0;font-size:12px;color:#94a3b8;">
-              © ${new Date().getFullYear()} Horizon Global Capital Ltd.
-            </p>
+          <td style="text-align:right;">
+            <div style="font-size:24px;font-weight:700;margin-bottom:8px;">Account Statement</div>
+            <div style="font-size:14px;color:#94a3b8;">
+              ${formatDate(data.period.start)} - ${formatDate(data.period.end)}
+            </div>
           </td>
         </tr>
       </table>
-    </td></tr>
+    </div>
+
+    <!-- Account Info -->
+    <div style="background:#fff;padding:32px 40px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="vertical-align:top;width:50%;">
+            <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Account Holder</div>
+            <div style="font-size:18px;font-weight:600;color:#1e293b;margin-bottom:4px;">${data.user.name}</div>
+            <div style="font-size:14px;color:#64748b;">${data.user.email}</div>
+          </td>
+          <td style="vertical-align:top;text-align:right;">
+            <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Account Number</div>
+            <div style="font-size:18px;font-weight:600;color:#1e293b;font-family:monospace;">${data.user.accountNumber}</div>
+            <div style="font-size:12px;color:#64748b;margin-top:8px;">Generated: ${formatDate(new Date())}</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Account Summary -->
+    <div style="background:#f8fafc;padding:24px 40px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
+      <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:16px;">Account Summary</div>
+      <table width="100%" cellpadding="0" cellspacing="8">
+        <tr>
+          ${data.accounts.map(acc => `
+            <td style="background:#fff;padding:20px;border-radius:12px;border:1px solid #e2e8f0;text-align:center;">
+              <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">${acc.type}</div>
+              <div style="font-size:24px;font-weight:700;color:#1e293b;">${formatCurrency(acc.closingBalance, acc.currency)}</div>
+            </td>
+          `).join('')}
+        </tr>
+      </table>
+    </div>
+
+    <!-- Summary Stats -->
+    <div style="background:#fff;padding:24px 40px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="text-align:center;padding:16px;">
+            <div style="font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Total Credits</div>
+            <div style="font-size:20px;font-weight:700;color:#16a34a;">+${formatCurrency(data.summary.totalCredits)}</div>
+          </td>
+          <td style="text-align:center;padding:16px;border-left:1px solid #e2e8f0;">
+            <div style="font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Total Debits</div>
+            <div style="font-size:20px;font-weight:700;color:#dc2626;">-${formatCurrency(data.summary.totalDebits)}</div>
+          </td>
+          <td style="text-align:center;padding:16px;border-left:1px solid #e2e8f0;">
+            <div style="font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Fees</div>
+            <div style="font-size:20px;font-weight:700;color:#f59e0b;">${formatCurrency(data.summary.totalFees)}</div>
+          </td>
+          <td style="text-align:center;padding:16px;border-left:1px solid #e2e8f0;">
+            <div style="font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Net Change</div>
+            <div style="font-size:20px;font-weight:700;color:${data.summary.netChange >= 0 ? '#16a34a' : '#dc2626'};">
+              ${data.summary.netChange >= 0 ? '+' : ''}${formatCurrency(data.summary.netChange)}
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Transactions -->
+    <div style="background:#fff;padding:32px 40px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
+      <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:16px;">Transaction History</div>
+      ${data.transactions.length > 0 ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+          <thead>
+            <tr style="background:#f8fafc;">
+              <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e2e8f0;">Date</th>
+              <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e2e8f0;">Description</th>
+              <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e2e8f0;">Reference</th>
+              <th style="padding:12px 16px;text-align:right;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e2e8f0;">Amount</th>
+              <th style="padding:12px 16px;text-align:right;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e2e8f0;">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${transactionRows}
+          </tbody>
+        </table>
+      ` : `
+        <div style="text-align:center;padding:40px;color:#64748b;">
+          No transactions found for this period.
+        </div>
+      `}
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f8fafc;border-radius:0 0 16px 16px;padding:24px 40px;border:1px solid #e2e8f0;border-top:none;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="font-size:11px;color:#64748b;line-height:1.6;">
+            <p style="margin:0 0 8px;">This statement is for informational purposes. Report discrepancies within 30 days.</p>
+            <p style="margin:0;">Questions? Contact support@horizonglobalcapital.com</p>
+          </td>
+          <td style="text-align:right;font-size:11px;color:#94a3b8;">
+            <p style="margin:0;">© ${new Date().getFullYear()} Horizon Global Capital Ltd.</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+</body>
+</html>`;
+}
+
+// ============================================
+// SEND STATEMENT EMAIL
+// ============================================
+export async function sendStatementEmail(
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+  accountType?: 'checking' | 'savings' | 'investment' | 'all'
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const data = await generateStatementData(userId, startDate, endDate, accountType);
+    
+    if (!data) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const formatDate = (date: Date) => {
+      return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+    };
+
+    const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    };
+
+    const subject = `Your Account Statement - ${formatDate(startDate)} to ${formatDate(endDate)}`;
+
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a1a2e 0%,#0f172a 100%);padding:32px;text-align:center;">
+              <span style="font-size:28px;font-weight:800;color:#D4AF37;">HORIZON</span>
+              <div style="font-size:11px;color:#94a3b8;letter-spacing:2px;margin-top:4px;">GLOBAL CAPITAL</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <h1 style="margin:0 0 16px;font-size:24px;color:#1e293b;">Your Statement is Ready</h1>
+              <p style="margin:0 0 24px;font-size:16px;color:#64748b;line-height:1.6;">
+                Dear ${data.user.name},<br><br>
+                Your account statement for <strong>${formatDate(startDate)}</strong> to <strong>${formatDate(endDate)}</strong> is ready.
+              </p>
+              
+              <div style="background:#f8fafc;border-radius:12px;padding:24px;margin-bottom:24px;">
+                <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:16px;">Summary</div>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:8px 0;color:#64748b;">Credits:</td>
+                    <td style="padding:8px 0;text-align:right;color:#16a34a;font-weight:600;">+${formatCurrency(data.summary.totalCredits)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:8px 0;color:#64748b;">Debits:</td>
+                    <td style="padding:8px 0;text-align:right;color:#dc2626;font-weight:600;">-${formatCurrency(data.summary.totalDebits)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:8px 0;color:#64748b;">Fees:</td>
+                    <td style="padding:8px 0;text-align:right;color:#f59e0b;font-weight:600;">${formatCurrency(data.summary.totalFees)}</td>
+                  </tr>
+                  <tr style="border-top:1px solid #e2e8f0;">
+                    <td style="padding:12px 0 0;color:#1e293b;font-weight:600;">Net Change:</td>
+                    <td style="padding:12px 0 0;text-align:right;color:${data.summary.netChange >= 0 ? '#16a34a' : '#dc2626'};font-weight:700;font-size:18px;">
+                      ${data.summary.netChange >= 0 ? '+' : ''}${formatCurrency(data.summary.netChange)}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <p style="margin:0;font-size:14px;color:#64748b;">
+                Log in to your dashboard to view the full statement with all transaction details.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f8fafc;padding:24px;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:12px;color:#64748b;">
+                © ${new Date().getFullYear()} Horizon Global Capital Ltd.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
   </table>
 </body>
 </html>`;
 
     await (mail as any).sendEmail({
-      to: user.email,
-      subject: `Your Account Statement - ${periodText}`,
-      html,
-      text: `Your Horizon Global Capital account statement for ${periodText} is attached.`,
-      attachments: [{ filename, content: pdfBuffer }],
+      to: data.user.email,
+      subject,
+      html: emailHtml,
     });
 
-    return true;
-  } catch (error) {
-    console.error('[Statement] Failed to email statement:', error);
-    return false;
+    return { success: true, message: 'Statement sent successfully' };
+  } catch (error: any) {
+    console.error('[Statement] Error:', error);
+    return { success: false, message: error.message || 'Failed to send statement' };
   }
-}
-
-// ============================================
-// HELPERS
-// ============================================
-async function calculateOpeningBalance(
-  userId: string,
-  startDate: Date,
-  accountType: string
-): Promise<number> {
-  const user = await User.findById(userId);
-  if (!user) return 0;
-
-  // Get all transactions before start date
-  const query: any = {
-    userId,
-    date: { $lt: startDate },
-  };
-  if (accountType !== 'all') {
-    query.accountType = accountType;
-  }
-
-  const priorTransactions = await Transaction.find(query);
-  
-  let balance = 0;
-  priorTransactions.forEach(tx => {
-    if (isCredit(tx.type)) {
-      balance += tx.amount;
-    } else {
-      balance -= tx.amount;
-    }
-  });
-
-  return balance;
-}
-
-function calculateClosingBalance(openingBalance: number, transactions: any[]): number {
-  let balance = openingBalance;
-  transactions.forEach(tx => {
-    if (isCredit(tx.type)) {
-      balance += tx.amount;
-    } else {
-      balance -= tx.amount;
-    }
-  });
-  return balance;
-}
-
-function isCredit(type: string): boolean {
-  return /deposit|transfer-in|interest|credit/i.test(type || '');
-}
-
-function isDebit(type: string): boolean {
-  return /withdraw|transfer-out|fee|debit|payment/i.test(type || '');
-}
-
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function formatCurrency(amount: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-  }).format(amount);
-}
-
-function maskAccountNumber(accountNumber: string): string {
-  if (accountNumber.length <= 4) return accountNumber;
-  return '****' + accountNumber.slice(-4);
-}
-
-function truncate(str: string, length: number): string {
-  if (str.length <= length) return str;
-  return str.substring(0, length - 3) + '...';
 }

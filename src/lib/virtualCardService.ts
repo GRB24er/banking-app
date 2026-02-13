@@ -842,4 +842,4 @@ async function sendCardRejectedEmail(email: string, name: string, card: any): Pr
   });
 }
 
-export { VirtualCard, CARD_TIERS };
+export { VirtualCard };

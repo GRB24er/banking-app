@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Transaction type and updates required' }, { status: 400 });
     }
 
-    const updated = await updateFeeConfig(transactionType, updates, user._id.toString());
+    const updated = await updateFeeConfig(transactionType, updates);
 
     return NextResponse.json({
       success: true,
