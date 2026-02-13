@@ -42,6 +42,51 @@ interface RevealedCard {
   cardholderName: string;
 }
 
+// Visa SVG Logo
+const VisaLogo = () => (
+  <svg viewBox="0 0 780 500" className={styles.cardLogo}>
+    <path d="M293.2 348.7l33.4-195.8h53.4l-33.4 195.8h-53.4zM540.7 159.6c-10.6-4-27.2-8.3-47.9-8.3-52.8 0-90 26.6-90.3 64.7-.3 28.2 26.5 43.9 46.8 53.3 20.8 9.6 27.8 15.7 27.7 24.3-.1 13.1-16.6 19.1-32 19.1-21.4 0-32.7-3-50.3-10.2l-6.9-3.1-7.5 43.8c12.5 5.5 35.6 10.2 59.6 10.5 56.1 0 92.5-26.3 92.9-67 .2-22.3-14-39.3-44.8-53.3-18.7-9.1-30.1-15.1-30-24.3 0-8.1 9.7-16.8 30.6-16.8 17.5-.3 30.1 3.5 40 7.5l4.8 2.3 7.3-42.5zM646.2 152.9h-41.3c-12.8 0-22.4 3.5-28 16.3l-79.4 179.5h56.1s9.2-24.2 11.3-29.5c6.1 0 60.5.1 68.3.1 1.6 6.9 6.5 29.4 6.5 29.4h49.6l-43.1-195.8zm-65.7 126.5c4.4-11.3 21.3-54.7 21.3-54.7-.3.5 4.4-11.3 7.1-18.7l3.6 16.9s10.2 46.9 12.4 56.5h-44.4zM235.1 152.9l-52.4 133.5-5.6-27.1c-9.7-31.2-40-65.1-73.8-82l47.8 171.3 56.5-.1 84-195.7h-56.5z" fill="#fff"/>
+    <path d="M146.9 152.9H60.9l-.7 4c67 16.2 111.4 55.4 129.8 102.5l-18.7-90c-3.2-12.3-12.6-16.1-24.4-16.5z" fill="#F7B600"/>
+  </svg>
+);
+
+// Mastercard SVG Logo
+const MastercardLogo = () => (
+  <svg viewBox="0 0 780 500" className={styles.cardLogo}>
+    <circle cx="250" cy="250" r="150" fill="#EB001B"/>
+    <circle cx="530" cy="250" r="150" fill="#F79E1B"/>
+    <path d="M390 120.8c-46.5 36.8-76.2 93.7-76.2 157.2s29.7 120.4 76.2 157.2c46.5-36.8 76.2-93.7 76.2-157.2s-29.7-120.4-76.2-157.2z" fill="#FF5F00"/>
+  </svg>
+);
+
+// Chip SVG
+const ChipSVG = () => (
+  <svg viewBox="0 0 50 40" className={styles.chip}>
+    <rect x="0" y="0" width="50" height="40" rx="5" fill="url(#chipGradient)"/>
+    <defs>
+      <linearGradient id="chipGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FFD700"/>
+        <stop offset="50%" stopColor="#DAA520"/>
+        <stop offset="100%" stopColor="#B8860B"/>
+      </linearGradient>
+    </defs>
+    <line x1="0" y1="13" x2="50" y2="13" stroke="#B8860B" strokeWidth="2"/>
+    <line x1="0" y1="27" x2="50" y2="27" stroke="#B8860B" strokeWidth="2"/>
+    <line x1="17" y1="0" x2="17" y2="40" stroke="#B8860B" strokeWidth="2"/>
+    <line x1="33" y1="0" x2="33" y2="40" stroke="#B8860B" strokeWidth="2"/>
+  </svg>
+);
+
+// Contactless SVG
+const ContactlessSVG = () => (
+  <svg viewBox="0 0 24 24" className={styles.contactless}>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="none"/>
+    <path d="M7.5 12.5c1.5-1.5 3.5-2 5.5-1.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+    <path d="M6 15c2.5-2.5 6-3 9-2" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+    <path d="M4.5 17.5c3.5-3.5 8.5-4 12.5-2.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+  </svg>
+);
+
 export default function CardsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -128,7 +173,6 @@ export default function CardsPage() {
     setError("");
 
     try {
-      // Step 1: Generate reveal token
       const tokenRes = await fetch("/api/cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -141,7 +185,6 @@ export default function CardsPage() {
       const tokenData = await tokenRes.json();
       if (!tokenRes.ok) throw new Error(tokenData.error || "Failed to generate token");
 
-      // Step 2: Reveal card with token
       const revealRes = await fetch("/api/cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -192,8 +235,22 @@ export default function CardsPage() {
     }
   };
 
-  const getTierColor = (tier: string) => {
-    return tiers[tier]?.color || "#64748b";
+  const getCardBackground = (cardType: string, cardTier: string) => {
+    if (cardType === "visa") {
+      switch (cardTier) {
+        case "gold": return "linear-gradient(135deg, #1a1f71 0%, #2d3494 50%, #1a1f71 100%)";
+        case "platinum": return "linear-gradient(135deg, #0f1419 0%, #2c3e50 50%, #0f1419 100%)";
+        case "black": return "linear-gradient(135deg, #000000 0%, #1c1c1c 50%, #000000 100%)";
+        default: return "linear-gradient(135deg, #1a1f71 0%, #00579f 100%)";
+      }
+    } else {
+      switch (cardTier) {
+        case "gold": return "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)";
+        case "platinum": return "linear-gradient(135deg, #1c1c1c 0%, #363636 50%, #1c1c1c 100%)";
+        case "black": return "linear-gradient(135deg, #000000 0%, #0d0d0d 50%, #000000 100%)";
+        default: return "linear-gradient(135deg, #1a1a1a 0%, #333333 100%)";
+      }
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -224,7 +281,6 @@ export default function CardsPage() {
       <div className={styles.main}>
         <Header />
         <div className={styles.content}>
-          {/* Page Header */}
           <div className={styles.pageHeader}>
             <div>
               <h1>Virtual Cards</h1>
@@ -238,11 +294,9 @@ export default function CardsPage() {
             </button>
           </div>
 
-          {/* Messages */}
           {error && <div className={styles.error}>{error}</div>}
           {success && <div className={styles.success}>{success}</div>}
 
-          {/* Cards Grid */}
           {cards.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>💳</div>
@@ -259,45 +313,69 @@ export default function CardsPage() {
             <div className={styles.cardsGrid}>
               {cards.map((card) => (
                 <div key={card._id} className={styles.cardContainer}>
-                  {/* Card Visual */}
+                  {/* Realistic Card Design */}
                   <div
                     className={styles.cardVisual}
-                    style={{
-                      background: `linear-gradient(135deg, ${getTierColor(card.cardTier)} 0%, ${getTierColor(card.cardTier)}dd 100%)`,
-                    }}
+                    style={{ background: getCardBackground(card.cardType, card.cardTier) }}
                   >
-                    <div className={styles.cardHeader}>
-                      <span className={styles.cardType}>{card.cardType.toUpperCase()}</span>
-                      <span
-                        className={styles.cardStatus}
-                        style={{ background: getStatusColor(card.status) }}
-                      >
-                        {card.status}
-                      </span>
+                    {/* Top Row - Bank Name & Contactless */}
+                    <div className={styles.cardTopRow}>
+                      <div className={styles.bankName}>HORIZON GLOBAL CAPITAL</div>
+                      <ContactlessSVG />
                     </div>
+
+                    {/* Chip */}
+                    <div className={styles.chipContainer}>
+                      <ChipSVG />
+                    </div>
+
+                    {/* Card Number */}
                     <div className={styles.cardNumber}>
-                      •••• •••• •••• {card.cardNumberLast4 || "****"}
+                      <span>••••</span>
+                      <span>••••</span>
+                      <span>••••</span>
+                      <span>{card.cardNumberLast4 || "••••"}</span>
                     </div>
-                    <div className={styles.cardFooter}>
-                      <div>
+
+                    {/* Card Details Row */}
+                    <div className={styles.cardDetailsRow}>
+                      <div className={styles.cardHolder}>
                         <span className={styles.cardLabel}>CARD HOLDER</span>
                         <span className={styles.cardValue}>{card.cardholderName}</span>
                       </div>
-                      <div>
-                        <span className={styles.cardLabel}>EXPIRES</span>
+                      <div className={styles.cardExpiry}>
+                        <span className={styles.cardLabel}>VALID THRU</span>
                         <span className={styles.cardValue}>
                           {card.expiryMonth && card.expiryYear
                             ? `${card.expiryMonth}/${card.expiryYear}`
-                            : "--/--"}
+                            : "••/••"}
                         </span>
                       </div>
                     </div>
-                    <div className={styles.cardTierBadge}>
+
+                    {/* Card Logo */}
+                    <div className={styles.cardLogoContainer}>
+                      {card.cardType === "visa" ? <VisaLogo /> : <MastercardLogo />}
+                    </div>
+
+                    {/* Status Badge */}
+                    <div
+                      className={styles.cardStatusBadge}
+                      style={{ background: getStatusColor(card.status) }}
+                    >
+                      {card.status}
+                    </div>
+
+                    {/* Tier Badge */}
+                    <div className={styles.tierBadge}>
                       {tiers[card.cardTier]?.name || card.cardTier}
                     </div>
+
+                    {/* Hologram Effect */}
+                    <div className={styles.hologram}></div>
                   </div>
 
-                  {/* Card Details */}
+                  {/* Card Info Section */}
                   <div className={styles.cardDetails}>
                     <div className={styles.cardReference}>
                       Ref: {card.cardReference}
@@ -306,20 +384,25 @@ export default function CardsPage() {
                     <div className={styles.limitsSection}>
                       <h4>Spending Limits</h4>
                       <div className={styles.limitRow}>
-                        <span>Daily</span>
+                        <span>Daily Limit</span>
                         <span>{formatCurrency(card.dailyLimit)}</span>
                       </div>
                       <div className={styles.limitRow}>
-                        <span>Monthly</span>
+                        <span>Monthly Limit</span>
                         <span>{formatCurrency(card.monthlyLimit)}</span>
                       </div>
                       <div className={styles.limitRow}>
-                        <span>This Month</span>
+                        <span>Spent This Month</span>
                         <span>{formatCurrency(card.currentMonthSpent)}</span>
+                      </div>
+                      <div className={styles.limitProgress}>
+                        <div 
+                          className={styles.limitProgressBar}
+                          style={{ width: `${Math.min((card.currentMonthSpent / card.monthlyLimit) * 100, 100)}%` }}
+                        ></div>
                       </div>
                     </div>
 
-                    {/* Card Actions */}
                     <div className={styles.cardActions}>
                       {card.status === "active" && (
                         <>
@@ -342,7 +425,7 @@ export default function CardsPage() {
                           className={styles.unfreezeBtn}
                           onClick={() => handleFreezeCard(card._id, "unfreeze")}
                         >
-                          🔓 Unfreeze
+                          🔓 Unfreeze Card
                         </button>
                       )}
                       {card.status === "pending" && (
@@ -352,7 +435,7 @@ export default function CardsPage() {
                       )}
                       {card.status === "processing" && (
                         <div className={styles.processingMessage}>
-                          ⚙️ Being processed
+                          ⚙️ Card is being processed
                         </div>
                       )}
                     </div>
@@ -378,16 +461,16 @@ export default function CardsPage() {
                 <label>Card Network</label>
                 <div className={styles.cardTypeOptions}>
                   <button
-                    className={`${styles.cardTypeBtn} ${requestForm.cardType === "visa" ? styles.active : ""}`}
+                    className={`${styles.cardTypeBtn} ${styles.visaBtn} ${requestForm.cardType === "visa" ? styles.active : ""}`}
                     onClick={() => setRequestForm({ ...requestForm, cardType: "visa" })}
                   >
-                    VISA
+                    <VisaLogo />
                   </button>
                   <button
-                    className={`${styles.cardTypeBtn} ${requestForm.cardType === "mastercard" ? styles.active : ""}`}
+                    className={`${styles.cardTypeBtn} ${styles.mastercardBtn} ${requestForm.cardType === "mastercard" ? styles.active : ""}`}
                     onClick={() => setRequestForm({ ...requestForm, cardType: "mastercard" })}
                   >
-                    MASTERCARD
+                    <MastercardLogo />
                   </button>
                 </div>
               </div>
@@ -400,17 +483,16 @@ export default function CardsPage() {
                       key={key}
                       className={`${styles.tierOption} ${requestForm.cardTier === key ? styles.active : ""}`}
                       onClick={() => setRequestForm({ ...requestForm, cardTier: key })}
-                      style={{ borderColor: requestForm.cardTier === key ? tier.color : undefined }}
                     >
-                      <div className={styles.tierColor} style={{ background: tier.color }}></div>
-                      <div className={styles.tierInfo}>
+                      <div className={styles.tierHeader}>
                         <span className={styles.tierName}>{tier.name}</span>
-                        <span className={styles.tierLimits}>
-                          Daily: {formatCurrency(tier.dailyLimit)} | Monthly: {formatCurrency(tier.monthlyLimit)}
+                        <span className={styles.tierFee}>
+                          {tier.fee === 0 ? "Free" : `$${tier.fee}/mo`}
                         </span>
                       </div>
-                      <div className={styles.tierFee}>
-                        {tier.fee === 0 ? "Free" : `$${tier.fee}/mo`}
+                      <div className={styles.tierLimits}>
+                        <div>Daily: {formatCurrency(tier.dailyLimit)}</div>
+                        <div>Monthly: {formatCurrency(tier.monthlyLimit)}</div>
                       </div>
                     </div>
                   ))}
@@ -465,12 +547,25 @@ export default function CardsPage() {
                   <div className={styles.securityWarning}>
                     🔒 These details are shown once. Do not share with anyone.
                   </div>
+                  
+                  {/* Mini Card Preview */}
+                  <div 
+                    className={styles.miniCardPreview}
+                    style={{ background: getCardBackground(selectedCard?.cardType || "visa", selectedCard?.cardTier || "standard") }}
+                  >
+                    <div className={styles.miniCardLogo}>
+                      {selectedCard?.cardType === "visa" ? <VisaLogo /> : <MastercardLogo />}
+                    </div>
+                    <div className={styles.miniCardNumber}>{revealedCard.cardNumber}</div>
+                  </div>
+
                   <div className={styles.revealField}>
                     <label>Card Number</label>
                     <div className={styles.revealValue}>
-                      {revealedCard.cardNumber}
+                      <span>{revealedCard.cardNumber}</span>
                       <button
                         onClick={() => navigator.clipboard.writeText(revealedCard.cardNumber.replace(/\s/g, ""))}
+                        title="Copy"
                       >
                         📋
                       </button>
@@ -479,13 +574,15 @@ export default function CardsPage() {
                   <div className={styles.revealRow}>
                     <div className={styles.revealField}>
                       <label>Expiry Date</label>
-                      <div className={styles.revealValue}>{revealedCard.expiry}</div>
+                      <div className={styles.revealValue}>
+                        <span>{revealedCard.expiry}</span>
+                      </div>
                     </div>
                     <div className={styles.revealField}>
                       <label>CVV</label>
                       <div className={styles.revealValue}>
-                        {revealedCard.cvv}
-                        <button onClick={() => navigator.clipboard.writeText(revealedCard.cvv)}>
+                        <span>{revealedCard.cvv}</span>
+                        <button onClick={() => navigator.clipboard.writeText(revealedCard.cvv)} title="Copy">
                           📋
                         </button>
                       </div>
@@ -493,7 +590,9 @@ export default function CardsPage() {
                   </div>
                   <div className={styles.revealField}>
                     <label>Cardholder Name</label>
-                    <div className={styles.revealValue}>{revealedCard.cardholderName}</div>
+                    <div className={styles.revealValue}>
+                      <span>{revealedCard.cardholderName}</span>
+                    </div>
                   </div>
                 </div>
               ) : (

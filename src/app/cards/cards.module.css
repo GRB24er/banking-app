@@ -126,90 +126,165 @@
 /* Cards Grid */
 .cardsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 2rem;
 }
 
 .cardContainer {
   background: white;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(212, 175, 55, 0.15);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
-/* Card Visual */
+.cardContainer:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* REALISTIC CARD DESIGN */
 .cardVisual {
+  position: relative;
   padding: 1.5rem;
   color: white;
-  position: relative;
-  min-height: 200px;
+  height: 220px;
   display: flex;
   flex-direction: column;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  background-size: cover;
 }
 
-.cardHeader {
+/* Hologram effect */
+.hologram {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.03) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.cardTopRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
 }
 
-.cardType {
-  font-size: 0.875rem;
+.bankName {
+  font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
+  opacity: 0.9;
+  text-transform: uppercase;
 }
 
-.cardStatus {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
+.contactless {
+  width: 24px;
+  height: 24px;
+  opacity: 0.8;
+  transform: rotate(90deg);
+}
+
+.chipContainer {
+  margin: 0.5rem 0 1rem;
+}
+
+.chip {
+  width: 45px;
+  height: 35px;
+  border-radius: 6px;
 }
 
 .cardNumber {
-  font-size: 1.5rem;
-  font-family: monospace;
-  letter-spacing: 0.15em;
+  display: flex;
+  gap: 1rem;
+  font-size: 1.4rem;
+  font-family: 'OCR A Std', 'Courier New', monospace;
+  letter-spacing: 0.1em;
   margin-bottom: auto;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.cardFooter {
+.cardNumber span {
+  min-width: 55px;
+}
+
+.cardDetailsRow {
   display: flex;
   justify-content: space-between;
-  margin-top: 1.5rem;
+  align-items: flex-end;
+  margin-top: auto;
+}
+
+.cardHolder, .cardExpiry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .cardLabel {
-  display: block;
-  font-size: 0.625rem;
-  opacity: 0.7;
+  font-size: 0.55rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
 }
 
 .cardValue {
-  display: block;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-top: 0.25rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.cardTierBadge {
+.cardLogoContainer {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.5rem;
+}
+
+.cardLogo {
+  width: 70px;
+  height: 45px;
+}
+
+.cardStatusBadge {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: rgba(255, 255, 255, 0.2);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  backdrop-filter: blur(4px);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
 }
 
-/* Card Details */
+.tierBadge {
+  position: absolute;
+  top: 2.5rem;
+  right: 1rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+/* Card Details Section */
 .cardDetails {
   padding: 1.5rem;
 }
@@ -218,6 +293,10 @@
   font-size: 0.75rem;
   color: #6b7280;
   font-family: monospace;
+  margin-bottom: 1rem;
+}
+
+.limitsSection {
   margin-bottom: 1rem;
 }
 
@@ -246,18 +325,33 @@
   color: #1a1a2e;
 }
 
+.limitProgress {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin-top: 0.75rem;
+  overflow: hidden;
+}
+
+.limitProgressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #D4AF37, #F4D03F);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
 /* Card Actions */
 .cardActions {
   display: flex;
   gap: 0.75rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .revealBtn, .freezeBtn, .unfreezeBtn {
   flex: 1;
   padding: 0.75rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   font-size: 0.875rem;
   cursor: pointer;
@@ -281,7 +375,8 @@
 }
 
 .revealBtn:hover, .freezeBtn:hover, .unfreezeBtn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .pendingMessage, .processingMessage {
@@ -290,8 +385,9 @@
   padding: 0.75rem;
   background: #fef3c7;
   color: #92400e;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .processingMessage {
@@ -303,7 +399,8 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -313,11 +410,12 @@
 
 .modal {
   background: white;
-  border-radius: 16px;
+  border-radius: 20px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .modalHeader {
@@ -340,6 +438,17 @@
   font-size: 1.5rem;
   cursor: pointer;
   color: #6b7280;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.modalHeader button:hover {
+  background: #f1f5f9;
 }
 
 .modalBody {
@@ -362,15 +471,16 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .formGroup input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
   font-size: 1rem;
+  transition: border-color 0.2s;
 }
 
 .formGroup input:focus {
@@ -378,6 +488,7 @@
   border-color: #D4AF37;
 }
 
+/* Card Type Selection */
 .cardTypeOptions {
   display: flex;
   gap: 1rem;
@@ -385,20 +496,40 @@
 
 .cardTypeBtn {
   flex: 1;
-  padding: 1rem;
-  border: 2px solid #e5e7eb;
+  padding: 1.5rem;
+  border: 3px solid #e5e7eb;
   background: white;
-  border-radius: 8px;
-  font-weight: 700;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardTypeBtn.visaBtn {
+  background: linear-gradient(135deg, #1a1f71 0%, #00579f 100%);
+}
+
+.cardTypeBtn.mastercardBtn {
+  background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+}
+
+.cardTypeBtn .cardLogo {
+  width: 80px;
+  height: 50px;
 }
 
 .cardTypeBtn.active {
   border-color: #D4AF37;
-  background: rgba(212, 175, 55, 0.1);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
 }
 
+.cardTypeBtn:hover:not(.active) {
+  border-color: #D4AF37;
+}
+
+/* Tier Options */
 .tierOptions {
   display: flex;
   flex-direction: column;
@@ -406,41 +537,32 @@
 }
 
 .tierOption {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   border: 2px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
+.tierOption:hover {
+  border-color: #D4AF37;
+}
+
 .tierOption.active {
+  border-color: #D4AF37;
   background: rgba(212, 175, 55, 0.05);
 }
 
-.tierColor {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-}
-
-.tierInfo {
-  flex: 1;
+.tierHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
 }
 
 .tierName {
-  display: block;
-  font-weight: 600;
+  font-weight: 700;
   color: #1a1a2e;
-}
-
-.tierLimits {
-  display: block;
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
 }
 
 .tierFee {
@@ -448,11 +570,18 @@
   color: #D4AF37;
 }
 
+.tierLimits {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
 .cancelBtn, .submitBtn {
   flex: 1;
   padding: 0.875rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -463,9 +592,18 @@
   color: #475569;
 }
 
+.cancelBtn:hover {
+  background: #e2e8f0;
+}
+
 .submitBtn {
   background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
   color: #1a1a2e;
+}
+
+.submitBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
 }
 
 .submitBtn:disabled {
@@ -473,10 +611,15 @@
   cursor: not-allowed;
 }
 
-/* Reveal Card */
+/* Reveal Card Styles */
 .revealLoading {
   text-align: center;
-  padding: 2rem;
+  padding: 3rem;
+}
+
+.revealLoading p {
+  margin-top: 1rem;
+  color: #6b7280;
 }
 
 .revealedCard {
@@ -486,26 +629,54 @@
 }
 
 .securityWarning {
-  background: #fef3c7;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   color: #92400e;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  padding: 1rem;
+  border-radius: 10px;
   font-size: 0.875rem;
   text-align: center;
+  font-weight: 500;
+}
+
+.miniCardPreview {
+  padding: 1.5rem;
+  border-radius: 12px;
+  color: white;
+  position: relative;
+}
+
+.miniCardLogo {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.miniCardLogo .cardLogo {
+  width: 50px;
+  height: 32px;
+}
+
+.miniCardNumber {
+  font-size: 1.25rem;
+  font-family: 'OCR A Std', 'Courier New', monospace;
+  letter-spacing: 0.15em;
+  margin-top: 2rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .revealField {
   background: #f8fafc;
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .revealField label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #6b7280;
   text-transform: uppercase;
-  margin-bottom: 0.25rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
 }
 
 .revealValue {
@@ -514,15 +685,22 @@
   align-items: center;
   font-size: 1.25rem;
   font-weight: 600;
-  font-family: monospace;
+  font-family: 'SF Mono', Monaco, monospace;
   color: #1a1a2e;
 }
 
 .revealValue button {
-  background: none;
+  background: #e5e7eb;
   border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 1rem;
+  transition: background 0.2s;
+}
+
+.revealValue button:hover {
+  background: #d1d5db;
 }
 
 .revealRow {
@@ -537,6 +715,7 @@
   padding: 2rem;
 }
 
+/* Responsive */
 @media (max-width: 768px) {
   .main {
     margin-left: 0;
@@ -554,5 +733,14 @@
   
   .cardsGrid {
     grid-template-columns: 1fr;
+  }
+  
+  .cardNumber {
+    font-size: 1.1rem;
+    gap: 0.5rem;
+  }
+  
+  .cardTypeOptions {
+    flex-direction: column;
   }
 }
