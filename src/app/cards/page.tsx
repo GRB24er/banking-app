@@ -1,103 +1,206 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import styles from "./cards.module.css";
 
-const CARD_LOGOS = {
-  'Visa': 'https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg',
-  'Mastercard': 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
-  'American Express': 'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg',
-  'Discover': 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg'
-};
+interface Card {
+  _id: string;
+  cardReference: string;
+  cardType: string;
+  cardTier: string;
+  cardNumberLast4?: string;
+  cardholderName: string;
+  expiryMonth?: string;
+  expiryYear?: string;
+  currency: string;
+  status: string;
+  spendingLimit: number;
+  dailyLimit: number;
+  monthlyLimit: number;
+  currentMonthSpent: number;
+  requestedAt: string;
+  activatedAt?: string;
+}
+
+interface CardTier {
+  name: string;
+  color: string;
+  dailyLimit: number;
+  monthlyLimit: number;
+  spendingLimit: number;
+  fee: number;
+}
+
+interface RevealedCard {
+  cardNumber: string;
+  expiry: string;
+  cvv: string;
+  cardholderName: string;
+}
 
 export default function CardsPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const { data: session } = useSession();
-  const [selectedCard, setSelectedCard] = useState(0);
-  const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [tiers, setTiers] = useState<Record<string, CardTier>>({});
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showRevealModal, setShowRevealModal] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [revealedCard, setRevealedCard] = useState<RevealedCard | null>(null);
+  const [revealLoading, setRevealLoading] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const [requestForm, setRequestForm] = useState({
+    cardType: "visa",
+    cardTier: "standard",
+    purpose: "",
+  });
 
   useEffect(() => {
-    if (session?.user) {
-      fetchUserCards();
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    } else if (status === "authenticated") {
+      fetchData();
     }
-  }, [session]);
+  }, [status]);
 
-  const fetchUserCards = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/creditcard/apply');
-      const result = await response.json();
-      
-      const approvedCards: any[] = [];
-      
-      if (result.success && result.data) {
-        result.data.forEach((app: any) => {
-          if (app.status === 'approved' && app.workflow?.approval?.cardDetails) {
-            approvedCards.push({
-              id: app._id,
-              type: "Credit",
-              name: getCardName(app.cardPreferences?.cardType),
-              number: app.workflow.approval.cardDetails.cardNumber,
-              expiry: formatExpiry(app.workflow.approval.cardDetails.expiryDate),
-              cvv: app.workflow.approval.cardDetails.cvv,
-              balance: app.workflow.approval.creditLimit,
-              status: "Active",
-              issuer: app.workflow.approval.issuer,
-              cardHolder: session?.user?.name?.toUpperCase() || 'CARD HOLDER',
-              interestRate: app.workflow.approval.interestRate,
-              annualFee: app.workflow.approval.annualFee,
-              color: getCardColor(app.cardPreferences?.cardType)
-            });
-          }
-        });
-      }
-      
-      setCards(approvedCards);
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to fetch cards:', error);
+      const [cardsRes, tiersRes] = await Promise.all([
+        fetch("/api/cards"),
+        fetch("/api/cards?action=tiers"),
+      ]);
+
+      const cardsData = await cardsRes.json();
+      const tiersData = await tiersRes.json();
+
+      if (cardsData.success) setCards(cardsData.cards || []);
+      if (tiersData.success) setTiers(tiersData.tiers || {});
+    } catch (err) {
+      console.error("Error fetching cards:", err);
+    } finally {
       setLoading(false);
     }
   };
 
-  const getCardName = (type: string) => {
-    const names: any = {
-      basic: 'Premium',
-      silver: 'Silver Elite',
-      gold: 'Gold Executive',
-      platinum: 'Platinum Prestige',
-      student: 'Student Plus',
-      secured: 'Secured Build',
-      business: 'Business Pro'
-    };
-    return names[type] || 'Premium';
+  const handleRequestCard = async () => {
+    setRequesting(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const res = await fetch("/api/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "request",
+          ...requestForm,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Failed to request card");
+
+      setSuccess("Card requested successfully! You will be notified once it's approved.");
+      setShowRequestModal(false);
+      fetchData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setRequesting(false);
+    }
   };
 
-  const getCardColor = (type: string) => {
-    const colors: any = {
-      basic: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
-      silver: 'linear-gradient(135deg, #475569 0%, #64748b 100%)',
-      gold: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
-      platinum: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)',
-      student: 'linear-gradient(135deg, #065f46 0%, #059669 100%)',
-      secured: 'linear-gradient(135deg, #374151 0%, #4b5563 100%)',
-      business: 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)'
-    };
-    return colors[type] || colors.basic;
+  const handleRevealCard = async (card: Card) => {
+    setSelectedCard(card);
+    setRevealLoading(true);
+    setShowRevealModal(true);
+    setRevealedCard(null);
+    setError("");
+
+    try {
+      // Step 1: Generate reveal token
+      const tokenRes = await fetch("/api/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "generate_reveal_token",
+          cardId: card._id,
+        }),
+      });
+
+      const tokenData = await tokenRes.json();
+      if (!tokenRes.ok) throw new Error(tokenData.error || "Failed to generate token");
+
+      // Step 2: Reveal card with token
+      const revealRes = await fetch("/api/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reveal",
+          cardId: card._id,
+          token: tokenData.token,
+        }),
+      });
+
+      const revealData = await revealRes.json();
+      if (!revealRes.ok) throw new Error(revealData.error || "Failed to reveal card");
+
+      setRevealedCard(revealData.cardDetails);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setRevealLoading(false);
+    }
   };
 
-  const formatCardNumber = (num: string) => {
-    if (!num) return '';
-    return num.match(/.{1,4}/g)?.join(' ') || num;
+  const handleFreezeCard = async (cardId: string, action: "freeze" | "unfreeze") => {
+    try {
+      const res = await fetch("/api/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, cardId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setSuccess(`Card ${action === "freeze" ? "frozen" : "unfrozen"} successfully`);
+      fetchData();
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
-  const formatExpiry = (date: string) => {
-    if (!date) return '';
-    const d = new Date(date);
-    return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": return "#10b981";
+      case "pending": return "#f59e0b";
+      case "processing": return "#3b82f6";
+      case "frozen": return "#6b7280";
+      case "rejected": return "#ef4444";
+      default: return "#6b7280";
+    }
+  };
+
+  const getTierColor = (tier: string) => {
+    return tiers[tier]?.color || "#64748b";
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
   };
 
   if (loading) {
@@ -106,253 +209,307 @@ export default function CardsPage() {
         <Sidebar />
         <div className={styles.main}>
           <Header />
-          <div style={{ padding: '100px', textAlign: 'center', color: '#64748b' }}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>💳</div>
-            <p>Loading your cards...</p>
+          <div className={styles.loadingScreen}>
+            <div className={styles.spinner}></div>
+            <p>Loading cards...</p>
           </div>
         </div>
       </div>
     );
   }
-
-  if (cards.length === 0) {
-    return (
-      <div className={styles.wrapper}>
-        <Sidebar />
-        <div className={styles.main}>
-          <Header />
-          
-          <div className={styles.content}>
-            <div className={styles.pageHeader}>
-              <div className={styles.headerInfo}>
-                <h1>Card Management</h1>
-                <p>Manage your credit cards</p>
-              </div>
-            </div>
-
-            <div style={{
-              background: '#fff',
-              borderRadius: '24px',
-              padding: '80px 40px',
-              textAlign: 'center',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-              maxWidth: '600px',
-              margin: '60px auto'
-            }}>
-              <div style={{ fontSize: '80px', marginBottom: '24px' }}>💳</div>
-              <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#1e293b', marginBottom: '12px' }}>
-                No Credit Cards Yet
-              </h2>
-              <p style={{ color: '#64748b', fontSize: '16px', marginBottom: '32px' }}>
-                Apply for your first premium credit card and start building your credit
-              </p>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                <button 
-                  className={styles.requestCardBtn}
-                  onClick={() => router.push('/accounts/credit-cards/status')}
-                  style={{ background: '#fff', color: '#D4AF37', border: '2px solid #D4AF37' }}
-                >
-                  📋 My Applications
-                </button>
-                <button 
-                  className={styles.requestCardBtn}
-                  onClick={() => router.push('/accounts/credit-cards/apply')}
-                >
-                  <span>+</span> Apply Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const currentCard = cards[selectedCard];
 
   return (
     <div className={styles.wrapper}>
       <Sidebar />
       <div className={styles.main}>
         <Header />
-        
         <div className={styles.content}>
+          {/* Page Header */}
           <div className={styles.pageHeader}>
-            <div className={styles.headerInfo}>
-              <h1>Card Management</h1>
-              <p>Manage your credit cards</p>
+            <div>
+              <h1>Virtual Cards</h1>
+              <p>Manage your virtual cards for secure online payments</p>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                className={styles.requestCardBtn}
-                onClick={() => router.push('/accounts/credit-cards/status')}
-                style={{ background: '#fff', color: '#D4AF37', border: '2px solid #D4AF37' }}
-              >
-                📋 My Applications
-              </button>
-              <button 
-                className={styles.requestCardBtn}
-                onClick={() => router.push('/accounts/credit-cards/apply')}
-              >
-                <span>+</span> Apply for New Card
-              </button>
-            </div>
+            <button
+              className={styles.requestBtn}
+              onClick={() => setShowRequestModal(true)}
+            >
+              <span>+</span> Request New Card
+            </button>
           </div>
 
-          <div className={styles.cardSection}>
-            <div className={styles.cardDisplay}>
-              <div className={styles.cardVisualContainer}>
-                <div 
-                  className={styles.cardVisual}
-                  style={{ background: currentCard.color }}
-                >
-                  <div className={styles.cardTop}>
-                    {/* ZentriBank Logo */}
-                    <img 
-                      src="https://i.ibb.co/ymwC7HBZ/zentri-bank-logo.png" 
-                      alt="ZentriBank"
-                      style={{
-                        width: '100px',
-                        height: 'auto',
-                        filter: 'brightness(0) invert(1)',
-                        opacity: 0.95
-                      }}
-                    />
-                    
-                    {/* Card Network Logo */}
-                    {currentCard.issuer && CARD_LOGOS[currentCard.issuer as keyof typeof CARD_LOGOS] && (
-                      <img 
-                        src={CARD_LOGOS[currentCard.issuer as keyof typeof CARD_LOGOS]} 
-                        alt={currentCard.issuer}
-                        style={{
-                          width: '60px',
-                          height: 'auto',
-                          filter: 'brightness(0) invert(1)',
-                          opacity: 0.95
-                        }}
-                      />
-                    )}
-                  </div>
+          {/* Messages */}
+          {error && <div className={styles.error}>{error}</div>}
+          {success && <div className={styles.success}>{success}</div>}
 
-                  {/* EMV Chip */}
-                  <div style={{
-                    width: '50px',
-                    height: '40px',
-                    background: 'linear-gradient(135deg, #d4af37 0%, #f4d03f 50%, #c9a436 100%)',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-evenly',
-                    padding: '6px',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.3)',
-                    margin: '20px 0'
-                  }}>
-                    <div style={{ height: '2px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '1px' }}></div>
-                    <div style={{ height: '2px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '1px' }}></div>
-                    <div style={{ height: '2px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '1px' }}></div>
-                    <div style={{ height: '2px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '1px' }}></div>
-                  </div>
-
-                  {/* Contactless Symbol */}
-                  <div style={{ position: 'absolute', right: '32px', top: '100px', opacity: 0.6 }}>
-                    <svg width="30" height="24" viewBox="0 0 30 24" fill="none">
-                      <path d="M8 12C8 8.68629 10.6863 6 14 6" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-                      <path d="M11 12C11 10.3431 12.3431 9 14 9" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-                      <path d="M5 12C5 7.02944 9.02944 3 14 3" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-                      <path d="M2 12C2 5.37258 7.37258 0 14 0" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-                    </svg>
-                  </div>
-
-                  {/* Card Number */}
-                  <div className={styles.cardNumber}>
-                    {formatCardNumber(currentCard.number)}
+          {/* Cards Grid */}
+          {cards.length === 0 ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>💳</div>
+              <h3>No Virtual Cards</h3>
+              <p>Request your first virtual card to start making secure online purchases.</p>
+              <button
+                className={styles.requestBtn}
+                onClick={() => setShowRequestModal(true)}
+              >
+                Request Virtual Card
+              </button>
+            </div>
+          ) : (
+            <div className={styles.cardsGrid}>
+              {cards.map((card) => (
+                <div key={card._id} className={styles.cardContainer}>
+                  {/* Card Visual */}
+                  <div
+                    className={styles.cardVisual}
+                    style={{
+                      background: `linear-gradient(135deg, ${getTierColor(card.cardTier)} 0%, ${getTierColor(card.cardTier)}dd 100%)`,
+                    }}
+                  >
+                    <div className={styles.cardHeader}>
+                      <span className={styles.cardType}>{card.cardType.toUpperCase()}</span>
+                      <span
+                        className={styles.cardStatus}
+                        style={{ background: getStatusColor(card.status) }}
+                      >
+                        {card.status}
+                      </span>
+                    </div>
+                    <div className={styles.cardNumber}>
+                      •••• •••• •••• {card.cardNumberLast4 || "****"}
+                    </div>
+                    <div className={styles.cardFooter}>
+                      <div>
+                        <span className={styles.cardLabel}>CARD HOLDER</span>
+                        <span className={styles.cardValue}>{card.cardholderName}</span>
+                      </div>
+                      <div>
+                        <span className={styles.cardLabel}>EXPIRES</span>
+                        <span className={styles.cardValue}>
+                          {card.expiryMonth && card.expiryYear
+                            ? `${card.expiryMonth}/${card.expiryYear}`
+                            : "--/--"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={styles.cardTierBadge}>
+                      {tiers[card.cardTier]?.name || card.cardTier}
+                    </div>
                   </div>
 
                   {/* Card Details */}
-                  <div className={styles.cardBottom}>
-                    <div>
-                      <div className={styles.cardLabel}>CARD HOLDER</div>
-                      <div className={styles.cardValue}>{currentCard.cardHolder}</div>
+                  <div className={styles.cardDetails}>
+                    <div className={styles.cardReference}>
+                      Ref: {card.cardReference}
                     </div>
-                    <div>
-                      <div className={styles.cardLabel}>VALID THRU</div>
-                      <div className={styles.cardValue}>{currentCard.expiry}</div>
+
+                    <div className={styles.limitsSection}>
+                      <h4>Spending Limits</h4>
+                      <div className={styles.limitRow}>
+                        <span>Daily</span>
+                        <span>{formatCurrency(card.dailyLimit)}</span>
+                      </div>
+                      <div className={styles.limitRow}>
+                        <span>Monthly</span>
+                        <span>{formatCurrency(card.monthlyLimit)}</span>
+                      </div>
+                      <div className={styles.limitRow}>
+                        <span>This Month</span>
+                        <span>{formatCurrency(card.currentMonthSpent)}</span>
+                      </div>
+                    </div>
+
+                    {/* Card Actions */}
+                    <div className={styles.cardActions}>
+                      {card.status === "active" && (
+                        <>
+                          <button
+                            className={styles.revealBtn}
+                            onClick={() => handleRevealCard(card)}
+                          >
+                            👁 Reveal Details
+                          </button>
+                          <button
+                            className={styles.freezeBtn}
+                            onClick={() => handleFreezeCard(card._id, "freeze")}
+                          >
+                            🔒 Freeze
+                          </button>
+                        </>
+                      )}
+                      {card.status === "frozen" && (
+                        <button
+                          className={styles.unfreezeBtn}
+                          onClick={() => handleFreezeCard(card._id, "unfreeze")}
+                        >
+                          🔓 Unfreeze
+                        </button>
+                      )}
+                      {card.status === "pending" && (
+                        <div className={styles.pendingMessage}>
+                          ⏳ Awaiting admin approval
+                        </div>
+                      )}
+                      {card.status === "processing" && (
+                        <div className={styles.processingMessage}>
+                          ⚙️ Being processed
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <Footer />
+      </div>
 
-                {/* Card Selector */}
-                <div className={styles.cardSelector}>
-                  {cards.map((card, index) => (
-                    <button
-                      key={card.id}
-                      className={`${styles.selectorBtn} ${selectedCard === index ? styles.selected : ''}`}
-                      onClick={() => setSelectedCard(index)}
+      {/* Request Card Modal */}
+      {showRequestModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowRequestModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Request Virtual Card</h2>
+              <button onClick={() => setShowRequestModal(false)}>&times;</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label>Card Network</label>
+                <div className={styles.cardTypeOptions}>
+                  <button
+                    className={`${styles.cardTypeBtn} ${requestForm.cardType === "visa" ? styles.active : ""}`}
+                    onClick={() => setRequestForm({ ...requestForm, cardType: "visa" })}
+                  >
+                    VISA
+                  </button>
+                  <button
+                    className={`${styles.cardTypeBtn} ${requestForm.cardType === "mastercard" ? styles.active : ""}`}
+                    onClick={() => setRequestForm({ ...requestForm, cardType: "mastercard" })}
+                  >
+                    MASTERCARD
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Card Tier</label>
+                <div className={styles.tierOptions}>
+                  {Object.entries(tiers).map(([key, tier]) => (
+                    <div
+                      key={key}
+                      className={`${styles.tierOption} ${requestForm.cardTier === key ? styles.active : ""}`}
+                      onClick={() => setRequestForm({ ...requestForm, cardTier: key })}
+                      style={{ borderColor: requestForm.cardTier === key ? tier.color : undefined }}
                     >
-                      <span className={styles.selectorDot}></span>
-                      {card.issuer} {card.name}
-                    </button>
+                      <div className={styles.tierColor} style={{ background: tier.color }}></div>
+                      <div className={styles.tierInfo}>
+                        <span className={styles.tierName}>{tier.name}</span>
+                        <span className={styles.tierLimits}>
+                          Daily: {formatCurrency(tier.dailyLimit)} | Monthly: {formatCurrency(tier.monthlyLimit)}
+                        </span>
+                      </div>
+                      <div className={styles.tierFee}>
+                        {tier.fee === 0 ? "Free" : `$${tier.fee}/mo`}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Card Info */}
-              <div className={styles.cardInfo}>
-                <h3>Card Details</h3>
-                
-                <div className={styles.infoGrid}>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Card Network</span>
-                    <span className={styles.infoValue}>{currentCard.issuer}</span>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Card Type</span>
-                    <span className={styles.infoValue}>{currentCard.name}</span>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Status</span>
-                    <span className={`${styles.infoValue} ${styles.statusActive}`}>
-                      {currentCard.status}
-                    </span>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Credit Limit</span>
-                    <span className={styles.infoValue}>
-                      ${currentCard.balance.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>APR</span>
-                    <span className={styles.infoValue}>{currentCard.interestRate}%</span>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>Annual Fee</span>
-                    <span className={styles.infoValue}>
-                      ${currentCard.annualFee}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card Actions */}
-                <div className={styles.cardActions}>
-                  <button className={styles.actionBtn}>
-                    <span>🔒</span> Lock Card
-                  </button>
-                  <button className={styles.actionBtn}>
-                    <span>🔢</span> Change PIN
-                  </button>
-                  <button className={styles.actionBtn}>
-                    <span>🌍</span> Travel Notice
-                  </button>
-                  <button className={styles.actionBtn}>
-                    <span>📊</span> View Statement
-                  </button>
-                </div>
+              <div className={styles.formGroup}>
+                <label>Purpose (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Online shopping, Subscriptions"
+                  value={requestForm.purpose}
+                  onChange={(e) => setRequestForm({ ...requestForm, purpose: e.target.value })}
+                />
               </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.cancelBtn}
+                onClick={() => setShowRequestModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.submitBtn}
+                onClick={handleRequestCard}
+                disabled={requesting}
+              >
+                {requesting ? "Requesting..." : "Request Card"}
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Reveal Card Modal */}
+      {showRevealModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowRevealModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Card Details</h2>
+              <button onClick={() => setShowRevealModal(false)}>&times;</button>
+            </div>
+            <div className={styles.modalBody}>
+              {revealLoading ? (
+                <div className={styles.revealLoading}>
+                  <div className={styles.spinner}></div>
+                  <p>Securely retrieving card details...</p>
+                </div>
+              ) : revealedCard ? (
+                <div className={styles.revealedCard}>
+                  <div className={styles.securityWarning}>
+                    🔒 These details are shown once. Do not share with anyone.
+                  </div>
+                  <div className={styles.revealField}>
+                    <label>Card Number</label>
+                    <div className={styles.revealValue}>
+                      {revealedCard.cardNumber}
+                      <button
+                        onClick={() => navigator.clipboard.writeText(revealedCard.cardNumber.replace(/\s/g, ""))}
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+                  <div className={styles.revealRow}>
+                    <div className={styles.revealField}>
+                      <label>Expiry Date</label>
+                      <div className={styles.revealValue}>{revealedCard.expiry}</div>
+                    </div>
+                    <div className={styles.revealField}>
+                      <label>CVV</label>
+                      <div className={styles.revealValue}>
+                        {revealedCard.cvv}
+                        <button onClick={() => navigator.clipboard.writeText(revealedCard.cvv)}>
+                          📋
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.revealField}>
+                    <label>Cardholder Name</label>
+                    <div className={styles.revealValue}>{revealedCard.cardholderName}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.revealError}>
+                  {error || "Failed to reveal card details"}
+                </div>
+              )}
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={() => setShowRevealModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

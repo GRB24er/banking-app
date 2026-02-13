@@ -1,0 +1,334 @@
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f7f5 0%, #faf9f7 100%);
+}
+
+.main {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+}
+
+.loadingScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 1rem;
+  color: #6b7280;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(212, 175, 55, 0.2);
+  border-top-color: #D4AF37;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pageHeader {
+  margin-bottom: 2rem;
+}
+
+.pageHeader h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.pageHeader p {
+  color: #6b7280;
+  margin: 0.25rem 0 0;
+}
+
+/* Exchange Card */
+.exchangeCard {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  margin-bottom: 2rem;
+}
+
+.exchangeForm {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.currencySection {
+  flex: 1;
+}
+
+.currencySection label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.currencyInput {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.currencyInput input {
+  flex: 1;
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.currencyInput input:focus {
+  outline: none;
+  border-color: #D4AF37;
+}
+
+.currencyInput select {
+  width: 200px;
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+}
+
+.currencyInput select:focus {
+  outline: none;
+  border-color: #D4AF37;
+}
+
+.quickCurrencies {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.quickCurrencies button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quickCurrencies button:hover,
+.quickCurrencies button.active {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: #D4AF37;
+}
+
+.swapBtn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  background: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1.5rem;
+}
+
+.swapBtn:hover {
+  background: #D4AF37;
+  border-color: #D4AF37;
+  color: white;
+}
+
+.convertBtn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  color: #1a1a2e;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.3s;
+}
+
+.convertBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+}
+
+.convertBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Result */
+.resultCard {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.resultMain {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.resultFrom {
+  font-size: 1.5rem;
+  color: #6b7280;
+}
+
+.resultEquals {
+  font-size: 1.5rem;
+  color: #D4AF37;
+}
+
+.resultTo {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.resultDetails {
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  padding-top: 1rem;
+}
+
+.resultRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.resultRow span {
+  color: #6b7280;
+}
+
+.resultRow strong {
+  color: #1a1a2e;
+}
+
+/* Currency List */
+.currencyList {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.currencyList h2 {
+  font-size: 1.25rem;
+  color: #1a1a2e;
+  margin: 0 0 1rem;
+}
+
+.currencyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.currencyItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.currencyItem:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.currencyFlag {
+  font-size: 1.5rem;
+}
+
+.currencyInfo {
+  flex: 1;
+}
+
+.currencyCode {
+  display: block;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.currencyName {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.currencySymbol {
+  font-weight: 600;
+  color: #D4AF37;
+}
+
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+  }
+  
+  .content {
+    padding: 1rem;
+  }
+  
+  .exchangeForm {
+    flex-direction: column;
+  }
+  
+  .swapBtn {
+    margin: 1rem 0;
+    transform: rotate(90deg);
+  }
+  
+  .currencyInput {
+    flex-direction: column;
+  }
+  
+  .currencyInput select {
+    width: 100%;
+  }
+  
+  .resultMain {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
