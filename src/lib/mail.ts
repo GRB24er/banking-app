@@ -16,7 +16,7 @@ if (!process.env.SMTP_PASSWORD && process.env.NODE_ENV === "production") {
 }
 
 // Email configuration
-const FROM_DISPLAY = `ZentriBank Security <${SMTP_USER}>`;
+const FROM_DISPLAY = `Horizon Global Capital <${SMTP_USER}>`;
 const ENVELOPE_FROM = SMTP_USER;
 const REPLY_TO = process.env.REPLY_TO_EMAIL || SMTP_USER;
 const LIST_UNSUBSCRIBE = `<mailto:${SMTP_USER}?subject=Unsubscribe>`;

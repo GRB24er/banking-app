@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
       if (!verifyResult.success) {
         return NextResponse.json(
-          { error: verifyResult.error || "Invalid verification code" },
+          { error: verifyResult.message || "Invalid verification code" },
           { status: 400 }
         );
       }

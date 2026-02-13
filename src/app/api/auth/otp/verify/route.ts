@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error || 'Invalid or expired code' },
+        { error: result.message || 'Invalid or expired code' },
         { status: 400 }
       );
     }
