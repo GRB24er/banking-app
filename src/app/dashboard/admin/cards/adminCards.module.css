@@ -1,0 +1,271 @@
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: #0f172a;
+}
+
+.main {
+  flex: 1;
+  margin-left: 280px;
+  padding: 2rem;
+  color: white;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  margin: 0;
+}
+
+.header p {
+  color: #94a3b8;
+  margin: 0.25rem 0 0;
+}
+
+.message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.message.success {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.message.error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.filters button {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filters button:hover,
+.filters button.active {
+  background: #D4AF37;
+  color: #0f172a;
+  border-color: #D4AF37;
+}
+
+.loading, .empty {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+}
+
+.cardsTable {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cardsTable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cardsTable th,
+.cardsTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cardsTable th {
+  background: rgba(0, 0, 0, 0.2);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.cardsTable td small {
+  color: #64748b;
+}
+
+.reference {
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  text-transform: capitalize;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actions button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.processBtn {
+  background: #3b82f6;
+  color: white;
+}
+
+.activateBtn {
+  background: #10b981;
+  color: white;
+}
+
+.rejectBtn {
+  background: #ef4444;
+  color: white;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #1e293b;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  color: white;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modalHeader h2 {
+  margin: 0;
+}
+
+.modalHeader button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 1.5rem;
+}
+
+.cardInfo {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.cardInfo p {
+  margin: 0.5rem 0;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.formGroup input,
+.formGroup select {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.modalFooter {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cancelBtn, .submitBtn {
+  flex: 1;
+  padding: 0.875rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelBtn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+.submitBtn {
+  background: #10b981;
+  color: white;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding: 1rem;
+  }
+  
+  .cardsTable {
+    overflow-x: auto;
+  }
+  
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}

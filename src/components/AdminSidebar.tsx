@@ -18,6 +18,8 @@ interface NavItem {
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard/admin", icon: "📊" },
   { label: "Credit Cards", href: "/dashboard/admin/credit-cards", icon: "💳" },
+  { label: "Virtual Cards", href: "/dashboard/admin/cards", icon: "🎴", badge: 0 },
+  { label: "Loan Applications", href: "/dashboard/admin/loans", icon: "💰", badge: 0 },
   { 
     label: "Statements", 
     href: "/dashboard/admin/statements", 
@@ -25,7 +27,6 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     badge: 3
   },
   { label: "Support Chats", href: "/dashboard/admin/chats", icon: "💬", badge: 7 },
-  // ADD THIS LINE:
   { label: "Check Deposits", href: "/dashboard/admin/check-deposits", icon: "📸" },
   { 
     label: "User Management", 
@@ -37,12 +38,14 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     ]
   },
   { label: "Transactions", href: "/dashboard/admin/transactions", icon: "💸" },
+  { label: "Transfers", href: "/dashboard/admin/transfers", icon: "🔄" },
   { 
     label: "KYC Verification", 
     href: "/dashboard/admin/kyc", 
     icon: "✅",
     badge: 12
   },
+  { label: "Fee Management", href: "/dashboard/admin/fees", icon: "💵" },
   { label: "Reports", href: "/dashboard/admin/reports", icon: "📈" },
   { label: "Settings", href: "/dashboard/admin/settings", icon: "⚙️" },
   { label: "User Dashboard", href: "/dashboard", icon: "🏠" }
@@ -55,6 +58,7 @@ export default function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
+  const [pendingCounts, setPendingCounts] = useState({ cards: 0, loans: 0 });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -62,6 +66,32 @@ export default function AdminSidebar() {
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  // Fetch pending counts
+  useEffect(() => {
+    const fetchPendingCounts = async () => {
+      try {
+        const [cardsRes, loansRes] = await Promise.all([
+          fetch('/api/admin/cards?status=pending'),
+          fetch('/api/admin/loans?status=submitted')
+        ]);
+        
+        const cardsData = await cardsRes.json();
+        const loansData = await loansRes.json();
+        
+        setPendingCounts({
+          cards: cardsData.cards?.length || 0,
+          loans: loansData.applications?.length || 0
+        });
+      } catch (err) {
+        console.error('Error fetching pending counts:', err);
+      }
+    };
+    
+    fetchPendingCounts();
+    const interval = setInterval(fetchPendingCounts, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
   }, []);
 
   const toggleSubmenu = (label: string) => {
@@ -72,6 +102,19 @@ export default function AdminSidebar() {
       newSet.add(label);
     }
     setOpenSubmenus(newSet);
+  };
+
+  // Update badge counts dynamically
+  const getNavItems = () => {
+    return ADMIN_NAV_ITEMS.map(item => {
+      if (item.label === "Virtual Cards") {
+        return { ...item, badge: pendingCounts.cards };
+      }
+      if (item.label === "Loan Applications") {
+        return { ...item, badge: pendingCounts.loans };
+      }
+      return item;
+    });
   };
 
   return (
@@ -157,7 +200,7 @@ export default function AdminSidebar() {
         {/* Navigation */}
         <nav className={styles.navContainer} role="navigation" aria-label="Admin navigation">
           <div className={styles.navItems}>
-            {ADMIN_NAV_ITEMS.map((item) => {
+            {getNavItems().map((item) => {
               const isActive = pathname === item.href;
               const hasChildren = item.children && item.children.length > 0;
               const isSubmenuOpen = openSubmenus.has(item.label);
@@ -180,7 +223,7 @@ export default function AdminSidebar() {
                     {!collapsed && (
                       <>
                         <span className={styles.navLabel}>{item.label}</span>
-                        {item.badge && item.badge > 0 && (
+                        {item.badge !== undefined && item.badge > 0 && (
                           <motion.span 
                             className={styles.badge}
                             initial={{ scale: 0 }}

@@ -115,6 +115,7 @@ export default function Sidebar() {
                 <Link href="/transfers/internal" className={`${styles.subLink} ${pathname === "/transfers/internal" ? styles.active : ""}`}>Internal Transfer</Link>
                 <Link href="/transfers/wire" className={`${styles.subLink} ${pathname === "/transfers/wire" ? styles.active : ""}`}>Wire Transfer</Link>
                 <Link href="/transfers/international" className={`${styles.subLink} ${pathname === "/transfers/international" ? styles.active : ""}`}>International</Link>
+                <Link href="/exchange" className={`${styles.subLink} ${pathname === "/exchange" ? styles.active : ""}`}>💱 Currency Exchange</Link>
               </div>
             )}
           </div>
@@ -138,18 +139,25 @@ export default function Sidebar() {
             <span className={styles.navIcon}>↗</span> Transactions
           </Link>
 
+          {/* Virtual Cards - NEW */}
           <div className={styles.navGroup}>
             <div className={styles.navLink} onClick={() => toggleExpand("Cards")}>
-              <span className={styles.navIcon}>▭</span> Cards
+              <span className={styles.navIcon}>💳</span> Cards
               <span className={`${styles.arrow} ${expandedItems.includes("Cards") ? styles.arrowOpen : ""}`}>›</span>
             </div>
             {expandedItems.includes("Cards") && (
               <div className={styles.subMenu}>
-                <Link href="/accounts/credit-cards" className={`${styles.subLink} ${pathname === "/accounts/credit-cards" ? styles.active : ""}`}>My Cards</Link>
+                <Link href="/cards" className={`${styles.subLink} ${pathname === "/cards" ? styles.active : ""}`}>Virtual Cards</Link>
+                <Link href="/accounts/credit-cards" className={`${styles.subLink} ${pathname === "/accounts/credit-cards" ? styles.active : ""}`}>Credit Cards</Link>
                 <Link href="/accounts/credit-cards/apply" className={`${styles.subLink} ${pathname === "/accounts/credit-cards/apply" ? styles.active : ""}`}>Apply for Card</Link>
               </div>
             )}
           </div>
+
+          {/* Loans - NEW */}
+          <Link href="/loans" className={`${styles.navLink} ${pathname === "/loans" ? styles.active : ""}`}>
+            <span className={styles.navIcon}>💰</span> Loans
+          </Link>
 
           <div className={styles.navGroup}>
             <div className={styles.navLink} onClick={() => toggleExpand("Investments")}>
@@ -184,6 +192,8 @@ export default function Sidebar() {
                   <Link href="/admin/users" className={`${styles.subLink} ${pathname === "/admin/users" ? styles.active : ""}`}>Users</Link>
                   <Link href="/admin/transactions" className={`${styles.subLink} ${pathname === "/admin/transactions" ? styles.active : ""}`}>Approvals</Link>
                   <Link href="/admin/crypto" className={`${styles.subLink} ${pathname === "/admin/crypto" ? styles.active : ""}`}>Crypto Approvals</Link>
+                  <Link href="/dashboard/admin/cards" className={`${styles.subLink} ${pathname === "/dashboard/admin/cards" ? styles.active : ""}`}>Card Requests</Link>
+                  <Link href="/dashboard/admin/loans" className={`${styles.subLink} ${pathname === "/dashboard/admin/loans" ? styles.active : ""}`}>Loan Applications</Link>
                 </div>
               )}
             </div>
