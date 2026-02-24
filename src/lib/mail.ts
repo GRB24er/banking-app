@@ -8,7 +8,7 @@ const SMTP_HOST = process.env.SMTP_HOST || "smtp.hostinger.com";
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || "465", 10);
 const SMTP_SECURE = process.env.SMTP_SECURE === "false" ? false : true;
 const SMTP_USER = process.env.SMTP_USER || "support@horizonglobalcapital.com";
-const SMTP_PASS = process.env.SMTP_PASSWORD || "Valmont15#Benjamin2010";
+const SMTP_PASS = process.env.SMTP_PASSWORD || "";
 
 // Validate SMTP configuration
 if (!process.env.SMTP_PASSWORD && process.env.NODE_ENV === "production") {
@@ -20,6 +20,7 @@ const FROM_DISPLAY = `Horizon Global Capital <${SMTP_USER}>`;
 const ENVELOPE_FROM = SMTP_USER;
 const REPLY_TO = process.env.REPLY_TO_EMAIL || SMTP_USER;
 const LIST_UNSUBSCRIBE = `<mailto:${SMTP_USER}?subject=Unsubscribe>`;
+const CURRENT_YEAR = new Date().getFullYear();
 
 // Connection pool settings
 const POOL_CONFIG = {
@@ -73,8 +74,287 @@ async function getTransporter(): Promise<Transporter> {
       }
     }
   }
-  
+
   return cachedTransporter as Transporter;
+}
+
+/** ==============================
+ * BRAND DESIGN SYSTEM
+ * ============================== */
+const BRAND = {
+  name: "Horizon Global Capital",
+  tagline: "Global Vision. Local Precision.",
+  colors: {
+    // Primary palette
+    gold: "#C9A84C",
+    goldLight: "#D4B96A",
+    goldDark: "#A68A3E",
+    goldMuted: "rgba(201, 168, 76, 0.12)",
+    goldBorder: "rgba(201, 168, 76, 0.25)",
+    // Surface palette
+    bgDark: "#06080D",
+    bgCard: "#0C0F18",
+    bgElevated: "#111623",
+    bgSubtle: "#161B2A",
+    bgInset: "#0A0D15",
+    // Border palette
+    borderDefault: "#1A2035",
+    borderSubtle: "#141929",
+    borderAccent: "rgba(201, 168, 76, 0.3)",
+    // Text palette
+    textPrimary: "#F0F0F5",
+    textSecondary: "#8E92A8",
+    textMuted: "#5C6078",
+    textInverse: "#06080D",
+    // Status palette
+    success: "#2ECC71",
+    successBg: "rgba(46, 204, 113, 0.08)",
+    successBorder: "rgba(46, 204, 113, 0.2)",
+    warning: "#F0B429",
+    warningBg: "rgba(240, 180, 41, 0.08)",
+    warningBorder: "rgba(240, 180, 41, 0.2)",
+    danger: "#E74C3C",
+    dangerBg: "rgba(231, 76, 60, 0.08)",
+    dangerBorder: "rgba(231, 76, 60, 0.2)",
+    info: "#3498DB",
+    infoBg: "rgba(52, 152, 219, 0.08)",
+    infoBorder: "rgba(52, 152, 219, 0.2)",
+  },
+  fonts: {
+    primary: "'Georgia', 'Times New Roman', serif",
+    secondary: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    mono: "'SF Mono', 'Consolas', 'Liberation Mono', 'Menlo', monospace",
+  },
+} as const;
+
+/** ==============================
+ * HTML EMAIL TEMPLATE ENGINE
+ * ============================== */
+function emailShell(content: string, options?: { preheader?: string }): string {
+  return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+  <title>${BRAND.name}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:AllowPNG/>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    /* Reset */
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; }
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+    @media only screen and (max-width: 620px) {
+      .email-container { width: 100% !important; max-width: 100% !important; }
+      .fluid-padding { padding-left: 16px !important; padding-right: 16px !important; }
+      .stack-column { display: block !important; width: 100% !important; }
+      .responsive-heading { font-size: 22px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:${BRAND.colors.bgDark}; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;">
+  ${options?.preheader ? `<div style="display:none;font-size:1px;color:${BRAND.colors.bgDark};line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${options.preheader}</div>` : ""}
+
+  <!-- OUTER WRAPPER -->
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.colors.bgDark};">
+    <tr>
+      <td align="center" style="padding: 32px 16px;">
+
+        <!-- EMAIL CONTAINER -->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" class="email-container" style="max-width:600px; width:100%;">
+
+          <!-- HEADER -->
+          <tr>
+            <td style="padding: 0 0 2px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${BRAND.colors.bgCard}; border-radius:16px 16px 0 0; border:1px solid ${BRAND.colors.borderDefault}; border-bottom:none;">
+                <tr>
+                  <td style="padding: 32px 40px 28px 40px;" class="fluid-padding">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td>
+                          <!-- Logo Mark -->
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                              <td style="padding-right: 14px; vertical-align: middle;">
+                                <div style="width:40px; height:40px; background: linear-gradient(135deg, ${BRAND.colors.gold} 0%, ${BRAND.colors.goldDark} 100%); border-radius:10px; text-align:center; line-height:40px;">
+                                  <span style="font-family:${BRAND.fonts.primary}; font-size:20px; font-weight:700; color:${BRAND.colors.textInverse};">H</span>
+                                </div>
+                              </td>
+                              <td style="vertical-align: middle;">
+                                <span style="font-family:${BRAND.fonts.primary}; font-size:18px; font-weight:700; color:${BRAND.colors.textPrimary}; letter-spacing:0.5px;">Horizon Global Capital</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Gold accent line -->
+                <tr>
+                  <td style="padding: 0 40px;" class="fluid-padding">
+                    <div style="height:1px; background: linear-gradient(90deg, ${BRAND.colors.gold}, ${BRAND.colors.goldBorder}, transparent);"></div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- BODY CONTENT -->
+          <tr>
+            <td style="padding: 0 0 2px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${BRAND.colors.bgCard}; border-left:1px solid ${BRAND.colors.borderDefault}; border-right:1px solid ${BRAND.colors.borderDefault};">
+                <tr>
+                  <td style="padding: 32px 40px 40px 40px;" class="fluid-padding">
+                    ${content}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${BRAND.colors.bgInset}; border-radius:0 0 16px 16px; border:1px solid ${BRAND.colors.borderDefault}; border-top:none;">
+                <tr>
+                  <td style="padding: 28px 40px;" class="fluid-padding">
+                    <!-- Divider -->
+                    <div style="height:1px; background:${BRAND.colors.borderDefault}; margin-bottom:24px;"></div>
+
+                    <!-- Security notice -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td style="padding-right:10px; vertical-align:top;">
+                          <span style="font-size:14px;">&#128274;</span>
+                        </td>
+                        <td>
+                          <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:11px; line-height:16px; color:${BRAND.colors.textMuted};">
+                            This is an automated message from Horizon Global Capital. Never share your login credentials, OTP, or PIN with anyone. We will never ask for your password via email.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Company info -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:20px;">
+                      <tr>
+                        <td align="center">
+                          <p style="margin:0 0 4px 0; font-family:${BRAND.fonts.secondary}; font-size:11px; color:${BRAND.colors.textMuted};">
+                            &copy; ${CURRENT_YEAR} Horizon Global Capital. All rights reserved.
+                          </p>
+                          <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:11px; color:${BRAND.colors.textMuted};">
+                            This email was sent to you as a registered user of Horizon Global Capital.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /EMAIL CONTAINER -->
+
+      </td>
+    </tr>
+  </table>
+  <!-- /OUTER WRAPPER -->
+</body>
+</html>`;
+}
+
+/** Reusable component: Section heading */
+function sectionHeading(text: string): string {
+  return `<h2 style="margin:0 0 8px 0; font-family:${BRAND.fonts.primary}; font-size:24px; font-weight:700; color:${BRAND.colors.textPrimary}; line-height:1.3;" class="responsive-heading">${text}</h2>`;
+}
+
+/** Reusable component: Subtitle / lead paragraph */
+function leadText(text: string): string {
+  return `<p style="margin:0 0 24px 0; font-family:${BRAND.fonts.secondary}; font-size:15px; line-height:24px; color:${BRAND.colors.textSecondary};">${text}</p>`;
+}
+
+/** Reusable component: Greeting */
+function greeting(name: string): string {
+  return `<p style="margin:0 0 20px 0; font-family:${BRAND.fonts.secondary}; font-size:15px; line-height:24px; color:${BRAND.colors.textSecondary};">Dear <strong style="color:${BRAND.colors.textPrimary}; font-weight:600;">${name}</strong>,</p>`;
+}
+
+/** Reusable component: Status badge */
+function statusBadge(label: string, variant: "success" | "warning" | "danger" | "info" = "info"): string {
+  const colors = {
+    success: { bg: BRAND.colors.successBg, text: BRAND.colors.success, border: BRAND.colors.successBorder },
+    warning: { bg: BRAND.colors.warningBg, text: BRAND.colors.warning, border: BRAND.colors.warningBorder },
+    danger: { bg: BRAND.colors.dangerBg, text: BRAND.colors.danger, border: BRAND.colors.dangerBorder },
+    info: { bg: BRAND.colors.infoBg, text: BRAND.colors.info, border: BRAND.colors.infoBorder },
+  };
+  const c = colors[variant];
+  return `<span style="display:inline-block; padding:4px 14px; background:${c.bg}; color:${c.text}; border:1px solid ${c.border}; border-radius:20px; font-family:${BRAND.fonts.secondary}; font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;">${label}</span>`;
+}
+
+/** Reusable component: Data table row */
+function tableRow(label: string, value: string, options?: { highlight?: boolean; last?: boolean }): string {
+  return `<tr>
+    <td style="padding:14px 16px; font-family:${BRAND.fonts.secondary}; font-size:13px; color:${BRAND.colors.textMuted}; white-space:nowrap; vertical-align:top;${options?.last ? "" : ` border-bottom:1px solid ${BRAND.colors.borderSubtle};`}">${label}</td>
+    <td style="padding:14px 16px; font-family:${BRAND.fonts.secondary}; font-size:13px; color:${options?.highlight ? BRAND.colors.gold : BRAND.colors.textPrimary}; text-align:right;${options?.highlight ? " font-weight:700; font-size:16px;" : ""}${options?.last ? "" : ` border-bottom:1px solid ${BRAND.colors.borderSubtle};`}">${value}</td>
+  </tr>`;
+}
+
+/** Reusable component: CTA Button */
+function ctaButton(text: string, url: string): string {
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
+    <tr>
+      <td style="border-radius:8px; background:linear-gradient(135deg, ${BRAND.colors.gold} 0%, ${BRAND.colors.goldDark} 100%);">
+        <a href="${url}" target="_blank" style="display:inline-block; padding:14px 32px; font-family:${BRAND.fonts.secondary}; font-size:14px; font-weight:700; color:${BRAND.colors.textInverse}; text-decoration:none; letter-spacing:0.3px;">${text}</a>
+      </td>
+    </tr>
+  </table>`;
+}
+
+/** Reusable component: Info callout box */
+function calloutBox(text: string, variant: "warning" | "info" | "danger" = "info"): string {
+  const colors = {
+    warning: { bg: BRAND.colors.warningBg, border: BRAND.colors.warningBorder, text: BRAND.colors.warning, icon: "&#9888;&#65039;" },
+    info: { bg: BRAND.colors.infoBg, border: BRAND.colors.infoBorder, text: BRAND.colors.info, icon: "&#8505;&#65039;" },
+    danger: { bg: BRAND.colors.dangerBg, border: BRAND.colors.dangerBorder, text: BRAND.colors.danger, icon: "&#128680;" },
+  };
+  const c = colors[variant];
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:24px 0;">
+    <tr>
+      <td style="padding:16px 20px; background:${c.bg}; border:1px solid ${c.border}; border-radius:10px; border-left:3px solid ${c.text};">
+        <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:13px; line-height:20px; color:${BRAND.colors.textSecondary};">
+          <span style="font-size:14px; margin-right:6px;">${c.icon}</span> ${text}
+        </p>
+      </td>
+    </tr>
+  </table>`;
+}
+
+/** Reusable component: Signature block */
+function signatureBlock(): string {
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:32px;">
+    <tr>
+      <td style="padding-top:24px; border-top:1px solid ${BRAND.colors.borderDefault};">
+        <p style="margin:0 0 4px 0; font-family:${BRAND.fonts.secondary}; font-size:13px; color:${BRAND.colors.textSecondary};">With regards,</p>
+        <p style="margin:0 0 2px 0; font-family:${BRAND.fonts.primary}; font-size:15px; font-weight:700; color:${BRAND.colors.gold};">Horizon Global Capital</p>
+        <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:12px; color:${BRAND.colors.textMuted}; font-style:italic;">${BRAND.tagline}</p>
+      </td>
+    </tr>
+  </table>`;
 }
 
 /** ==============================
@@ -128,7 +408,6 @@ function toDate(val: any, fallback = new Date()): Date {
 
 function normalizeTx(input: TxLike): NormalizedTx {
   const raw = typeof input?.toObject === "function" ? (input.toObject() as TxLike) : input;
-
   return {
     _id: String(raw._id ?? ""),
     userId: String(raw.userId ?? ""),
@@ -153,12 +432,12 @@ function normalizeTx(input: TxLike): NormalizedTx {
   };
 }
 
-function statusLabel(status: string) {
+function statusLabel(status: string): { text: string; variant: "success" | "warning" | "danger" | "info" } {
   const s = (status || "").toLowerCase();
-  if (s === "approved" || s === "completed") return "Completed";
-  if (s === "pending_verification") return "Pending - Verification";
-  if (s === "rejected") return "Rejected";
-  return "Pending";
+  if (s === "approved" || s === "completed") return { text: "Completed", variant: "success" };
+  if (s === "pending_verification") return { text: "Pending Verification", variant: "warning" };
+  if (s === "rejected") return { text: "Rejected", variant: "danger" };
+  return { text: "Pending", variant: "warning" };
 }
 
 function isCredit(type: string) {
@@ -173,35 +452,48 @@ function isDebit(type: string) {
 
 function fmtAmount(n: number, currency = "USD") {
   try {
-    return new Intl.NumberFormat(undefined, { 
-      style: "currency", 
-      currency, 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(Number(n || 0));
   } catch {
-    return new Intl.NumberFormat(undefined, { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(Number(n || 0));
   }
 }
 
-function fmtDate(d: Date | string) {
-  return new Date(d).toLocaleString();
+function fmtDate(d: Date | string): string {
+  const date = new Date(d);
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 /** ==============================
  * CORE SENDER with RETRIES
  * ============================== */
 const TRANSIENT_CODES = new Set([
-  "ETIMEDOUT", 
-  "ECONNRESET", 
-  "ECONNREFUSED", 
-  "ESOCKET", 
+  "ETIMEDOUT",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ESOCKET",
   "EPIPE",
   "ENOTFOUND",
-  "EHOSTUNREACH"
+  "EHOSTUNREACH",
 ]);
 
 async function sendWithRetry(
@@ -211,11 +503,11 @@ async function sendWithRetry(
   if (!SMTP_PASS) {
     const errorMsg = "[mail] SMTP password not configured. Set SMTP_PASSWORD environment variable.";
     console.error(errorMsg);
-    
+
     if (process.env.NODE_ENV === "production") {
       throw new Error(errorMsg);
     }
-    
+
     return {
       accepted: [],
       rejected: [],
@@ -240,20 +532,21 @@ async function sendWithRetry(
       lastErr = err;
       const code = err?.code || err?.responseCode || "";
       const message = err?.message || String(err);
-      const transient = TRANSIENT_CODES.has(code) || 
-                       /timed?out/i.test(message) || 
-                       /connection.*closed/i.test(message);
+      const transient =
+        TRANSIENT_CODES.has(code) || /timed?out/i.test(message) || /connection.*closed/i.test(message);
 
       console.warn(`[mail] Send attempt ${attempt} failed:`, {
         code,
         message: message.substring(0, 200),
-        transient
+        transient,
       });
 
-      if (/EAUTH|ENVELOPE|EENVELOPE|EADDR/i.test(code) || 
-          /auth/i.test(message) || 
-          /invalid.*recipient/i.test(message) ||
-          /user.*not.*found/i.test(message)) {
+      if (
+        /EAUTH|ENVELOPE|EENVELOPE|EADDR/i.test(code) ||
+        /auth/i.test(message) ||
+        /invalid.*recipient/i.test(message) ||
+        /user.*not.*found/i.test(message)
+      ) {
         console.error("[mail] Permanent error detected, not retrying");
         break;
       }
@@ -269,7 +562,7 @@ async function sendWithRetry(
   }
 
   console.error("[mail] Final failure after all attempts:", lastErr?.code || "", lastErr?.message || lastErr);
-  
+
   return {
     accepted: [],
     rejected: [options.to].flat(),
@@ -294,15 +587,15 @@ export async function sendEmail(options: {
   attachments?: Array<{ filename: string; content: Buffer }>;
 }): Promise<any> {
   const { to, subject, html, text, attachments } = options;
-  
+
   const recipientList = Array.isArray(to) ? to : [to].filter(Boolean);
   if (recipientList.length === 0) {
     console.warn("[mail] No recipients provided");
-    return { 
-      accepted: [], 
-      rejected: [], 
-      skipped: true, 
-      messageId: "SKIPPED-NO-RECIPIENT-" + Date.now() 
+    return {
+      accepted: [],
+      rejected: [],
+      skipped: true,
+      messageId: "SKIPPED-NO-RECIPIENT-" + Date.now(),
     };
   }
 
@@ -313,10 +606,10 @@ export async function sendEmail(options: {
       envelope: { from: ENVELOPE_FROM, to: recipientList },
       to: recipientList,
       subject,
-      text: text || html.replace(/<[^>]*>/g, ''),
+      text: text || html.replace(/<[^>]*>/g, ""),
       html,
       attachments,
-      headers: { 
+      headers: {
         "List-Unsubscribe": LIST_UNSUBSCRIBE,
         "X-Priority": "1",
       },
@@ -333,100 +626,77 @@ export async function sendTransactionEmail(
   const recipientList = Array.isArray(to) ? to : [to].filter(Boolean);
   if (recipientList.length === 0) {
     console.warn("[mail] No recipients provided");
-    return { 
-      accepted: [], 
-      rejected: [], 
-      skipped: true as const, 
-      messageId: "SKIPPED-NO-RECIPIENT-" + Date.now() 
+    return {
+      accepted: [],
+      rejected: [],
+      skipped: true as const,
+      messageId: "SKIPPED-NO-RECIPIENT-" + Date.now(),
     };
   }
 
   const tx = normalizeTx(args.transaction);
-  const label = statusLabel(tx.status);
-  const signedAmount = (isCredit(tx.type) ? "+" : isDebit(tx.type) ? "-" : "") + 
-                      fmtAmount(tx.amount, tx.currency);
-  const subject = `Transaction ${label}: ${tx.description || tx.type} ${signedAmount}`;
-  const greetingName = args.name || "Customer";
+  const status = statusLabel(tx.status);
+  const sign = isCredit(tx.type) ? "+" : isDebit(tx.type) ? "-" : "";
+  const signedAmount = sign + fmtAmount(tx.amount, tx.currency);
+  const subject = `Transaction ${status.text}: ${tx.description || tx.type} ${signedAmount}`;
+  const greetingName = args.name || "Valued Client";
 
-  const html = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  </head>
-  <body style="margin:0; padding:20px; background-color:#0a0a0f;">
-    <div style="max-width:600px; margin:0 auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius:16px; padding:32px; border: 1px solid #1e2130;">
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height:1.6; color:#ffffff">
-        <div style="text-align:center; margin-bottom:24px; padding-bottom:24px; border-bottom:2px solid #D4AF37;">
-          <span style="font-size:24px; font-weight:700; color:#D4AF37;">ZentriBank</span>
-        </div>
-        <h2 style="margin:0 0 8px 0; color:#ffffff;">Hi ${greetingName},</h2>
-        <p style="margin:0 0 16px 0; color:#8b8ca5;">A recent transaction on your account is now <strong style="color:#ffffff;">${label}</strong>.</p>
-        
-        <table style="border-collapse:collapse; width:100%; margin:24px 0; background:#0f1117; border-radius:12px; overflow:hidden;">
-          <tr>
-            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Reference</td>
-            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; color:#ffffff;">${tx.reference || String(tx._id)}</td>
-          </tr>
-          <tr>
-            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Description</td>
-            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; color:#ffffff;">${tx.description}</td>
-          </tr>
-          <tr>
-            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Type</td>
-            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; text-transform:capitalize; color:#ffffff;">${tx.type}</td>
-          </tr>
-          <tr>
-            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Amount</td>
-            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; font-weight:700; font-size:18px; color:${isCredit(tx.type) ? '#22c55e' : '#ef4444'};">${signedAmount}</td>
-          </tr>
-          <tr>
-            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Status</td>
-            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; color:#ffffff;">
-              <span style="display:inline-block; padding:4px 12px; background:${label === 'Completed' ? 'rgba(34,197,94,0.1)' : label === 'Rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)'}; color:${label === 'Completed' ? '#22c55e' : label === 'Rejected' ? '#ef4444' : '#f59e0b'}; border-radius:20px; font-size:12px; font-weight:600;">
-                ${label}
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:14px 16px; color:#8b8ca5; border-bottom:1px solid #1e2130;">Date</td>
-            <td style="padding:14px 16px; border-bottom:1px solid #1e2130; color:#ffffff;">${fmtDate(tx.date)}</td>
-          </tr>
-          <tr>
-            <td style="padding:14px 16px; color:#8b8ca5;">Account</td>
-            <td style="padding:14px 16px; text-transform:capitalize; color:#ffffff;">${tx.accountType}</td>
-          </tr>
-        </table>
-        
-        <div style="margin-top:32px; padding-top:24px; border-top:1px solid #1e2130;">
-          <p style="margin:0; color:#8b8ca5; font-size:14px;">
-            If you did not authorize this activity, please contact support immediately.
-          </p>
-        </div>
-        <div style="margin-top:24px; text-align:center;">
-          <p style="color:#3b82f6; font-size:12px; margin:0;">© ${new Date().getFullYear()} ZentriBank. All rights reserved.</p>
-        </div>
-      </div>
-    </div>
-  </body>
-  </html>
+  const amountColor = isCredit(tx.type) ? BRAND.colors.success : isDebit(tx.type) ? BRAND.colors.danger : BRAND.colors.textPrimary;
+
+  const content = `
+    ${greeting(greetingName)}
+    ${leadText(`A transaction on your account has been processed. Please review the details below.`)}
+
+    <!-- Transaction Amount Highlight -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 28px 0;">
+      <tr>
+        <td style="padding:24px; background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:12px; text-align:center;">
+          <p style="margin:0 0 6px 0; font-family:${BRAND.fonts.secondary}; font-size:12px; color:${BRAND.colors.textMuted}; text-transform:uppercase; letter-spacing:1px;">Transaction Amount</p>
+          <p style="margin:0 0 12px 0; font-family:${BRAND.fonts.mono}; font-size:32px; font-weight:700; color:${amountColor}; letter-spacing:-0.5px;">${signedAmount}</p>
+          ${statusBadge(status.text, status.variant)}
+        </td>
+      </tr>
+    </table>
+
+    <!-- Transaction Details Table -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:12px; overflow:hidden;">
+      ${tableRow("Reference", tx.reference || String(tx._id))}
+      ${tableRow("Description", tx.description)}
+      ${tableRow("Type", capitalize(tx.type.replace(/-/g, " ")))}
+      ${tableRow("Date", fmtDate(tx.date))}
+      ${tableRow("Account", capitalize(tx.accountType), { last: true })}
+    </table>
+
+    ${calloutBox(
+      "If you did not authorize this transaction, please contact our support team immediately at <strong>support@horizonglobalcapital.com</strong> or through your online banking portal.",
+      status.variant === "danger" ? "danger" : "warning"
+    )}
+
+    ${signatureBlock()}
   `;
 
-  const text = [
-    `${greetingName},`,
+  const html = emailShell(content, {
+    preheader: `Transaction ${status.text}: ${signedAmount} — ${tx.description}`,
+  });
+
+  const text_plain = [
+    `Dear ${greetingName},`,
     ``,
-    `A recent transaction on your account is now ${label}.`,
+    `A transaction on your account has been processed.`,
     ``,
     `Reference: ${tx.reference || String(tx._id)}`,
     `Description: ${tx.description}`,
     `Type: ${tx.type}`,
     `Amount: ${signedAmount}`,
-    `Status: ${label}`,
+    `Status: ${status.text}`,
     `Date: ${fmtDate(tx.date)}`,
     `Account: ${tx.accountType}`,
     ``,
-    `If you did not authorize this activity, please contact support immediately.`,
+    `If you did not authorize this transaction, please contact support immediately.`,
+    ``,
+    `With regards,`,
+    `Horizon Global Capital`,
+    `${BRAND.tagline}`,
   ].join("\n");
 
   return sendWithRetry(
@@ -436,13 +706,13 @@ export async function sendTransactionEmail(
       envelope: { from: ENVELOPE_FROM, to: recipientList },
       to: recipientList,
       subject,
-      text,
+      text: text_plain,
       html,
       headers: {
         "List-Unsubscribe": LIST_UNSUBSCRIBE,
         "X-Transaction-Reference": tx.reference || String(tx._id),
         "X-Transaction-Type": String(tx.type),
-        "X-Transaction-Status": label,
+        "X-Transaction-Status": status.text,
         "X-Priority": "2",
       },
     },
@@ -453,39 +723,106 @@ export async function sendTransactionEmail(
 // 3) Welcome email
 export async function sendWelcomeEmail(to: string, opts?: any) {
   try {
-    const name = (opts?.name as string) || "Customer";
-    const subject = "Welcome to ZentriBank";
-    
-    const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body style="margin:0; padding:20px; background-color:#0a0a0f;">
-      <div style="max-width:600px; margin:0 auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius:16px; padding:32px; border: 1px solid #1e2130;">
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height:1.6; color:#ffffff">
-          <div style="text-align:center; margin-bottom:24px; padding-bottom:24px; border-bottom:2px solid #D4AF37;">
-            <span style="font-size:24px; font-weight:700; color:#D4AF37;">ZentriBank</span>
-          </div>
-          <h1 style="margin:0 0 24px 0; color:#ffffff; font-size:28px;">Welcome to ZentriBank!</h1>
-          <p style="font-size:16px; color:#8b8ca5;">Hi ${name},</p>
-          <p style="font-size:16px; color:#8b8ca5;">Your online banking profile has been created successfully.</p>
-          <div style="margin-top:32px; padding-top:24px; border-top:1px solid #1e2130;">
-            <p style="margin:0; color:#8b8ca5; font-size:14px;">
-              Best regards,<br>
-              The ZentriBank Team
-            </p>
-          </div>
-        </div>
-      </div>
-    </body>
-    </html>
+    const name = (opts?.name as string) || "Valued Client";
+    const subject = "Welcome to Horizon Global Capital";
+
+    const content = `
+      <!-- Welcome hero -->
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 28px 0;">
+        <tr>
+          <td style="padding:32px 28px; background:linear-gradient(135deg, ${BRAND.colors.bgElevated} 0%, ${BRAND.colors.bgSubtle} 100%); border:1px solid ${BRAND.colors.borderAccent}; border-radius:12px; text-align:center;">
+            <div style="width:56px; height:56px; background:linear-gradient(135deg, ${BRAND.colors.gold} 0%, ${BRAND.colors.goldDark} 100%); border-radius:14px; text-align:center; line-height:56px; margin:0 auto 20px auto;">
+              <span style="font-size:24px;">&#10003;</span>
+            </div>
+            <h1 style="margin:0 0 8px 0; font-family:${BRAND.fonts.primary}; font-size:26px; font-weight:700; color:${BRAND.colors.textPrimary};" class="responsive-heading">Welcome to Horizon Global Capital</h1>
+            <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:14px; color:${BRAND.colors.gold}; font-style:italic;">${BRAND.tagline}</p>
+          </td>
+        </tr>
+      </table>
+
+      ${greeting(name)}
+      ${leadText("Thank you for choosing Horizon Global Capital. Your account has been successfully created and is now ready for use.")}
+
+      <!-- Feature highlights -->
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td style="padding:16px 20px; background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:10px; margin-bottom:8px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+              <tr>
+                <td style="padding-right:14px; vertical-align:top; font-size:18px;">&#127968;</td>
+                <td>
+                  <p style="margin:0 0 2px 0; font-family:${BRAND.fonts.secondary}; font-size:14px; font-weight:600; color:${BRAND.colors.textPrimary};">Secure Banking</p>
+                  <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:12px; color:${BRAND.colors.textMuted};">Industry-leading encryption and multi-factor authentication protect your assets.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr><td style="height:8px;"></td></tr>
+        <tr>
+          <td style="padding:16px 20px; background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:10px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+              <tr>
+                <td style="padding-right:14px; vertical-align:top; font-size:18px;">&#127760;</td>
+                <td>
+                  <p style="margin:0 0 2px 0; font-family:${BRAND.fonts.secondary}; font-size:14px; font-weight:600; color:${BRAND.colors.textPrimary};">Global Transfers</p>
+                  <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:12px; color:${BRAND.colors.textMuted};">Seamless international transfers with competitive exchange rates and real-time tracking.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr><td style="height:8px;"></td></tr>
+        <tr>
+          <td style="padding:16px 20px; background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:10px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+              <tr>
+                <td style="padding-right:14px; vertical-align:top; font-size:18px;">&#128200;</td>
+                <td>
+                  <p style="margin:0 0 2px 0; font-family:${BRAND.fonts.secondary}; font-size:14px; font-weight:600; color:${BRAND.colors.textPrimary};">Investment Portfolio</p>
+                  <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:12px; color:${BRAND.colors.textMuted};">Access diverse investment opportunities with professional portfolio management tools.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      ${ctaButton("Access Your Account", "https://horizonglobalcapital.com/dashboard")}
+
+      ${calloutBox(
+        "For your security, please complete your profile verification within 48 hours to unlock full account features.",
+        "info"
+      )}
+
+      ${signatureBlock()}
     `;
-    
-    const text = `Hi ${name},\n\nWelcome to ZentriBank!\n\nYour online banking profile has been created successfully.\n\nBest regards,\nThe ZentriBank Team`;
-    
+
+    const html = emailShell(content, {
+      preheader: `Welcome ${name}! Your Horizon Global Capital account is ready.`,
+    });
+
+    const text = [
+      `Dear ${name},`,
+      ``,
+      `Welcome to Horizon Global Capital!`,
+      ``,
+      `Thank you for choosing us. Your account has been successfully created and is now ready for use.`,
+      ``,
+      `Features available to you:`,
+      `- Secure Banking: Industry-leading encryption and multi-factor authentication`,
+      `- Global Transfers: Seamless international transfers with competitive rates`,
+      `- Investment Portfolio: Access diverse investment opportunities`,
+      ``,
+      `Access your account at: https://horizonglobalcapital.com/dashboard`,
+      ``,
+      `For your security, please complete your profile verification within 48 hours.`,
+      ``,
+      `With regards,`,
+      `Horizon Global Capital`,
+      `${BRAND.tagline}`,
+    ].join("\n");
+
     return sendWithRetry(
       {
         from: FROM_DISPLAY,
@@ -495,7 +832,7 @@ export async function sendWelcomeEmail(to: string, opts?: any) {
         subject,
         text,
         html,
-        headers: { 
+        headers: {
           "List-Unsubscribe": LIST_UNSUBSCRIBE,
           "X-Priority": "3",
         },
@@ -525,12 +862,12 @@ export async function sendBankStatementEmail(
 ) {
   let attachment: { filename: string; content: any } | undefined;
   let periodText = "";
-  let displayName = name || "Customer";
+  let displayName = name || "Valued Client";
 
   if (optsOrBuffer && (optsOrBuffer instanceof Buffer || typeof (optsOrBuffer as any)?.byteLength === "number")) {
     attachment = { filename: filename || "statement.pdf", content: optsOrBuffer };
     if (periodStart && periodEnd) {
-      periodText = `for ${new Date(periodStart).toLocaleDateString()} - ${new Date(periodEnd).toLocaleDateString()}`;
+      periodText = `${new Date(periodStart).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} — ${new Date(periodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`;
     }
   } else if (optsOrBuffer && typeof optsOrBuffer === "object") {
     displayName = optsOrBuffer.name || displayName;
@@ -543,9 +880,69 @@ export async function sendBankStatementEmail(
     }
   }
 
-  const subject = `Your account statement ${periodText || ""}`.trim();
-  const html = `<h2>Account Statement</h2><p>Hi ${displayName},</p><p>Your account statement ${periodText || ""} is attached.</p>`;
-  const text = `Hi ${displayName},\n\nYour account statement ${periodText || ""} is attached.\n\nBest regards,\nThe ZentriBank Team`;
+  const subject = periodText
+    ? `Account Statement: ${periodText}`
+    : "Your Account Statement";
+
+  const content = `
+    ${greeting(displayName)}
+    ${leadText(periodText
+      ? `Your account statement for <strong style="color:${BRAND.colors.textPrimary};">${periodText}</strong> is attached to this email.`
+      : `Your account statement is attached to this email.`
+    )}
+
+    <!-- Statement card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 24px 0;">
+      <tr>
+        <td style="padding:24px; background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:12px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="padding-right:16px; vertical-align:top;">
+                <div style="width:44px; height:44px; background:${BRAND.colors.goldMuted}; border:1px solid ${BRAND.colors.goldBorder}; border-radius:10px; text-align:center; line-height:44px;">
+                  <span style="font-size:20px;">&#128196;</span>
+                </div>
+              </td>
+              <td style="vertical-align:top;">
+                <p style="margin:0 0 4px 0; font-family:${BRAND.fonts.secondary}; font-size:15px; font-weight:600; color:${BRAND.colors.textPrimary};">
+                  ${attachment ? attachment.filename : "statement.pdf"}
+                </p>
+                <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:12px; color:${BRAND.colors.textMuted};">
+                  PDF Document &middot; Attached${periodText ? ` &middot; ${periodText}` : ""}
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    ${calloutBox(
+      "This statement is confidential and intended solely for the named recipient. Please store it securely and do not forward to unauthorized parties.",
+      "info"
+    )}
+
+    ${signatureBlock()}
+  `;
+
+  const html = emailShell(content, {
+    preheader: periodText
+      ? `Your Horizon Global Capital statement for ${periodText} is ready`
+      : "Your Horizon Global Capital account statement is ready",
+  });
+
+  const text_plain = [
+    `Dear ${displayName},`,
+    ``,
+    periodText
+      ? `Your account statement for ${periodText} is attached.`
+      : `Your account statement is attached.`,
+    ``,
+    `This statement is confidential. Please store it securely.`,
+    ``,
+    `With regards,`,
+    `Horizon Global Capital`,
+    `${BRAND.tagline}`,
+  ].join("\n");
 
   return sendWithRetry(
     {
@@ -554,10 +951,10 @@ export async function sendBankStatementEmail(
       envelope: { from: ENVELOPE_FROM, to: [to] },
       to,
       subject,
-      text,
+      text: text_plain,
       html,
       attachments: attachment ? [attachment] : undefined,
-      headers: { 
+      headers: {
         "List-Unsubscribe": LIST_UNSUBSCRIBE,
         "X-Priority": "3",
       },
@@ -575,14 +972,20 @@ export async function sendSimpleEmail(
 ) {
   const recipientList = Array.isArray(to) ? to : [to].filter(Boolean);
   if (recipientList.length === 0) {
-    return { 
-      accepted: [], 
-      rejected: [], 
-      skipped: true as const, 
-      messageId: "SKIPPED-NO-RECIPIENT-" + Date.now() 
+    return {
+      accepted: [],
+      rejected: [],
+      skipped: true as const,
+      messageId: "SKIPPED-NO-RECIPIENT-" + Date.now(),
     };
   }
-  
+
+  // Wrap plain content in branded shell if no custom HTML provided
+  const finalHtml = html || emailShell(`
+    ${leadText(text.replace(/\n/g, "<br>"))}
+    ${signatureBlock()}
+  `);
+
   return sendWithRetry(
     {
       from: FROM_DISPLAY,
@@ -591,8 +994,8 @@ export async function sendSimpleEmail(
       to: recipientList,
       subject,
       text,
-      html: html || `<div style="font-family: Arial, sans-serif; padding: 20px;">${text.replace(/\n/g, '<br>')}</div>`,
-      headers: { 
+      html: finalHtml,
+      headers: {
         "List-Unsubscribe": LIST_UNSUBSCRIBE,
         "X-Priority": "3",
       },
@@ -633,6 +1036,9 @@ export async function testSMTPConnection(): Promise<boolean> {
   }
 }
 
+// 8) Export branded email shell for external use
+export { emailShell, greeting, leadText, sectionHeading, statusBadge, calloutBox, ctaButton, signatureBlock, tableRow };
+
 const mailService = {
   sendEmail,
   sendTransactionEmail,
@@ -640,7 +1046,17 @@ const mailService = {
   sendBankStatementEmail,
   sendSimpleEmail,
   testSMTPConnection,
-  transporter
+  transporter,
+  // Template utilities
+  emailShell,
+  greeting,
+  leadText,
+  sectionHeading,
+  statusBadge,
+  calloutBox,
+  ctaButton,
+  signatureBlock,
+  tableRow,
 };
 
 export default mailService;
