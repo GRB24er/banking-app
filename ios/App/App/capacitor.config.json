@@ -1,9 +1,9 @@
 {
-	"appId": "com.zentribank.app",
-	"appName": "ZentriBank",
+	"appId": "com.horizonglobalcapital.app",
+	"appName": "Horizon Global Capital",
 	"webDir": "public",
 	"server": {
-		"url": "https://www.zentribank.capital",
+		"url": "https://www.horizonglobalcapital.com",
 		"cleartext": false
 	},
 	"android": {

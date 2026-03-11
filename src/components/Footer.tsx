@@ -93,18 +93,16 @@ const Footer = () => {
                 />
               </a>
 
-              <a
-                href="https://play.google.com/store/apps/details?id=com.example.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Get it on Google Play"
+              <Link
+                href="/download"
+                aria-label="Download Android App"
               >
                 <img
                   src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-                  alt="Get it on Google Play"
+                  alt="Download Android App"
                   className={styles.storeBadge}
                 />
-              </a>
+              </Link>
             </div>
 
             <div className={styles.socialLinks}>

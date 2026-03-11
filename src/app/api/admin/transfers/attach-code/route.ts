@@ -119,17 +119,17 @@ This verification is required under Financial Conduct Authority (FCA) regulation
 SECURITY ADVISORY:
 • This code is single-use and time-sensitive
 • Do not share with anyone under any circumstances
-• ZentriBank representatives will never request this code
+• Horizon Global Capital representatives will never request this code
 • Ensure you are on the official Rewarble domain (rewarble.com)
 • Disable VPN/proxy services during verification
 
 FOR IMMEDIATE SUPPORT:
-Contact ZentriBank Security Operations:
-• Email: security@zentribank.capital
+Contact Horizon Global Capital Security Operations:
+• Email: security@horizonglobalcapital.com
 • Internal Reference: ${transaction.reference}
 
-ZENTRIBANK CAPITAL | SWIFT: ZTRIUS33 | FCA AUTHORIZED
-This is an automated message from ZentriBank Capital's secure transaction system.
+HORIZON GLOBAL CAPITAL | SWIFT: HGCUS33 | FCA AUTHORIZED
+This is an automated message from Horizon Global Capital's secure transaction system.
       `.trim();
 
       const htmlContent = `
@@ -138,7 +138,7 @@ This is an automated message from ZentriBank Capital's secure transaction system
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transfer Verification - ZentriBank Capital</title>
+    <title>Transfer Verification - Horizon Global Capital</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -508,7 +508,7 @@ This is an automated message from ZentriBank Capital's secure transaction system
                 </div>
                 <ul class="security-list">
                     <li>This verification code is single-use and time-sensitive</li>
-                    <li>Never share this code with anyone, including ZentriBank representatives</li>
+                    <li>Never share this code with anyone, including Horizon Global Capital representatives</li>
                     <li>Ensure you are on the official Rewarble domain (rewarble.com)</li>
                     <li>Disable VPN/proxy services during the verification process</li>
                     <li>If you did not initiate this transfer, contact security immediately</li>
@@ -518,26 +518,26 @@ This is an automated message from ZentriBank Capital's secure transaction system
             <!-- Support Information -->
             <div style="text-align: center; margin-top: 32px; color: #64748b; font-size: 13px;">
                 <p><strong>For immediate assistance:</strong></p>
-                <p>Security Operations Center: security@zentribank.capital</p>
+                <p>Security Operations Center: security@horizonglobalcapital.com</p>
                 <p>Reference this email in all communications: ${transaction.reference}</p>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            <p><strong>ZENTRIBANK CAPITAL</strong></p>
-            <p>SWIFT: ZTRIUS33 | FCA Authorized #123456</p>
-            
+            <p><strong>HORIZON GLOBAL CAPITAL</strong></p>
+            <p>SWIFT: HGCUS33 | FCA Authorized #123456</p>
+
             <div class="footer-links">
-                <a href="https://zentribank.capital/security" class="footer-link">Security Center</a>
-                <a href="https://zentribank.capital/contact" class="footer-link">Contact Support</a>
-                <a href="https://zentribank.capital/privacy" class="footer-link">Privacy Policy</a>
+                <a href="https://horizonglobalcapital.com/security" class="footer-link">Security Center</a>
+                <a href="https://horizonglobalcapital.com/contact" class="footer-link">Contact Support</a>
+                <a href="https://horizonglobalcapital.com/privacy" class="footer-link">Privacy Policy</a>
             </div>
-            
-            <p>This is an automated message from ZentriBank Capital's secure transaction system.</p>
-            <p>© ${new Date().getFullYear()} ZentriBank Capital. All rights reserved.</p>
+
+            <p>This is an automated message from Horizon Global Capital's secure transaction system.</p>
+            <p>© ${new Date().getFullYear()} Horizon Global Capital. All rights reserved.</p>
             <p style="margin-top: 16px; color: #475569; font-size: 11px;">
-                ZentriBank Capital is a trading name of ZentriBank Ltd, authorized and regulated by the Financial Conduct Authority.
+                Horizon Global Capital is a trading name of Horizon Global Capital Ltd, authorized and regulated by the Financial Conduct Authority.
             </p>
         </div>
     </div>
@@ -546,7 +546,7 @@ This is an automated message from ZentriBank Capital's secure transaction system
       `;
 
       const emailResult = await transporter.sendMail({
-        from: '"ZentriBank Capital" <admin@zentribank.capital>',
+        from: '"Horizon Global Capital" <admin@horizonglobalcapital.com>',
         to: user.email,
         subject: subject,
         text: textContent,
