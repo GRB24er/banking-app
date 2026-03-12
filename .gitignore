@@ -42,3 +42,19 @@ next-env.d.ts
 
 #local env
 .env.local
+
+# Android/Capacitor
+android/.gradle/
+android/.idea/
+android/app/build/
+android/build/
+android/capacitor-cordova-android-plugins/build/
+!android/capacitor-cordova-android-plugins/
+android/local.properties
+
+# iOS
+ios/App/Pods/
+ios/App/build/
+
+# Capacitor
+/out/

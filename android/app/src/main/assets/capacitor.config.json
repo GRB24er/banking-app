@@ -1,7 +1,7 @@
 {
 	"appId": "com.horizonglobalcapital.app",
 	"appName": "Horizon Global Capital",
-	"webDir": "public",
+	"webDir": "out",
 	"server": {
 		"url": "https://www.horizonglobalcapital.com",
 		"cleartext": false

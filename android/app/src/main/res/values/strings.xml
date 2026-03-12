@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Horizon Global Capital</string>
+    <string name="title_activity_main">Horizon Global Capital</string>
+    <string name="package_name">com.horizonglobalcapital.app</string>
+    <string name="custom_url_scheme">com.horizonglobalcapital.app</string>
+</resources>
