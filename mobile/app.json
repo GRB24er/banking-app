@@ -23,7 +23,11 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -45,6 +49,13 @@
           "photosPermission": "Allow Horizon Global Capital to access your photos for check deposits."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f6e2a14f-f867-4dae-9602-4d10bc2a4373"
+      }
+    },
+    "owner": "jp87er"
   }
 }
