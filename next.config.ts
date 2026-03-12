@@ -6,9 +6,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    // 1) allow SVGs  
     dangerouslyAllowSVG: true,
-    // 2) disable all built-in optimization & blur placeholders
     unoptimized: true,
   },
 };

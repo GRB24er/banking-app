@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Horizon Global Capital",
+    "slug": "horizon-global-capital",
+    "scheme": "horizongc",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0D0D"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.horizonglobalcapital.mobile"
+    },
+    "android": {
+      "package": "com.horizonglobalcapital.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0D0D",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Horizon Global Capital to access your camera for check deposits."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Horizon Global Capital to access your photos for check deposits."
+        }
+      ]
+    ]
+  }
+}
