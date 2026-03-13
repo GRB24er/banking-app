@@ -9,9 +9,7 @@ import Transaction from '@/models/Transaction';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
 
 async function verifyAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization');

@@ -50,7 +50,7 @@ export default function InternationalTransfer() {
           { text: 'OK', onPress: () => router.back() },
         ]);
       } else {
-        Alert.alert('Error', res.message || 'Transfer failed');
+        Alert.alert('Error', res.error || res.message || 'Transfer failed');
       }
     } catch {
       Alert.alert('Error', 'Something went wrong');

@@ -7,8 +7,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 
-// SAME SECRET AS YOUR authOptions.ts
-const AUTH_SECRET = '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
+const AUTH_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
 
 async function verifyMobileToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization');

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
+import CheckDeposit from '@/models/CheckDeposit';
 import { sendTransactionEmail } from '@/lib/mail';
 
 // Helper functions
@@ -125,9 +126,26 @@ export async function POST(
       if (adminNotes) transaction.adminNotes = adminNotes;
       
       await transaction.save();
-      
+
       console.log(`[Admin] Transaction marked as completed and posted`);
-      
+
+      // If this transaction is linked to a CheckDeposit, update it too
+      if (transaction.origin === 'check_deposit' || transaction.metadata?.depositId) {
+        try {
+          const depositId = transaction.metadata?.depositId;
+          if (depositId) {
+            await CheckDeposit.findByIdAndUpdate(depositId, {
+              status: 'approved',
+              reviewedAt: new Date(),
+              reviewedBy: adminId || 'admin',
+            });
+            console.log(`[Admin] Linked CheckDeposit ${depositId} also marked as approved`);
+          }
+        } catch (depErr) {
+          console.error('[Admin] Failed to update linked CheckDeposit:', depErr);
+        }
+      }
+
       // Send email notification
       if (user.email) {
         try {
@@ -173,9 +191,27 @@ export async function POST(
       // posted stays false - no balance was ever applied
       
       await transaction.save();
-      
+
       console.log(`[Admin] Transaction rejected`);
-      
+
+      // If this transaction is linked to a CheckDeposit, update it too
+      if (transaction.origin === 'check_deposit' || transaction.metadata?.depositId) {
+        try {
+          const depositId = transaction.metadata?.depositId;
+          if (depositId) {
+            await CheckDeposit.findByIdAndUpdate(depositId, {
+              status: 'rejected',
+              rejectionReason: adminNotes || 'Rejected by admin',
+              reviewedAt: new Date(),
+              reviewedBy: adminId || 'admin',
+            });
+            console.log(`[Admin] Linked CheckDeposit ${depositId} also marked as rejected`);
+          }
+        } catch (depErr) {
+          console.error('[Admin] Failed to update linked CheckDeposit:', depErr);
+        }
+      }
+
       // Send rejection email
       if (user.email) {
         try {

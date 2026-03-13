@@ -147,23 +147,29 @@ export async function PATCH(
       console.log(`[Admin Check Deposit] Updated ${deposit.accountType} balance for user ${user.email}: +$${deposit.amount}`);
     }
 
+    // Update the linked Transaction record (separate from email)
+    const reference = `DEP-${deposit._id.toString().slice(-8).toUpperCase()}`;
+    try {
+      const linkedTx = await Transaction.findOne({
+        $or: [
+          { 'metadata.depositId': deposit._id.toString() },
+          { origin: 'check_deposit', userId: deposit.userId, status: 'pending' },
+        ],
+      });
+      if (linkedTx) {
+        linkedTx.status = action === 'approve' ? 'completed' : 'rejected';
+        linkedTx.posted = action === 'approve';
+        linkedTx.postedAt = action === 'approve' ? new Date() : null;
+        await linkedTx.save();
+        console.log(`[Admin Check Deposit] Linked transaction ${linkedTx._id} updated to ${linkedTx.status}`);
+      }
+    } catch (txErr: any) {
+      console.error('[Admin Check Deposit] Failed to update linked transaction:', txErr?.message);
+    }
+
     // Send email notification
     if (user && user.email) {
       try {
-        const reference = `DEP-${deposit._id.toString().slice(-8).toUpperCase()}`;
-
-        // Find or create the transaction record for this deposit
-        let transaction = await Transaction.findOne({
-          'metadata.depositId': deposit._id.toString(),
-        });
-
-        if (transaction) {
-          transaction.status = action === 'approve' ? 'completed' : 'rejected';
-          transaction.posted = action === 'approve';
-          transaction.postedAt = action === 'approve' ? new Date() : null;
-          await transaction.save();
-        }
-
         await sendTransactionEmail(user.email, {
           name: user.name || user.firstName || 'Customer',
           transaction: {
@@ -188,7 +194,6 @@ export async function PATCH(
         console.log(`[Admin Check Deposit] Email sent to ${user.email} for ${action}`);
       } catch (emailErr: any) {
         console.error('[Admin Check Deposit] Email failed:', emailErr?.message);
-        // Don't fail the request if email fails
       }
     }
 
