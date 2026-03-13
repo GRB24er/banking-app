@@ -217,6 +217,12 @@ const Footer = () => {
                     </Link>
                   </motion.li>
                 ))}
+                <motion.li whileHover={{ x: 5 }}>
+                  <Link href="/download">
+                    <span className={styles.linkBullet}>•</span>
+                    Download Mobile App
+                  </Link>
+                </motion.li>
               </ul>
             </div>
           </div>
