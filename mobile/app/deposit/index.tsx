@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import api from '../../services/api';
 import { endpoints } from '../../constants/api';
 import Input from '../../components/ui/Input';
@@ -36,6 +37,22 @@ export default function CheckDeposit() {
     setRefreshing(false);
   };
 
+  const compressImage = async (uri: string): Promise<string | null> => {
+    try {
+      // Resize to max 600px wide and compress to JPEG 0.2 quality
+      // This keeps each image well under 200KB in base64
+      const manipulated = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 600 } }],
+        { compress: 0.2, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+      return manipulated.base64 || null;
+    } catch (err) {
+      console.error('Image compression failed:', err);
+      return null;
+    }
+  };
+
   const pickImage = async (side: 'front' | 'back') => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
@@ -44,30 +61,36 @@ export default function CheckDeposit() {
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      quality: 0.3,
-      base64: true,
+      quality: 0.5,
       allowsEditing: true,
       exif: false,
     });
-    if (!result.canceled && result.assets[0]?.base64) {
-      const base64 = result.assets[0].base64;
-      if (side === 'front') setFrontImage(base64);
-      else setBackImage(base64);
+    if (!result.canceled && result.assets[0]?.uri) {
+      const base64 = await compressImage(result.assets[0].uri);
+      if (base64) {
+        if (side === 'front') setFrontImage(base64);
+        else setBackImage(base64);
+      } else {
+        Alert.alert('Error', 'Failed to process image. Please try again.');
+      }
     }
   };
 
   const pickFromGallery = async (side: 'front' | 'back') => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.3,
-      base64: true,
+      quality: 0.5,
       allowsEditing: true,
       exif: false,
     });
-    if (!result.canceled && result.assets[0]?.base64) {
-      const base64 = result.assets[0].base64;
-      if (side === 'front') setFrontImage(base64);
-      else setBackImage(base64);
+    if (!result.canceled && result.assets[0]?.uri) {
+      const base64 = await compressImage(result.assets[0].uri);
+      if (base64) {
+        if (side === 'front') setFrontImage(base64);
+        else setBackImage(base64);
+      } else {
+        Alert.alert('Error', 'Failed to process image. Please try again.');
+      }
     }
   };
 

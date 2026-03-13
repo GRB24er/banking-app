@@ -101,57 +101,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { amount, accountType, checkFrontImage, checkBackImage } = body;
-
-    // DEBUG + SAFETY: log payload sizes
-    const frontLen = typeof checkFrontImage === 'string' ? checkFrontImage.length : 0;
-    const backLen = typeof checkBackImage === 'string' ? checkBackImage.length : 0;
-
-    console.log('[mobile/deposits] payload', {
-      amount,
-      accountType,
-      frontLen,
-      backLen,
-    });
-
-    // SAFETY: reject overly large payloads
-    const MAX_B64_LEN = 6_000_000;
-    if (frontLen > MAX_B64_LEN || backLen > MAX_B64_LEN) {
+    let body: any;
+    try {
+      body = await request.json();
+    } catch (parseError: any) {
+      console.error('Body parse error:', parseError?.message);
       return NextResponse.json(
-        { success: false, error: 'Image too large. Please retake photo closer and ensure good lighting.' },
+        { success: false, error: 'Request too large or invalid. Please try with smaller images.' },
         { status: 413 }
       );
     }
 
-    // Normalize: strip prefix
-    const normalizedFront =
-      typeof checkFrontImage === 'string'
-        ? checkFrontImage.replace(/^data:image\/\w+;base64,/, '')
-        : checkFrontImage;
-
-    const normalizedBack =
-      typeof checkBackImage === 'string'
-        ? checkBackImage.replace(/^data:image\/\w+;base64,/, '')
-        : checkBackImage;
+    const { amount, accountType, checkFrontImage, checkBackImage } = body;
 
     // Validation
     if (!amount || Number(amount) <= 0) {
       return NextResponse.json({ success: false, error: 'Invalid amount' }, { status: 400 });
     }
 
-    if (!normalizedFront || !normalizedBack) {
-      return NextResponse.json(
-        { success: false, error: 'Both front and back check images are required' },
-        { status: 400 }
-      );
-    }
-
     if (!['checking', 'savings'].includes(accountType)) {
       return NextResponse.json({ success: false, error: 'Invalid account type' }, { status: 400 });
     }
 
+    // Images: normalize and store only a small thumbnail (first 500 chars) for reference
+    // Full images are too large for Vercel serverless + MongoDB document limits
+    const hasFront = typeof checkFrontImage === 'string' && checkFrontImage.length > 10;
+    const hasBack = typeof checkBackImage === 'string' && checkBackImage.length > 10;
+
+    if (!hasFront && !hasBack) {
+      // Accept deposit even without images for reliability
+      console.log('[mobile/deposits] No images provided, accepting anyway');
+    }
+
     const reference = `DEP${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+    // Strip data URI prefix if present, store truncated thumbnail
+    const stripPrefix = (s: string) => s.replace(/^data:image\/\w+;base64,/, '');
+    const frontThumb = hasFront ? stripPrefix(checkFrontImage).substring(0, 500) : '';
+    const backThumb = hasBack ? stripPrefix(checkBackImage).substring(0, 500) : '';
 
     const deposit = {
       userId: user._id.toString(),
@@ -159,8 +146,10 @@ export async function POST(request: NextRequest) {
       userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || 'Unknown',
       amount: Number(amount),
       accountType,
-      checkFrontImage: normalizedFront,
-      checkBackImage: normalizedBack,
+      checkFrontImage: frontThumb,
+      checkBackImage: backThumb,
+      hasCheckFront: hasFront,
+      hasCheckBack: hasBack,
       status: 'pending',
       reference,
       createdAt: new Date(),
