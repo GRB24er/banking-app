@@ -45,7 +45,7 @@ export default function DownloadPage() {
           </div>
 
           <a
-            href="https://expo.dev/artifacts/eas/4HrSmzsRC9FxJydKRHecfi.apk"
+            href="https://expo.dev/artifacts/eas/8iLyhDHUJFHeGvJi8nm74q.apk"
             download="HorizonGlobalCapital.apk"
             className={styles.downloadButton}
           >
