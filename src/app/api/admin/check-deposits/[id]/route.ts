@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/mongodb';
 import CheckDeposit from '@/models/CheckDeposit';
 import User from '@/models/User';
+import Transaction from '@/models/Transaction';
+import { sendTransactionEmail } from '@/lib/mail';
 
 // GET single deposit
 export async function GET(
@@ -132,24 +134,67 @@ export async function PATCH(
     await deposit.save();
 
     // If approved, update user balance
-    if (action === 'approve') {
-      const user = await User.findById(deposit.userId);
-      
-      if (user) {
-        if (deposit.accountType === 'checking') {
-          user.checkingBalance = (user.checkingBalance || 0) + deposit.amount;
-        } else if (deposit.accountType === 'savings') {
-          user.savingsBalance = (user.savingsBalance || 0) + deposit.amount;
+    const user = await User.findById(deposit.userId);
+
+    if (action === 'approve' && user) {
+      if (deposit.accountType === 'checking') {
+        user.checkingBalance = (user.checkingBalance || 0) + deposit.amount;
+      } else if (deposit.accountType === 'savings') {
+        user.savingsBalance = (user.savingsBalance || 0) + deposit.amount;
+      }
+
+      await user.save();
+      console.log(`[Admin Check Deposit] Updated ${deposit.accountType} balance for user ${user.email}: +$${deposit.amount}`);
+    }
+
+    // Send email notification
+    if (user && user.email) {
+      try {
+        const reference = `DEP-${deposit._id.toString().slice(-8).toUpperCase()}`;
+
+        // Find or create the transaction record for this deposit
+        let transaction = await Transaction.findOne({
+          'metadata.depositId': deposit._id.toString(),
+        });
+
+        if (transaction) {
+          transaction.status = action === 'approve' ? 'completed' : 'rejected';
+          transaction.posted = action === 'approve';
+          transaction.postedAt = action === 'approve' ? new Date() : null;
+          await transaction.save();
         }
-        
-        await user.save();
-        console.log(`[Admin Check Deposit] Updated ${deposit.accountType} balance for user ${user.email}: +$${deposit.amount}`);
+
+        await sendTransactionEmail(user.email, {
+          name: user.name || user.firstName || 'Customer',
+          transaction: {
+            _id: deposit._id,
+            userId: deposit.userId,
+            reference,
+            type: 'deposit',
+            currency: 'USD',
+            amount: deposit.amount,
+            description: action === 'approve'
+              ? `Check Deposit Approved - $${deposit.amount.toFixed(2)} credited to ${deposit.accountType}`
+              : `Check Deposit Rejected${deposit.rejectionReason ? ': ' + deposit.rejectionReason : ''}`,
+            status: action === 'approve' ? 'approved' : 'rejected',
+            date: new Date(),
+            accountType: deposit.accountType,
+            posted: action === 'approve',
+            postedAt: action === 'approve' ? new Date() : null,
+            createdAt: deposit.createdAt,
+            updatedAt: new Date(),
+          },
+        });
+        console.log(`[Admin Check Deposit] Email sent to ${user.email} for ${action}`);
+      } catch (emailErr: any) {
+        console.error('[Admin Check Deposit] Email failed:', emailErr?.message);
+        // Don't fail the request if email fails
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: action === 'approve' 
+      message: action === 'approve'
         ? `Deposit approved. $${deposit.amount.toFixed(2)} has been added to the user's ${deposit.accountType} account.`
         : 'Deposit rejected.',
       deposit: {
