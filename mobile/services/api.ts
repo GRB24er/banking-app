@@ -23,11 +23,12 @@ class ApiClient {
 
   async request<T = any>(
     endpoint: string,
-    options: RequestInit = {}
-  ): Promise<{ success: boolean; error?: string } & T> {
+    options: RequestInit = {},
+    timeoutMs: number = 15000
+  ): Promise<{ success: boolean; error?: string; message?: string } & T> {
     const token = await this.getToken();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const headers: Record<string, string> = {
@@ -66,11 +67,11 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
-  post<T = any>(endpoint: string, body: any) {
+  post<T = any>(endpoint: string, body: any, timeoutMs?: number) {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(body),
-    });
+    }, timeoutMs);
   }
 }
 

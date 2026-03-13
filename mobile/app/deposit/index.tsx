@@ -37,13 +37,20 @@ export default function CheckDeposit() {
   };
 
   const pickImage = async (side: 'front' | 'back') => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Camera permission is needed to capture check images');
+      return;
+    }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
+      quality: 0.3,
       base64: true,
+      allowsEditing: true,
+      exif: false,
     });
     if (!result.canceled && result.assets[0]?.base64) {
-      const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      const base64 = result.assets[0].base64;
       if (side === 'front') setFrontImage(base64);
       else setBackImage(base64);
     }
@@ -52,11 +59,13 @@ export default function CheckDeposit() {
   const pickFromGallery = async (side: 'front' | 'back') => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
+      quality: 0.3,
       base64: true,
+      allowsEditing: true,
+      exif: false,
     });
     if (!result.canceled && result.assets[0]?.base64) {
-      const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      const base64 = result.assets[0].base64;
       if (side === 'front') setFrontImage(base64);
       else setBackImage(base64);
     }
@@ -84,9 +93,9 @@ export default function CheckDeposit() {
       const res = await api.post(endpoints.deposits, {
         amount: parseFloat(amount),
         accountType,
-        checkFrontImage: frontImage,
-        checkBackImage: backImage,
-      });
+        checkFrontImage: `data:image/jpeg;base64,${frontImage}`,
+        checkBackImage: `data:image/jpeg;base64,${backImage}`,
+      }, 60000);
       if (res.success) {
         Alert.alert('Success', 'Check deposit submitted for review', [
           { text: 'OK', onPress: () => {
@@ -97,10 +106,10 @@ export default function CheckDeposit() {
           }},
         ]);
       } else {
-        Alert.alert('Error', res.message || 'Deposit failed');
+        Alert.alert('Error', res.error || res.message || 'Deposit failed');
       }
-    } catch {
-      Alert.alert('Error', 'Something went wrong');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -152,7 +161,7 @@ export default function CheckDeposit() {
         <Text style={styles.label}>Check Front</Text>
         <TouchableOpacity style={styles.imageBox} onPress={() => showImageOptions('front')}>
           {frontImage ? (
-            <Image source={{ uri: frontImage }} style={styles.preview} />
+            <Image source={{ uri: `data:image/jpeg;base64,${frontImage}` }} style={styles.preview} />
           ) : (
             <View style={styles.imagePlaceholder}>
               <Ionicons name="camera" size={32} color={colors.textMuted} />
@@ -164,7 +173,7 @@ export default function CheckDeposit() {
         <Text style={styles.label}>Check Back</Text>
         <TouchableOpacity style={styles.imageBox} onPress={() => showImageOptions('back')}>
           {backImage ? (
-            <Image source={{ uri: backImage }} style={styles.preview} />
+            <Image source={{ uri: `data:image/jpeg;base64,${backImage}` }} style={styles.preview} />
           ) : (
             <View style={styles.imagePlaceholder}>
               <Ionicons name="camera" size={32} color={colors.textMuted} />

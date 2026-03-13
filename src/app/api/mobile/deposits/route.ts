@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import clientPromise from '@/lib/mongodb';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 const JWT_SECRET =
   process.env.JWT_SECRET ||
