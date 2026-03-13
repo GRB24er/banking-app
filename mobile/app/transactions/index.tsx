@@ -20,16 +20,18 @@ export default function Transactions() {
   const [hasMore, setHasMore] = useState(true);
 
   const fetchTx = async (p = 1, f = filter) => {
-    const typeParam = f === 'all' ? '' : `&type=${f}`;
-    const res = await api.get<{ transactions: Transaction[]; pagination: any }>(
-      `${endpoints.transactions}?limit=20&page=${p}${typeParam}`
-    );
-    if (res.success) {
-      if (p === 1) setTransactions(res.transactions);
-      else setTransactions(prev => [...prev, ...res.transactions]);
-      setHasMore(res.pagination?.hasMore || false);
-      setPage(p);
-    }
+    try {
+      const typeParam = f === 'all' ? '' : `&type=${f}`;
+      const res = await api.get<{ transactions: Transaction[]; pagination: any }>(
+        `${endpoints.transactions}?limit=20&page=${p}${typeParam}`
+      );
+      if (res.success) {
+        if (p === 1) setTransactions(res.transactions);
+        else setTransactions(prev => [...prev, ...res.transactions]);
+        setHasMore(res.pagination?.hasMore || false);
+        setPage(p);
+      }
+    } catch {}
   };
 
   useFocusEffect(useCallback(() => { fetchTx(1); }, []));

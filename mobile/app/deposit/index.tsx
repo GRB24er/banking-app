@@ -25,8 +25,10 @@ export default function CheckDeposit() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchDeposits = async () => {
-    const res = await api.get<{ deposits: Deposit[] }>(endpoints.deposits);
-    if (res.success) setDeposits(res.deposits || []);
+    try {
+      const res = await api.get<{ deposits: Deposit[] }>(endpoints.deposits);
+      if (res.success) setDeposits(res.deposits || []);
+    } catch {}
   };
 
   useFocusEffect(useCallback(() => { fetchDeposits(); }, []));

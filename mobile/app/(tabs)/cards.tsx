@@ -16,8 +16,10 @@ export default function Cards() {
   const [requesting, setRequesting] = useState(false);
 
   const fetchCards = async () => {
-    const res = await api.get<{ cards: Card[] }>(endpoints.cards);
-    if (res.success) setCards(res.cards || []);
+    try {
+      const res = await api.get<{ cards: Card[] }>(endpoints.cards);
+      if (res.success) setCards(res.cards || []);
+    } catch {}
   };
 
   useFocusEffect(useCallback(() => { fetchCards(); }, []));

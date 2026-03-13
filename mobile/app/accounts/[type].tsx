@@ -29,15 +29,17 @@ export default function AccountDetail() {
   const balance = user ? (user as any)[`${type}Balance`] || 0 : 0;
 
   const fetchTransactions = async (p = 1) => {
-    const res = await api.get<{ transactions: Transaction[]; pagination: any }>(
-      `${endpoints.transactions}?limit=20&page=${p}&accountType=${type}`
-    );
-    if (res.success) {
-      if (p === 1) setTransactions(res.transactions);
-      else setTransactions(prev => [...prev, ...res.transactions]);
-      setHasMore(res.pagination?.hasMore || false);
-      setPage(p);
-    }
+    try {
+      const res = await api.get<{ transactions: Transaction[]; pagination: any }>(
+        `${endpoints.transactions}?limit=20&page=${p}&accountType=${type}`
+      );
+      if (res.success) {
+        if (p === 1) setTransactions(res.transactions);
+        else setTransactions(prev => [...prev, ...res.transactions]);
+        setHasMore(res.pagination?.hasMore || false);
+        setPage(p);
+      }
+    } catch {}
   };
 
   useFocusEffect(useCallback(() => { fetchTransactions(1); }, [type]));

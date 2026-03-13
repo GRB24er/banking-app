@@ -20,8 +20,10 @@ export default function Transfers() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchTransfers = async () => {
-    const res = await api.get<{ transfers: Transfer[] }>(endpoints.transfers);
-    if (res.success) setTransfers(res.transfers?.slice(0, 10) || []);
+    try {
+      const res = await api.get<{ transfers: Transfer[] }>(endpoints.transfers);
+      if (res.success) setTransfers(res.transfers?.slice(0, 10) || []);
+    } catch {}
   };
 
   useFocusEffect(useCallback(() => { fetchTransfers(); }, []));
