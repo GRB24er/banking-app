@@ -5,6 +5,10 @@ import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 import { sendTransactionEmail } from '@/lib/mail';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
+
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
 
 async function getMobileUser(request: NextRequest) {
@@ -195,10 +199,10 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error) {
-    console.error('Mobile transfer error:', error);
+  } catch (error: any) {
+    console.error('Mobile transfer error:', error?.message || error);
     return NextResponse.json(
-      { success: false, error: 'Transfer failed' },
+      { success: false, error: error?.message || 'Transfer failed. Please try again.' },
       { status: 500 }
     );
   }
@@ -255,7 +259,7 @@ export async function GET(request: NextRequest) {
       .limit(50)
       .lean();
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       transfers: (transfers as any[]).map(tx => ({
         _id: tx._id.toString(),
@@ -268,9 +272,11 @@ export async function GET(request: NextRequest) {
         origin: tx.origin,
       }))
     });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return response;
 
-  } catch (error) {
-    console.error('Get transfers error:', error);
+  } catch (error: any) {
+    console.error('Get transfers error:', error?.message || error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch transfers' },
       { status: 500 }

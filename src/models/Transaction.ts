@@ -224,7 +224,7 @@ TransactionSchema.pre('insertMany', function (next, docs: any[]) {
     d.posted = false;
     d.postedAt = null;
     const acct = String(d.accountType || 'checking').toLowerCase();
-    d.accountType = ['checking', 'savings', 'inv8,090.00estment'].includes(acct) ? acct : 'checking';
+    d.accountType = ['checking', 'savings', 'investment'].includes(acct) ? acct : 'checking';
   }
   next();
 });

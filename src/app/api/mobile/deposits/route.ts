@@ -7,6 +7,7 @@ import CheckDeposit from '@/models/CheckDeposit';
 import Transaction from '@/models/Transaction';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
       .limit(50)
       .lean();
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       deposits: deposits.map((d: any) => ({
         _id: d._id.toString(),
@@ -54,9 +55,12 @@ export async function GET(request: NextRequest) {
         hasCheckBack: !!d.backImage,
         createdAt: d.createdAt,
         reviewedAt: d.reviewedAt,
+        rejectionReason: d.rejectionReason,
         notes: d.notes,
       })),
     });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return response;
   } catch (error: any) {
     console.error('Deposits fetch error:', error);
     return NextResponse.json(

@@ -6,6 +6,9 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const AUTH_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
 
 async function verifyMobileToken(request: NextRequest) {
@@ -88,7 +91,14 @@ export async function GET(request: NextRequest) {
 
     // Add virtual card if user has savings
     if ((user.savingsBalance || 0) > 0) {
-      const virtualLast4 = String(Math.abs(user._id.toString().hashCode?.() || Date.now()) % 10000).padStart(4, '0');
+      // Simple deterministic hash from user ID for stable virtual card number
+      const idStr = user._id.toString();
+      let hash = 0;
+      for (let i = 0; i < idStr.length; i++) {
+        hash = ((hash << 5) - hash) + idStr.charCodeAt(i);
+        hash |= 0;
+      }
+      const virtualLast4 = String(Math.abs(hash) % 10000).padStart(4, '0');
       cards.push({
         _id: `card_virtual_${user._id}`,
         type: 'virtual',

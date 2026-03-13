@@ -7,6 +7,9 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const AUTH_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '308d98ab1034136b95e1f7b43f6afde185e5892d09bbe9d1e2b68e1db9c1acae';
 
 // POST /api/auth/mobile - Mobile login

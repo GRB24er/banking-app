@@ -7,6 +7,8 @@ import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 import { sendTransactionEmail } from '@/lib/mail';
 
+export const dynamic = 'force-dynamic';
+
 // GET single deposit
 export async function GET(
   request: NextRequest,
