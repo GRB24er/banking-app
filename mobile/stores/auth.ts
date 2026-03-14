@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await SecureStore.deleteItemAsync('auth_token');
       await SecureStore.deleteItemAsync('auth_user');
-    } catch {}
+    } catch (err) { console.warn('Auth operation failed:', err); }
     setState({ token: null, user: null, isLoading: false, isAuthenticated: false });
   }, []);
 

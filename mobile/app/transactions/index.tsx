@@ -31,7 +31,7 @@ export default function Transactions() {
         setHasMore(res.pagination?.hasMore || false);
         setPage(p);
       }
-    } catch {}
+    } catch (err) { console.warn('Request failed:', err); }
   };
 
   useFocusEffect(useCallback(() => { fetchTx(1); }, []));

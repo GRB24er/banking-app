@@ -39,7 +39,7 @@ export default function AccountDetail() {
         setHasMore(res.pagination?.hasMore || false);
         setPage(p);
       }
-    } catch {}
+    } catch (err) { console.warn('Request failed:', err); }
   };
 
   useFocusEffect(useCallback(() => { fetchTransactions(1); }, [type]));

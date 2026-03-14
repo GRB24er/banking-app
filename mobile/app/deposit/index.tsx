@@ -28,7 +28,7 @@ export default function CheckDeposit() {
     try {
       const res = await api.get<{ deposits: Deposit[] }>(endpoints.deposits);
       if (res.success) setDeposits(res.deposits || []);
-    } catch {}
+    } catch (err) { console.warn('Request failed:', err); }
   };
 
   useFocusEffect(useCallback(() => { fetchDeposits(); }, []));
