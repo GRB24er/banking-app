@@ -40,12 +40,12 @@ export default function DownloadPage() {
             </div>
             <div>
               <h2 className={styles.cardTitle}>Android App</h2>
-              <p className={styles.cardVersion}>Version 1.0.0 &bull; 16 MB</p>
+              <p className={styles.cardVersion}>Version 2.0.0 &bull; Updated Mar 2026</p>
             </div>
           </div>
 
           <a
-            href="https://expo.dev/artifacts/eas/kbvf7KVAoF3vtYvT1dScxN.apk"
+            href="https://expo.dev/artifacts/eas/7q4v3dUfN5am2ccfpnd8xp.apk"
             download="HorizonGlobalCapital.apk"
             className={styles.downloadButton}
           >
