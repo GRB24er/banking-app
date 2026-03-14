@@ -761,7 +761,7 @@ export default function SignUpPage() {
                 />
                 <span className={styles.checkmark}></span>
                 <span className={styles.checkboxLabel}>
-                  I would like to receive updates, market insights, and exclusive offers from Aldwych Capital.
+                  I would like to receive updates, market insights, and exclusive offers from Horizon Capital.
                 </span>
               </label>
             </div>
@@ -863,7 +863,7 @@ export default function SignUpPage() {
             <div className={styles.headerContent}>
               <h1 className={styles.pageTitle}>Private Account Application</h1>
               <p className={styles.pageSubtitle}>
-                Complete this form to begin your journey with Aldwych Capital. 
+                Complete this form to begin your journey with Horizon Capital. 
                 Estimated completion time: 5-7 minutes.
               </p>
             </div>

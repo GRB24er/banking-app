@@ -159,7 +159,7 @@ export default function AdminSidebar() {
             <div className={styles.logoIcon}>🏦</div>
             {!collapsed && (
               <div className={styles.logoText}>
-                <div className={styles.logoName}>Horizon Bank</div>
+                <div className={styles.logoName}>Horizon Global Capital</div>
                 <div className={styles.logoSubtitle}>Admin Portal</div>
               </div>
             )}

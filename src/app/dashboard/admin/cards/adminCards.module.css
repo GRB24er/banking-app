@@ -57,9 +57,9 @@
 
 .filters button:hover,
 .filters button.active {
-  background: #D4AF37;
+  background: var(--gold, #C9A962);
   color: #0f172a;
-  border-color: #D4AF37;
+  border-color: var(--gold, #C9A962);
 }
 
 .loading, .empty {

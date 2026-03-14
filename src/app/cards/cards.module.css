@@ -29,8 +29,8 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(212, 175, 55, 0.2);
-  border-top-color: #D4AF37;
+  border: 3px solid rgba(201, 169, 98, 0.2);
+  border-top-color: var(--gold, #C9A962);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -64,7 +64,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8860B 100%);
   color: #1a1a2e;
   border: none;
   border-radius: 10px;
@@ -75,7 +75,7 @@
 
 .requestBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 4px 12px rgba(201, 169, 98, 0.4);
 }
 
 /* Messages */
@@ -104,7 +104,7 @@
   padding: 4rem 2rem;
   background: white;
   border-radius: 16px;
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(201, 169, 98, 0.15);
 }
 
 .emptyIcon {
@@ -134,7 +134,7 @@
   background: white;
   border-radius: 20px;
   overflow: hidden;
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(201, 169, 98, 0.15);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   transition: transform 0.3s, box-shadow 0.3s;
 }
@@ -335,7 +335,7 @@
 
 .limitProgressBar {
   height: 100%;
-  background: linear-gradient(90deg, #D4AF37, #F4D03F);
+  background: linear-gradient(90deg, var(--gold, #C9A962), #F4D03F);
   border-radius: 2px;
   transition: width 0.3s;
 }
@@ -359,7 +359,7 @@
 }
 
 .revealBtn {
-  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8860B 100%);
   color: #1a1a2e;
 }
 
@@ -485,7 +485,7 @@
 
 .formGroup input:focus {
   outline: none;
-  border-color: #D4AF37;
+  border-color: var(--gold, #C9A962);
 }
 
 /* Card Type Selection */
@@ -521,12 +521,12 @@
 }
 
 .cardTypeBtn.active {
-  border-color: #D4AF37;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  border-color: var(--gold, #C9A962);
+  box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.2);
 }
 
 .cardTypeBtn:hover:not(.active) {
-  border-color: #D4AF37;
+  border-color: var(--gold, #C9A962);
 }
 
 /* Tier Options */
@@ -545,12 +545,12 @@
 }
 
 .tierOption:hover {
-  border-color: #D4AF37;
+  border-color: var(--gold, #C9A962);
 }
 
 .tierOption.active {
-  border-color: #D4AF37;
-  background: rgba(212, 175, 55, 0.05);
+  border-color: var(--gold, #C9A962);
+  background: rgba(201, 169, 98, 0.05);
 }
 
 .tierHeader {
@@ -567,7 +567,7 @@
 
 .tierFee {
   font-weight: 600;
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
 }
 
 .tierLimits {
@@ -597,13 +597,13 @@
 }
 
 .submitBtn {
-  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8860B 100%);
   color: #1a1a2e;
 }
 
 .submitBtn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 4px 12px rgba(201, 169, 98, 0.4);
 }
 
 .submitBtn:disabled {

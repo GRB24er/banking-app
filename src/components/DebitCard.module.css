@@ -1,55 +1,94 @@
+/* DebitCard — Horizon Global Capital Professional Theme */
+
 .card {
   position: relative;
-  width: 320px;
-  height: 200px;
+  width: 340px;
+  height: 210px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  background: linear-gradient(135deg, var(--navy, #1A1F2E) 0%, var(--dark-bg, #0B0D11) 100%);
   color: #fff;
   padding: 24px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 169, 98, 0.15);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 98, 0.4), transparent);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(201, 169, 98, 0.06) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .logo {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
+  color: var(--gold, #C9A962);
+  letter-spacing: 0.02em;
+  position: relative;
+  z-index: 1;
 }
 
 .chip {
-  width: 40px;
-  height: 30px;
-  border-radius: 4px;
-  background: rgba(255,255,255,0.7);
-  margin-top: 16px;
+  width: 42px;
+  height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, var(--gold-dark, #A8935F) 100%);
+  margin-top: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .number {
-  font-size: 1.1rem;
-  letter-spacing: 2px;
+  font-size: 1.0625rem;
+  letter-spacing: 3px;
   margin-top: 12px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
 }
 
 .infoRow {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
-  margin-top: 16px;
+  font-size: 0.8125rem;
+  margin-top: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .accountName {
   text-transform: uppercase;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
 }
 
 .expiry {
   font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, #A0A4B8);
 }
 
 .holderName {
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   margin-top: 4px;
-  opacity: 0.85;
+  color: var(--text-secondary, #A0A4B8);
 }

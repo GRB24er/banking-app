@@ -1,19 +1,19 @@
-/* dashboard.module.css - Horizon Global Capital - Dark Premium Gold */
+/* Dashboard — Horizon Global Capital Professional Theme */
 
 .wrapper {
   display: flex;
   min-height: 100vh;
-  background: #0D0D0D;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  background: var(--dark-bg, #0B0D11);
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
 .mainContent {
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin-left: 280px;
+  margin-left: 272px;
   min-height: 100vh;
-  background: #0D0D0D;
+  background: var(--dark-bg, #0B0D11);
 }
 
 .dashboard {
@@ -24,13 +24,14 @@
   margin: 0 auto;
 }
 
+/* ===== LOADING SCREEN ===== */
 .loadingScreen {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #0D0D0D 0%, #1A1A1A 100%);
+  background: var(--dark-bg, #0B0D11);
 }
 
 .loadingContent {
@@ -47,14 +48,14 @@
 .loadingLogoIcon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, var(--gold-dark, #A8935F) 100%);
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
   font-weight: 800;
-  color: #0D0D0D;
+  color: var(--dark-bg, #0B0D11);
   position: relative;
   z-index: 2;
 }
@@ -62,7 +63,7 @@
 .loadingPulse {
   position: absolute;
   inset: -10px;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, var(--gold-dark, #A8935F) 100%);
   border-radius: 24px;
   opacity: 0.3;
   animation: pulse 2s ease-in-out infinite;
@@ -74,7 +75,7 @@
 }
 
 .loadingText {
-  color: #A0A0A0;
+  color: var(--text-secondary, #A0A4B8);
   font-size: 1.125rem;
   font-weight: 500;
   margin-bottom: 1rem;
@@ -89,7 +90,7 @@
 .loadingDots span {
   width: 8px;
   height: 8px;
-  background: #D4AF37;
+  background: var(--gold, #C9A962);
   border-radius: 50%;
   animation: bounce 1.4s infinite ease-in-out both;
 }
@@ -102,24 +103,25 @@
   40% { transform: scale(1); }
 }
 
+/* ===== ERROR SCREEN ===== */
 .errorScreen {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   width: 100%;
-  background: #0D0D0D;
+  background: var(--dark-bg, #0B0D11);
   padding: 2rem;
 }
 
 .errorCard {
-  background: #1A1A1A;
-  border-radius: 24px;
+  background: var(--dark-card, #161820);
+  border-radius: 20px;
   padding: 3rem;
   max-width: 420px;
   text-align: center;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  box-shadow: var(--shadow-lg, 0 8px 30px rgba(0, 0, 0, 0.5));
+  border: 1px solid var(--dark-border, #1E2130);
 }
 
 .errorIcon {
@@ -130,19 +132,19 @@
 .errorTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text-primary, #FFFFFF);
   margin: 0 0 0.75rem;
 }
 
 .errorMessage {
-  color: #A0A0A0;
+  color: var(--text-secondary, #A0A4B8);
   margin: 0 0 2rem;
   line-height: 1.6;
 }
 
 .retryBtn {
-  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
-  color: #0D0D0D;
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, var(--gold-dark, #A8935F) 100%);
+  color: var(--dark-bg, #0B0D11);
   padding: 0.875rem 2rem;
   border-radius: 12px;
   border: none;
@@ -154,13 +156,14 @@
 
 .retryBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 10px 30px rgba(201, 169, 98, 0.3);
 }
 
+/* ===== HERO SECTION ===== */
 .hero {
-  background: linear-gradient(135deg, #1A1A1A 0%, #252525 50%, #1A1A1A 100%);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  border-radius: 24px;
+  background: var(--dark-card, #161820);
+  border: 1px solid var(--dark-border, #1E2130);
+  border-radius: 20px;
   padding: 2.5rem;
   margin-bottom: 2rem;
   display: grid;
@@ -169,7 +172,6 @@
   align-items: center;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .hero::before {
@@ -178,8 +180,8 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 98, 0.3), transparent);
 }
 
 .hero::after {
@@ -189,7 +191,7 @@
   right: -50%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(201, 169, 98, 0.04) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -207,7 +209,7 @@
   display: block;
   font-size: 1rem;
   font-weight: 500;
-  color: #A0A0A0;
+  color: var(--text-secondary, #A0A4B8);
   margin-bottom: 0.25rem;
 }
 
@@ -216,7 +218,7 @@
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #FFFFFF 0%, #D4AF37 100%);
+  background: linear-gradient(135deg, #FFFFFF 0%, var(--gold, #C9A962) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -227,9 +229,9 @@
 }
 
 .balanceLabel {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #D4AF37;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gold, #C9A962);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 0.5rem;
@@ -240,19 +242,19 @@
   font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
-  color: #FFFFFF;
+  color: var(--text-primary, #FFFFFF);
 }
 
 .balanceBreakdown {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9375rem;
-  color: #A0A0A0;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #A0A4B8);
 }
 
 .breakdownDivider {
-  opacity: 0.5;
+  opacity: 0.3;
 }
 
 .heroStats {
@@ -260,7 +262,7 @@
   align-items: center;
   gap: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  border-top: 1px solid var(--dark-border, #1E2130);
 }
 
 .statItem {
@@ -270,12 +272,12 @@
 .statValue {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
 }
 
 .statLabel {
-  font-size: 0.75rem;
-  color: #A0A0A0;
+  font-size: 0.6875rem;
+  color: var(--text-muted, #6B7084);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 0.25rem;
@@ -284,7 +286,7 @@
 .statDivider {
   width: 1px;
   height: 40px;
-  background: rgba(212, 175, 55, 0.2);
+  background: var(--dark-border, #1E2130);
 }
 
 .heroChart {
@@ -292,6 +294,7 @@
   z-index: 1;
 }
 
+/* ===== QUICK ACTIONS ===== */
 .quickActions {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -303,9 +306,9 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: #1A1A1A;
-  border: 1px solid rgba(212, 175, 55, 0.15);
-  border-radius: 16px;
+  background: var(--dark-card, #161820);
+  border: 1px solid var(--dark-border, #1E2130);
+  border-radius: 14px;
   padding: 1.25rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -314,42 +317,44 @@
 
 .actionCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  border-color: var(--action-color, #D4AF37);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border-color: rgba(201, 169, 98, 0.2);
 }
 
 .actionIcon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(212, 175, 55, 0.1);
+  background: rgba(201, 169, 98, 0.08);
   border-radius: 12px;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .actionInfo {
   flex: 1;
+  min-width: 0;
 }
 
 .actionTitle {
   display: block;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #FFFFFF;
+  color: var(--text-primary, #FFFFFF);
 }
 
 .actionDesc {
   display: block;
-  font-size: 0.8125rem;
-  color: #A0A0A0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #6B7084);
   margin-top: 0.125rem;
 }
 
 .actionArrow {
-  font-size: 1.25rem;
-  color: #A0A0A0;
+  font-size: 1.125rem;
+  color: var(--text-dim, #4A4E63);
   opacity: 0;
   transform: translateX(-8px);
   transition: all 0.2s;
@@ -358,9 +363,10 @@
 .actionCard:hover .actionArrow {
   opacity: 1;
   transform: translateX(0);
-  color: var(--action-color, #D4AF37);
+  color: var(--gold, #C9A962);
 }
 
+/* ===== SECTION HEADERS ===== */
 .sectionHeader {
   display: flex;
   justify-content: space-between;
@@ -375,33 +381,36 @@
 }
 
 .sectionTitle {
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text-primary, #FFFFFF);
   margin: 0;
 }
 
 .sectionLink {
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   transition: color 0.2s;
+  letter-spacing: 0.01em;
 }
 
 .sectionLink:hover {
-  color: #F4D03F;
+  color: var(--gold-light, #D4B978);
 }
 
 .processingBadge {
-  background: rgba(251, 191, 36, 0.15);
-  color: #FBBF24;
-  padding: 0.375rem 0.875rem;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning, #F59E0B);
+  padding: 0.25rem 0.75rem;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
+  border: 1px solid rgba(245, 158, 11, 0.15);
 }
 
+/* ===== ACCOUNTS SECTION ===== */
 .accountsSection {
   margin-bottom: 2rem;
 }
@@ -409,15 +418,15 @@
 .accountsGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .accountCard {
-  background: #1A1A1A;
-  border-radius: 20px;
-  padding: 1.75rem;
-  border: 1px solid rgba(212, 175, 55, 0.15);
-  transition: all 0.3s;
+  background: var(--dark-card, #161820);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid var(--dark-border, #1E2130);
+  transition: all 0.25s;
   position: relative;
   overflow: hidden;
 }
@@ -428,69 +437,72 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: var(--card-color, #D4AF37);
+  height: 2px;
+  background: var(--card-color, var(--gold, #C9A962));
 }
 
 .accountCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  border-color: rgba(212, 175, 55, 0.25);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(201, 169, 98, 0.15);
 }
 
 .cardHeader {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
 }
 
 .cardIcon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(212, 175, 55, 0.1);
+  background: rgba(201, 169, 98, 0.08);
   border-radius: 12px;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .cardInfo {
   flex: 1;
+  min-width: 0;
 }
 
 .cardName {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  color: #FFFFFF;
+  color: var(--text-primary, #FFFFFF);
 }
 
 .cardNumber {
-  font-size: 0.8125rem;
-  color: #A0A0A0;
-  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted, #6B7084);
+  font-family: var(--font-mono, monospace);
   margin-top: 0.125rem;
 }
 
 .cardBadge {
-  background: rgba(212, 175, 55, 0.15);
-  color: #D4AF37;
-  padding: 0.25rem 0.625rem;
+  background: rgba(201, 169, 98, 0.1);
+  color: var(--gold, #C9A962);
+  padding: 0.1875rem 0.5rem;
   border-radius: 6px;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(201, 169, 98, 0.15);
 }
 
 .cardBalance {
-  margin-bottom: 1rem;
+  margin-bottom: 0.875rem;
 }
 
 .cardBalanceLabel {
-  font-size: 0.75rem;
-  color: #A0A0A0;
+  font-size: 0.6875rem;
+  color: var(--text-muted, #6B7084);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
@@ -498,96 +510,100 @@
 }
 
 .cardBalanceValue {
-  font-size: 1.75rem;
+  font-size: 1.625rem;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--text-primary, #FFFFFF);
   letter-spacing: -0.02em;
 }
 
 .cardAvailable {
-  font-size: 0.8125rem;
-  color: #A0A0A0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #6B7084);
   margin-top: 0.25rem;
 }
 
 .cardChart {
-  margin: 1rem -0.5rem 1rem;
+  margin: 0.875rem -0.5rem;
 }
 
 .cardActions {
   display: flex;
-  gap: 0.75rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 0.625rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--dark-border, #1E2130);
 }
 
 .cardAction {
   flex: 1;
-  padding: 0.625rem;
-  background: rgba(212, 175, 55, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  padding: 0.5rem;
+  background: rgba(201, 169, 98, 0.06);
+  border: 1px solid rgba(201, 169, 98, 0.12);
   border-radius: 8px;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
   cursor: pointer;
   transition: all 0.2s;
+  text-align: center;
 }
 
 .cardAction:hover {
-  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
-  color: #0D0D0D;
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, var(--gold-dark, #A8935F) 100%);
+  color: var(--dark-bg, #0B0D11);
   border-color: transparent;
 }
 
+/* ===== ACTIVITY SECTION ===== */
 .activitySection {
   margin-bottom: 2rem;
 }
 
 .transactionsCard {
-  background: #1A1A1A;
-  border-radius: 20px;
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: var(--dark-card, #161820);
+  border-radius: 16px;
+  border: 1px solid var(--dark-border, #1E2130);
   overflow: hidden;
 }
 
 .emptyState {
-  background: #1A1A1A;
-  border-radius: 20px;
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: var(--dark-card, #161820);
+  border-radius: 16px;
+  border: 1px solid var(--dark-border, #1E2130);
   padding: 4rem 2rem;
   text-align: center;
 }
 
 .emptyIcon {
-  font-size: 4rem;
+  font-size: 3.5rem;
   margin-bottom: 1rem;
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 .emptyTitle {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text-primary, #FFFFFF);
   margin: 0 0 0.5rem;
 }
 
 .emptyText {
-  color: #A0A0A0;
+  color: var(--text-muted, #6B7084);
   margin: 0;
+  font-size: 0.875rem;
 }
 
+/* ===== SECURITY BANNER ===== */
 .securityBanner {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
-  padding: 1rem;
-  background: rgba(0, 196, 140, 0.1);
-  border: 1px solid rgba(0, 196, 140, 0.2);
+  padding: 0.875rem;
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.12);
   border-radius: 12px;
-  color: #00C48C;
-  font-size: 0.875rem;
+  color: #22C55E;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
@@ -597,6 +613,7 @@
   flex-shrink: 0;
 }
 
+/* ===== RESPONSIVE ===== */
 @media (max-width: 1280px) {
   .accountsGrid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -609,9 +626,9 @@
 }
 
 @media (max-width: 768px) {
-  .dashboard { padding: 1.5rem; }
-  .hero { padding: 2rem; }
-  .heroName { font-size: 2rem; }
+  .dashboard { padding: 1.25rem; }
+  .hero { padding: 1.75rem; }
+  .heroName { font-size: 1.75rem; }
   .balanceValue { font-size: 2.25rem; }
   .heroStats { flex-wrap: wrap; gap: 1rem; }
   .statDivider { display: none; }
@@ -619,19 +636,20 @@
   .accountsGrid { grid-template-columns: 1fr; }
 }
 
+/* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .hero, .quickActions, .accountsSection, .activitySection {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 .accountCard {
-  animation: fadeIn 0.5s ease-out both;
+  animation: fadeIn 0.4s ease-out both;
 }
 
-.accountCard:nth-child(1) { animation-delay: 0.1s; }
-.accountCard:nth-child(2) { animation-delay: 0.15s; }
-.accountCard:nth-child(3) { animation-delay: 0.2s; }
+.accountCard:nth-child(1) { animation-delay: 0.05s; }
+.accountCard:nth-child(2) { animation-delay: 0.1s; }
+.accountCard:nth-child(3) { animation-delay: 0.15s; }

@@ -29,8 +29,8 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(212, 175, 55, 0.2);
-  border-top-color: #D4AF37;
+  border: 3px solid rgba(201, 169, 98, 0.2);
+  border-top-color: var(--gold, #C9A962);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -61,7 +61,7 @@
   border-radius: 20px;
   padding: 2rem;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(201, 169, 98, 0.15);
   margin-bottom: 2rem;
 }
 
@@ -99,7 +99,7 @@
 
 .currencyInput input:focus {
   outline: none;
-  border-color: #D4AF37;
+  border-color: var(--gold, #C9A962);
 }
 
 .currencyInput select {
@@ -114,7 +114,7 @@
 
 .currencyInput select:focus {
   outline: none;
-  border-color: #D4AF37;
+  border-color: var(--gold, #C9A962);
 }
 
 .quickCurrencies {
@@ -135,8 +135,8 @@
 
 .quickCurrencies button:hover,
 .quickCurrencies button.active {
-  background: rgba(212, 175, 55, 0.1);
-  border-color: #D4AF37;
+  background: rgba(201, 169, 98, 0.1);
+  border-color: var(--gold, #C9A962);
 }
 
 .swapBtn {
@@ -152,15 +152,15 @@
 }
 
 .swapBtn:hover {
-  background: #D4AF37;
-  border-color: #D4AF37;
+  background: var(--gold, #C9A962);
+  border-color: var(--gold, #C9A962);
   color: white;
 }
 
 .convertBtn {
   width: 100%;
   padding: 1rem;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8860B 100%);
   color: #1a1a2e;
   border: none;
   border-radius: 12px;
@@ -173,7 +173,7 @@
 
 .convertBtn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 4px 12px rgba(201, 169, 98, 0.4);
 }
 
 .convertBtn:disabled {
@@ -194,9 +194,9 @@
 .resultCard {
   margin-top: 1.5rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(201, 169, 98, 0.1) 0%, rgba(201, 169, 98, 0.05) 100%);
   border-radius: 16px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(201, 169, 98, 0.2);
 }
 
 .resultMain {
@@ -214,7 +214,7 @@
 
 .resultEquals {
   font-size: 1.5rem;
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
 }
 
 .resultTo {
@@ -224,7 +224,7 @@
 }
 
 .resultDetails {
-  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  border-top: 1px solid rgba(201, 169, 98, 0.2);
   padding-top: 1rem;
 }
 
@@ -247,7 +247,7 @@
   background: white;
   border-radius: 16px;
   padding: 1.5rem;
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(201, 169, 98, 0.15);
 }
 
 .currencyList h2 {
@@ -273,7 +273,7 @@
 }
 
 .currencyItem:hover {
-  background: rgba(212, 175, 55, 0.1);
+  background: rgba(201, 169, 98, 0.1);
 }
 
 .currencyFlag {
@@ -298,7 +298,7 @@
 
 .currencySymbol {
   font-weight: 600;
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
 }
 
 @media (max-width: 768px) {

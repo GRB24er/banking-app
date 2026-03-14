@@ -29,8 +29,8 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(212, 175, 55, 0.2);
-  border-top-color: #D4AF37;
+  border: 3px solid rgba(201, 169, 98, 0.2);
+  border-top-color: var(--gold, #C9A962);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -63,7 +63,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8860B 100%);
   color: #1a1a2e;
   border: none;
   border-radius: 10px;
@@ -74,7 +74,7 @@
 
 .applyBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 4px 12px rgba(201, 169, 98, 0.4);
 }
 
 .error, .success {
@@ -117,7 +117,7 @@
   background: white;
   border-radius: 16px;
   padding: 1.5rem;
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(201, 169, 98, 0.15);
   transition: all 0.3s;
 }
 
@@ -166,7 +166,7 @@
 .applySmallBtn {
   width: 100%;
   padding: 0.75rem;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8860B 100%);
   color: #1a1a2e;
   border: none;
   border-radius: 8px;
@@ -192,7 +192,7 @@
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(201, 169, 98, 0.15);
 }
 
 .applicationsTable table {
@@ -306,16 +306,16 @@
 .formGroup input:focus,
 .formGroup select:focus {
   outline: none;
-  border-color: #D4AF37;
+  border-color: var(--gold, #C9A962);
 }
 
 /* Estimate Box */
 .estimateBox {
   margin-top: 1.5rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(201, 169, 98, 0.1) 0%, rgba(201, 169, 98, 0.05) 100%);
   border-radius: 12px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(201, 169, 98, 0.2);
 }
 
 .estimateBox h3 {
@@ -347,7 +347,7 @@
 }
 
 .estimateItem strong.highlight {
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
   font-size: 1.5rem;
 }
 
@@ -373,7 +373,7 @@
 }
 
 .submitBtn {
-  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8860B 100%);
   color: #1a1a2e;
 }
 

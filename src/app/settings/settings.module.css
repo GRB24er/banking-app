@@ -1,5 +1,5 @@
 /* src/app/settings/settings.module.css */
-/* Aldwych European Capital - Enterprise Settings */
+/* Horizon Global Capital - Enterprise Settings */
 
 .wrapper {
   display: flex;
@@ -275,7 +275,7 @@
   margin: 0 0 1.5rem 0;
 }
 
-/* Toggle Switch - Aldwych Gold */
+/* Toggle Switch - Horizon Gold */
 .switch {
   position: relative;
   display: inline-block;

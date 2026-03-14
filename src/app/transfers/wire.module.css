@@ -1,5 +1,5 @@
 .transferContainer {
-  /* Aldwych European Capital color scheme */
+  /* Horizon Global Capital color scheme */
   --aec-gold: #c9a962;
   --aec-gold-light: #d4b978;
   --aec-gold-dark: #a8935f;
@@ -14,7 +14,7 @@
   --aec-danger: #ef4444;
   --aec-warning: #f59e0b;
 
-  /* Component-specific variables mapped to Aldwych theme */
+  /* Component-specific variables mapped to Horizon theme */
   --transfer-primary: var(--aec-gold);
   --transfer-primary-hover: var(--aec-gold-dark);
   --transfer-text-dark: var(--aec-navy);

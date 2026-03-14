@@ -158,7 +158,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h2 className={styles.modalTitle}>Welcome to Horizon Global Capital</h2>
-              <p className={styles.modalSubtitle}>European Capital • Private Banking</p>
+              <p className={styles.modalSubtitle}>Global Capital • Private Banking</p>
             </div>
             
             <div className={styles.modalBody}>
@@ -344,7 +344,7 @@ export default function LandingPage() {
           <div className={styles.heroContent}>
             <div className={styles.heroText}>
               <div className={styles.heroBadge}>
-                <span>European Private Banking</span>
+                <span>Global Private Banking</span>
               </div>
               <h1 className={styles.heroTitle}>
                 <span className={styles.heroHighlight}>Private</span> Banking
@@ -566,13 +566,13 @@ export default function LandingPage() {
             <div className={styles.footerBrand}>
               <div className={styles.footerLogo}>
                 <img
-                  src="/images/Logo.png"
+                  src="/images/logo-dark.png"
                   alt="Horizon Global Capital"
                   className={styles.footerLogoImage}
                 />
               </div>
               <p className={styles.footerTagline}>
-                European Private Banking Excellence Since 1897
+                Global Private Banking Excellence Since 1897
               </p>
               <div className={styles.footerSocial}>
                 <a href="#" aria-label="LinkedIn">

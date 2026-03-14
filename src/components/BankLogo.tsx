@@ -7,10 +7,13 @@ interface BankLogoProps {
   width?: number;
   height?: number;
   className?: string;
+  variant?: "light" | "dark";
 }
 
-export default function BankLogo({ width = 32, height = 32, className }: BankLogoProps) {
-  const [src, setSrc] = useState("/images/logo.png");
+export default function BankLogo({ width = 160, height = 60, className, variant = "light" }: BankLogoProps) {
+  const [src, setSrc] = useState(
+    variant === "dark" ? "/images/logo-dark.png" : "/images/Logo.png"
+  );
 
   return (
     <Image
@@ -20,7 +23,8 @@ export default function BankLogo({ width = 32, height = 32, className }: BankLog
       height={height}
       className={className}
       priority
-      onError={() => setSrc("/icons/logo.svg")} // fallback if PNG missing
+      style={{ objectFit: "contain" }}
+      onError={() => setSrc("/images/Logo.png")}
     />
   );
 }

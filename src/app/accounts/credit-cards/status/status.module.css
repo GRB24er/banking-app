@@ -31,7 +31,7 @@
   width: 50px;
   height: 50px;
   border: 4px solid #e5e7eb;
-  border-top-color: #D4AF37;
+  border-top-color: var(--gold, #C9A962);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 20px;
@@ -67,7 +67,7 @@
   align-items: center;
   gap: 8px;
   padding: 14px 28px;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8941F 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8941F 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -75,12 +75,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 12px rgba(201, 169, 98, 0.3);
 }
 
 .applyBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 6px 20px rgba(201, 169, 98, 0.4);
 }
 
 .applyBtn span {
@@ -116,7 +116,7 @@
 
 .startBtn {
   padding: 16px 40px;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8941F 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, #B8941F 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -128,7 +128,7 @@
 
 .startBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 6px 20px rgba(201, 169, 98, 0.4);
 }
 
 /* Applications Grid */

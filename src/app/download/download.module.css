@@ -15,7 +15,7 @@
   max-width: 1100px;
   width: 100%;
   margin: 0 auto 2rem;
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 500;
@@ -38,9 +38,9 @@
 
 .badge {
   display: inline-block;
-  background: rgba(212, 175, 55, 0.12);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  color: #D4AF37;
+  background: rgba(201, 169, 98, 0.12);
+  border: 1px solid rgba(201, 169, 98, 0.25);
+  color: var(--gold, #C9A962);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -54,7 +54,7 @@
   font-size: 2.75rem;
   font-weight: 700;
   margin: 0 0 1rem;
-  background: linear-gradient(135deg, #ffffff 0%, #D4AF37 100%);
+  background: linear-gradient(135deg, #ffffff 0%, var(--gold, #C9A962) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -80,8 +80,8 @@
 
 /* Download Card */
 .downloadCard {
-  background: rgba(212, 175, 55, 0.04);
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: rgba(201, 169, 98, 0.04);
+  border: 1px solid rgba(201, 169, 98, 0.15);
   border-radius: 20px;
   padding: 2.5rem;
   position: relative;
@@ -95,7 +95,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+  background: linear-gradient(90deg, transparent, var(--gold, #C9A962), transparent);
 }
 
 .cardHeader {
@@ -137,7 +137,7 @@
   gap: 0.75rem;
   width: 100%;
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, var(--gold-dark, #A8935F) 100%);
   color: #0D0D0D;
   border: none;
   border-radius: 12px;
@@ -151,7 +151,7 @@
 
 .downloadButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 8px 25px rgba(201, 169, 98, 0.3);
 }
 
 .downloadIcon {
@@ -171,7 +171,7 @@
   padding: 0.75rem;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
-  border: 1px solid rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(201, 169, 98, 0.08);
 }
 
 .metaLabel {
@@ -245,7 +245,7 @@
   width: 32px;
   height: 32px;
   min-width: 32px;
-  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%);
+  background: linear-gradient(135deg, var(--gold, #C9A962) 0%, var(--gold-dark, #A8935F) 100%);
   color: #0D0D0D;
   border-radius: 50%;
   display: flex;
@@ -291,8 +291,8 @@
 }
 
 .featureCard {
-  background: rgba(212, 175, 55, 0.04);
-  border: 1px solid rgba(212, 175, 55, 0.1);
+  background: rgba(201, 169, 98, 0.04);
+  border: 1px solid rgba(201, 169, 98, 0.1);
   border-radius: 14px;
   padding: 1.5rem;
   text-align: center;
@@ -300,7 +300,7 @@
 }
 
 .featureCard:hover {
-  border-color: rgba(212, 175, 55, 0.25);
+  border-color: rgba(201, 169, 98, 0.25);
   transform: translateY(-3px);
 }
 
@@ -308,12 +308,12 @@
   width: 40px;
   height: 40px;
   margin: 0 auto 0.75rem;
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(201, 169, 98, 0.12);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #D4AF37;
+  color: var(--gold, #C9A962);
 }
 
 .featureCard h3 {

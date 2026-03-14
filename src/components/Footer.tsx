@@ -18,7 +18,7 @@ import {
   Globe,
 } from "lucide-react";
 
-const LOGO_SRC = "/images/Logo.png";
+const LOGO_SRC = "/images/logo-dark.png";
 
 const Footer = () => {
   const [emailSubscribe, setEmailSubscribe] = useState("");

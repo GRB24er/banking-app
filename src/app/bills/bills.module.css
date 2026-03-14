@@ -1,5 +1,5 @@
 /* src/app/bills/bills.module.css */
-/* Aldwych European Capital - Enterprise Bill Pay */
+/* Horizon Global Capital - Enterprise Bill Pay */
 
 .wrapper {
   display: flex;
@@ -326,7 +326,7 @@
   font-weight: 500;
 }
 
-/* Toggle Switch - Aldwych Gold */
+/* Toggle Switch - Horizon Gold */
 .autopayToggle {
   display: flex;
   align-items: center;
