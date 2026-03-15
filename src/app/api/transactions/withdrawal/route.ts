@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: true,
-        message: 'Withdrawal initiated. Awaiting admin approval.', 
+        message: 'Withdrawal initiated. Under compliance review.',
         transaction: {
           id: transaction._id,
           reference: transaction.reference,

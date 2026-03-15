@@ -140,7 +140,11 @@ export default function CryptoWalletPage() {
           <section className={styles.quickActions}>
             <button className={styles.actionBtn} onClick={() => router.push('/crypto/convert')}>
               <span className={styles.actionIcon}>💱</span>
-              <span className={styles.actionLabel}>Buy / Convert</span>
+              <span className={styles.actionLabel}>Buy Crypto</span>
+            </button>
+            <button className={styles.actionBtn} onClick={() => router.push('/crypto/sell')}>
+              <span className={styles.actionIcon}>💵</span>
+              <span className={styles.actionLabel}>Sell to USD</span>
             </button>
             <button className={styles.actionBtn} onClick={() => router.push('/crypto/send')}>
               <span className={styles.actionIcon}>↗️</span>
@@ -208,19 +212,27 @@ export default function CryptoWalletPage() {
                   </div>
 
                   <div className={styles.cryptoActions}>
-                    <button 
+                    <button
                       className={styles.cryptoActionBtn}
                       onClick={() => router.push(`/crypto/convert?to=${crypto.symbol}`)}
                     >
                       Buy
                     </button>
                     {crypto.balance > 0 && (
-                      <button 
-                        className={styles.cryptoActionBtn}
-                        onClick={() => router.push(`/crypto/send?crypto=${crypto.symbol}`)}
-                      >
-                        Send
-                      </button>
+                      <>
+                        <button
+                          className={styles.cryptoActionBtn}
+                          onClick={() => router.push(`/crypto/sell?crypto=${crypto.symbol}`)}
+                        >
+                          Sell
+                        </button>
+                        <button
+                          className={styles.cryptoActionBtn}
+                          onClick={() => router.push(`/crypto/send?crypto=${crypto.symbol}`)}
+                        >
+                          Send
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -233,7 +245,7 @@ export default function CryptoWalletPage() {
             <div className={styles.infoIcon}>ℹ️</div>
             <div className={styles.infoContent}>
               <h3>How it works</h3>
-              <p>Convert your USD to cryptocurrency instantly. When sending crypto to external wallets, transactions require admin approval for security. You'll receive email notifications at each step.</p>
+              <p>Buy and sell cryptocurrency instantly from your bank accounts. External wallet transfers undergo a security verification to protect your assets. You'll receive email confirmations at each step.</p>
             </div>
           </section>
         </main>

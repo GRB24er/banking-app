@@ -296,7 +296,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "International transfer initiated. Awaiting admin approval.",
+      message: "International transfer initiated. Under compliance review.",
       transferReference: intlRef,
       transfer: {
         type: 'international',

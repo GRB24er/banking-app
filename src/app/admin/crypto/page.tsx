@@ -148,7 +148,7 @@ export default function AdminCryptoPage() {
       <div className={styles.wrapper}>
         <div className={styles.loadingScreen}>
           <div className={styles.loadingSpinner}></div>
-          <p>Loading pending approvals...</p>
+          <p>Loading pending reviews...</p>
         </div>
       </div>
     );

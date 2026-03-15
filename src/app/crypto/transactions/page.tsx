@@ -91,7 +91,7 @@ export default function CryptoTransactionsPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed': return 'Completed';
-      case 'pending_approval': return 'Pending Approval';
+      case 'pending_approval': return 'Under Review';
       case 'processing': return 'Processing';
       case 'rejected': return 'Rejected';
       case 'failed': return 'Failed';

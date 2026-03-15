@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true,
-      message: 'Transfer initiated. Awaiting admin approval.',
+      message: 'Transfer initiated. Under compliance review.',
       transfer: {
         reference: transferRef,
         amount: transferAmount,

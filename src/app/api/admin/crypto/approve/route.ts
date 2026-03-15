@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       transaction.status = 'rejected';
       transaction.approvedBy = adminUser._id;
       transaction.approvedAt = new Date();
-      transaction.rejectionReason = rejectionReason || 'Transaction rejected by admin';
+      transaction.rejectionReason = rejectionReason || 'Transaction did not pass compliance verification';
       await transaction.save();
 
       // Send rejection email

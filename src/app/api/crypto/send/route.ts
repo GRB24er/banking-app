@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     const reference = `CSND-${timestamp}-${random}`;
 
-    // Lock the crypto amount (will be deducted after admin approval)
+    // Lock the crypto amount (will be deducted after compliance verification)
     const balanceIndex = wallet.balances.findIndex((b: any) => b.symbol === cryptoSymbol);
     wallet.balances[balanceIndex].lockedBalance += totalRequired;
     await wallet.save();
@@ -131,10 +131,10 @@ export async function POST(request: NextRequest) {
           currency: cryptoSymbol,
           description: `Transfer to ${walletAddress.slice(0, 12)}...`,
           reference,
-          status: 'Pending Approval',
+          status: 'Under Review',
           network,
         },
-        subject: 'Crypto Transfer Initiated - Pending Approval'
+        subject: 'Crypto Transfer Initiated - Under Review'
       });
     } catch (emailError) {
       console.error('[Crypto Send] Email failed:', emailError);
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Crypto transfer submitted for approval',
+      message: 'Crypto transfer submitted for verification',
       reference,
       transfer: {
         cryptoCurrency: cryptoSymbol,

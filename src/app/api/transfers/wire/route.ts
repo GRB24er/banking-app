@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${wireType === 'international' ? 'International' : 'Domestic'} wire transfer initiated. Awaiting admin approval.`,
+      message: `${wireType === 'international' ? 'International' : 'Domestic'} wire transfer initiated. Under compliance review.`,
       wireReference: wireRef,
       transfer: {
         type: 'wire',

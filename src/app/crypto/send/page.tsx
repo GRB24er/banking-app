@@ -159,7 +159,7 @@ function SendCryptoContent() {
       "Validating wallet address...",
       "Checking available balance...",
       "Preparing transaction...",
-      "Submitting for approval...",
+      "Running compliance checks...",
       "Finalizing..."
     ];
 
@@ -427,8 +427,8 @@ function SendCryptoContent() {
                     <div className={sendStyles.approvalNotice}>
                       <span className={sendStyles.noticeIcon}>🔒</span>
                       <div>
-                        <strong>Admin Approval Required</strong>
-                        <p>For security, this transfer will be reviewed before processing. You'll receive an email once approved.</p>
+                        <strong>Security Verification Required</strong>
+                        <p>For your protection, external transfers undergo a compliance review. You'll receive an email confirmation once verified.</p>
                       </div>
                     </div>
                   </>
@@ -455,7 +455,7 @@ function SendCryptoContent() {
                 <div className={sendStyles.successIcon}>✓</div>
                 <h2>Transfer Submitted</h2>
                 <p className={sendStyles.successSubtext}>
-                  Your transfer is pending admin approval
+                  Your transfer is under security verification
                 </p>
                 
                 <div className={sendStyles.successDetails}>
@@ -473,16 +473,16 @@ function SendCryptoContent() {
                   </div>
                   <div className={sendStyles.detailRow}>
                     <span>Status</span>
-                    <span className={sendStyles.statusPending}>Pending Approval</span>
+                    <span className={sendStyles.statusPending}>Under Review</span>
                   </div>
                 </div>
 
                 <div className={sendStyles.nextSteps}>
                   <h4>What happens next?</h4>
                   <ol>
-                    <li>Our team will review your transfer</li>
-                    <li>You'll receive an email notification</li>
-                    <li>Once approved, crypto will be sent to the recipient</li>
+                    <li>Your transfer will undergo compliance verification</li>
+                    <li>You'll receive an email confirmation</li>
+                    <li>Once verified, the crypto will be sent to the recipient</li>
                   </ol>
                 </div>
 
@@ -503,7 +503,7 @@ function SendCryptoContent() {
                     "Validating wallet address",
                     "Checking available balance",
                     "Preparing transaction",
-                    "Submitting for approval",
+                    "Running compliance checks",
                     "Finalizing"
                   ].map((step, idx) => (
                     <div 

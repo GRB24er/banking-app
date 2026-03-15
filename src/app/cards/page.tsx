@@ -430,7 +430,7 @@ export default function CardsPage() {
                       )}
                       {card.status === "pending" && (
                         <div className={styles.pendingMessage}>
-                          ⏳ Awaiting admin approval
+                          ⏳ Under review
                         </div>
                       )}
                       {card.status === "processing" && (
