@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import AdminSidebar from "@/components/AdminSidebar";
 import styles from "./adminCards.module.css";
 
 interface CardRequest {
@@ -152,9 +151,7 @@ export default function AdminCardsPage() {
   };
 
   return (
-    <div className={styles.wrapper}>
-      <AdminSidebar />
-      <div className={styles.main}>
+    <div className={styles.main}>
         <div className={styles.header}>
           <h1>Virtual Card Requests</h1>
           <p>Manage and approve virtual card applications</p>
@@ -346,7 +343,6 @@ export default function AdminCardsPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

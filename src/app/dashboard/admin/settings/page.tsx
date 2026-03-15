@@ -2,8 +2,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import AdminSidebar from "@/components/AdminSidebar";
-
 export default function AdminSettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -49,11 +47,8 @@ export default function AdminSettingsPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div style={wrapperStyle}>
-        <AdminSidebar />
-        <div style={mainStyle}>
-          <div style={loadingStyle}>Loading settings...</div>
-        </div>
+      <div style={mainStyle}>
+        <div style={loadingStyle}>Loading settings...</div>
       </div>
     );
   }
@@ -67,9 +62,7 @@ export default function AdminSettingsPage() {
   ];
 
   return (
-    <div style={wrapperStyle}>
-      <AdminSidebar />
-      <div style={mainStyle}>
+    <div style={mainStyle}>
         <div style={headerStyle}>
           <div>
             <h1 style={titleStyle}>Admin Settings</h1>
@@ -234,13 +227,12 @@ export default function AdminSettingsPage() {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }
 
 const wrapperStyle: React.CSSProperties = { display: "flex", minHeight: "100vh", background: "#f0f2f5" };
-const mainStyle: React.CSSProperties = { flex: 1, padding: "24px 32px", marginLeft: 280, minWidth: 0 };
+const mainStyle: React.CSSProperties = { flex: 1, padding: "24px 32px", minWidth: 0 };
 const loadingStyle: React.CSSProperties = { display: "flex", justifyContent: "center", alignItems: "center", height: "60vh", fontSize: 18, color: "#6c757d" };
 const headerStyle: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 };
 const titleStyle: React.CSSProperties = { fontSize: 24, fontWeight: 700, color: "#1a1f2e", margin: 0 };

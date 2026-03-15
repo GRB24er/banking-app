@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react';
 import { Mail, Send, CheckCircle, User } from 'lucide-react';
-import AdminSidebar from "@/components/AdminSidebar";
 import styles from '../admin.module.css';
 
 interface StatementRequest {
@@ -119,9 +118,7 @@ export default function AdminStatementsPage() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <AdminSidebar />
-      <div className={styles.wrapper} style={{ flex: 1, marginLeft: 280 }}>
+    <div className={styles.wrapper}>
       <div className={styles.container}>
         {/* Header */}
         <div className={styles.header}>
@@ -413,7 +410,6 @@ export default function AdminStatementsPage() {
             </table>
           )}
         </div>
-      </div>
       </div>
     </div>
   );

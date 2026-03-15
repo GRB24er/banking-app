@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import AdminSidebar from "@/components/AdminSidebar";
 import styles from "./transfers.module.css";
 
 // Path: src/app/dashboard/admin/transfers/page.tsx
@@ -229,23 +228,17 @@ export default function AdminTransfersPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className={styles.wrapper}>
-        <AdminSidebar />
-        <div className={styles.mainContent}>
-          <div className={styles.loadingScreen}>
-            <div className={styles.spinner}></div>
-            <p>Loading transfers...</p>
-          </div>
+      <div className={styles.mainContent}>
+        <div className={styles.loadingScreen}>
+          <div className={styles.spinner}></div>
+          <p>Loading transfers...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.wrapper}>
-      <AdminSidebar />
-      
-      <div className={styles.mainContent}>
+    <div className={styles.mainContent}>
         <div className={styles.header}>
           <div>
             <h1>Transfer Management</h1>
@@ -474,7 +467,6 @@ export default function AdminTransfersPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

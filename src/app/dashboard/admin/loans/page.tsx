@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import AdminSidebar from "@/components/AdminSidebar";
 import styles from "../cards/adminCards.module.css";
 
 interface LoanApplication {
@@ -169,9 +168,7 @@ export default function AdminLoansPage() {
   };
 
   return (
-    <div className={styles.wrapper}>
-      <AdminSidebar />
-      <div className={styles.main}>
+    <div className={styles.main}>
         <div className={styles.header}>
           <h1>Loan Applications</h1>
           <p>Review and manage loan applications</p>
@@ -359,7 +356,6 @@ export default function AdminLoansPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

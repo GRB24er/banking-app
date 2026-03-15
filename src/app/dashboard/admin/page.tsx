@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import AdminSidebar from "@/components/AdminSidebar";
 import styles from "./admin.module.css";
 
 interface User {
@@ -408,9 +407,7 @@ const handleTransaction = async (e: React.FormEvent) => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <AdminSidebar />
-      <div className={styles.wrapper} style={{ flex: 1, marginLeft: 280 }}>
+    <div className={styles.wrapper}>
       <div className={styles.container}>
         {/* Header */}
         <div className={styles.header}>
@@ -791,7 +788,6 @@ const handleTransaction = async (e: React.FormEvent) => {
             </div>
           )}
         </div>
-      </div>
       </div>
     </div>
   );
