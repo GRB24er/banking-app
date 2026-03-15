@@ -1,6 +1,5 @@
 // src/app/dashboard/admin/layout.tsx
-"use client";
-
+// Server component — AdminSidebar is already "use client"
 import AdminSidebar from "@/components/AdminSidebar";
 
 export default function AdminLayout({
