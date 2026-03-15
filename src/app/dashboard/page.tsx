@@ -218,6 +218,27 @@ export default function DashboardPage() {
     };
   }, [allTransactions]);
 
+  // Hero chart: use real balance trend for cash (checking + savings combined)
+  // IMPORTANT: Must be before any early returns to maintain consistent hook count
+  const balances0 = data?.balances;
+  const checkingBalance0 = balances0?.checking || 0;
+  const savingsBalance0 = balances0?.savings || 0;
+  const heroChartData = useMemo(() => {
+    if (!data || !allTransactions || allTransactions.length === 0) return [];
+    const checkingTrend = buildAccountTrend("checking", checkingBalance0);
+    const savingsTrend = buildAccountTrend("savings", savingsBalance0);
+    if (checkingTrend.length === 0 && savingsTrend.length === 0) return [];
+    const len = Math.max(checkingTrend.length, savingsTrend.length);
+    const combined: { day: number; value: number }[] = [];
+    for (let i = 0; i < len; i++) {
+      combined.push({
+        day: i + 1,
+        value: (checkingTrend[i]?.value || 0) + (savingsTrend[i]?.value || 0),
+      });
+    }
+    return combined;
+  }, [data, allTransactions, checkingBalance0, savingsBalance0, buildAccountTrend]);
+
   // Loading State
   if (status === "loading" || loading) {
     return (
@@ -392,23 +413,6 @@ export default function DashboardPage() {
       balance: 0
     };
   });
-
-  // Hero chart: use real balance trend for cash (checking + savings combined)
-  const heroChartData = useMemo(() => {
-    if (!allTransactions || allTransactions.length === 0) return [];
-    const checkingTrend = buildAccountTrend("checking", checkingBalance);
-    const savingsTrend = buildAccountTrend("savings", savingsBalance);
-    if (checkingTrend.length === 0 && savingsTrend.length === 0) return [];
-    const len = Math.max(checkingTrend.length, savingsTrend.length);
-    const combined: { day: number; value: number }[] = [];
-    for (let i = 0; i < len; i++) {
-      combined.push({
-        day: i + 1,
-        value: (checkingTrend[i]?.value || 0) + (savingsTrend[i]?.value || 0),
-      });
-    }
-    return combined;
-  }, [allTransactions, checkingBalance, savingsBalance, buildAccountTrend]);
 
   const hasActivity = allTransactions.length > 0 || recent.length > 0;
 
