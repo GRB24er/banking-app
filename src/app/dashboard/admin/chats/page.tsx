@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { User, Shield, Send } from 'lucide-react';
+import AdminSidebar from "@/components/AdminSidebar";
 import styles from '../admin.module.css';
 
 interface Message {
@@ -101,7 +102,9 @@ export default function AdminChatsPage() {
   }, [selectedChat?.messages]);
 
   return (
-    <div className={styles.wrapper}>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <AdminSidebar />
+      <div className={styles.wrapper} style={{ flex: 1, marginLeft: 280 }}>
       <div className={styles.container}>
         {/* Header */}
         <div className={styles.header}>
@@ -459,6 +462,7 @@ export default function AdminChatsPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

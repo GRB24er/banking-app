@@ -1,5 +1,6 @@
 // src/lib/mail.ts
-import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
+import nodemailer from "nodemailer";
+import type { Transporter, SentMessageInfo } from "nodemailer";
 
 /** ==============================
  * SMTP CONFIGURATION - HOSTINGER

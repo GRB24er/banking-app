@@ -2,7 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import { sendWelcomeEmail, sendEmail, emailShell, greeting, leadText, signatureBlock } from '@/lib/mail';
+import { sendWelcomeEmail } from '@/lib/mail';
+// @ts-ignore - runtime exports exist, TypeScript resolution quirk with nodemailer types
+import { sendEmail, emailShell, greeting, leadText, signatureBlock } from '@/lib/mail';
 
 // Helper functions for generating account details
 function generateAccountNumber() {

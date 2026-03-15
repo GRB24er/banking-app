@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import AdminSidebar from "@/components/AdminSidebar";
 import styles from "../admin.module.css";
 
 interface CheckDeposit {
@@ -177,7 +178,9 @@ export default function CheckDepositsPage() {
   };
 
   return (
-    <div className={styles.wrapper}>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <AdminSidebar />
+      <div className={styles.wrapper} style={{ flex: 1, marginLeft: 280 }}>
       <div className={styles.container}>
         {/* Header */}
         <div className={styles.header}>
@@ -593,6 +596,7 @@ export default function CheckDepositsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

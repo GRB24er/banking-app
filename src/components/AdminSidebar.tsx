@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import styles from "./Sidebar.module.css";
+import styles from "./AdminSidebar.module.css";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface NavItem {

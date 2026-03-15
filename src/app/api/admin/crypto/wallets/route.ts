@@ -31,11 +31,11 @@ export async function GET(request: NextRequest) {
     const userIds = wallets.map((w: any) => w.userId);
     const users = await User.find({ _id: { $in: userIds } }).select('name email').lean();
 
-    const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
+    const userMap = new Map(users.map((u: any) => [u._id.toString(), u as { name?: string; email?: string }]));
 
     // Build result with user info
     const result = await Promise.all(wallets.map(async (wallet: any) => {
-      const user = userMap.get(wallet.userId.toString());
+      const user = userMap.get(wallet.userId.toString()) as { name?: string; email?: string } | undefined;
 
       // Calculate total USD value
       let totalUsdValue = 0;
