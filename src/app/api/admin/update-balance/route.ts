@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       userId: user._id,
       type: transactionType,
       amount: adjustmentAmount, // POSITIVE
-      description: description || `Admin ${type} adjustment`,
+      description: description || (type === 'credit' ? 'Balance adjustment - credit' : 'Balance adjustment - debit'),
       currency,
       status: 'completed',
       accountType,

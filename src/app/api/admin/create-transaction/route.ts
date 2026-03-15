@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       userId: user._id,
       type,
       amount: transactionAmount, // POSITIVE
-      description: description || `Admin ${type}`,
+      description: description || (type === 'deposit' ? 'Bank credit' : type === 'withdraw' ? 'Account debit' : type === 'interest' ? 'Interest payment' : type === 'fee' ? 'Service fee' : type === 'transfer-in' ? 'Incoming transfer' : type === 'transfer-out' ? 'Outgoing transfer' : 'Balance adjustment'),
       status: finalStatus,
       accountType,
       reference,

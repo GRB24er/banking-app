@@ -232,7 +232,8 @@ export default function Sidebar() {
                     <Link href="/dashboard/admin" className={`${styles.subLink} ${pathname === "/dashboard/admin" ? styles.active : ""}`}>Dashboard</Link>
                     <Link href="/admin/users" className={`${styles.subLink} ${pathname === "/admin/users" ? styles.active : ""}`}>Users</Link>
                     <Link href="/admin/transactions" className={`${styles.subLink} ${pathname === "/admin/transactions" ? styles.active : ""}`}>Approvals</Link>
-                    <Link href="/admin/crypto" className={`${styles.subLink} ${pathname === "/admin/crypto" ? styles.active : ""}`}>Crypto Approvals</Link>
+                    <Link href="/admin/crypto" className={`${styles.subLink} ${pathname === "/admin/crypto" ? styles.active : ""}`}>Crypto Transfers</Link>
+                    <Link href="/admin/crypto/wallets" className={`${styles.subLink} ${pathname === "/admin/crypto/wallets" ? styles.active : ""}`}>Crypto Wallets</Link>
                     <Link href="/dashboard/admin/cards" className={`${styles.subLink} ${pathname === "/dashboard/admin/cards" ? styles.active : ""}`}>Card Requests</Link>
                     <Link href="/dashboard/admin/loans" className={`${styles.subLink} ${pathname === "/dashboard/admin/loans" ? styles.active : ""}`}>Loan Applications</Link>
                   </div>

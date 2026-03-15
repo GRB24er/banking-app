@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       currency,
       amount,
       date: date ? new Date(date) : new Date(),
-      description: description || 'Admin Withdrawal',
+      description: description || 'Account debit',
       status: 'pending',
       posted: false,
       postedAt: null,
@@ -42,6 +42,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     return NextResponse.json({ success: true, transaction: txn });
   } catch (err: any) {
     console.error('Admin withdraw error:', err);
-    return NextResponse.json({ error: err?.message || 'Failed to create admin withdrawal' }, { status: 500 });
+    return NextResponse.json({ error: err?.message || 'Failed to process withdrawal' }, { status: 500 });
   }
 }

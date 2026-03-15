@@ -192,7 +192,7 @@ const handleTransaction = async (e: React.FormEvent) => {
         type: transactionForm.type,
         amount: parseFloat(transactionForm.amount),
         accountType: transactionForm.accountType,
-        description: transactionForm.description || `Admin ${transactionForm.type}`,
+        description: transactionForm.description || '',
         status: "completed"
       })
     });
