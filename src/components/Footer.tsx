@@ -107,7 +107,7 @@ const Footer = () => {
 
             <div className={styles.socialLinks}>
               <motion.a
-                href="https://www.facebook.com/yourbrand"
+                href="https://www.facebook.com/horizonglobalcapital"
                 className={styles.socialLink}
                 whileHover={{ y: -3, backgroundColor: "rgba(212, 175, 55, 0.15)" }}
                 aria-label="Facebook"
@@ -118,7 +118,7 @@ const Footer = () => {
               </motion.a>
 
               <motion.a
-                href="https://x.com/yourbrand"
+                href="https://x.com/horizonglobalcapital"
                 className={styles.socialLink}
                 whileHover={{ y: -3, backgroundColor: "rgba(212, 175, 55, 0.15)" }}
                 aria-label="X (Twitter)"
@@ -129,7 +129,7 @@ const Footer = () => {
               </motion.a>
 
               <motion.a
-                href="https://www.linkedin.com/company/yourbrand"
+                href="https://www.linkedin.com/company/horizonglobalcapital"
                 className={styles.socialLink}
                 whileHover={{ y: -3, backgroundColor: "rgba(212, 175, 55, 0.15)" }}
                 aria-label="LinkedIn"
@@ -140,7 +140,7 @@ const Footer = () => {
               </motion.a>
 
               <motion.a
-                href="https://www.instagram.com/yourbrand"
+                href="https://www.instagram.com/horizonglobalcapital"
                 className={styles.socialLink}
                 whileHover={{ y: -3, backgroundColor: "rgba(212, 175, 55, 0.15)" }}
                 aria-label="Instagram"
@@ -151,7 +151,7 @@ const Footer = () => {
               </motion.a>
 
               <motion.a
-                href="https://www.youtube.com/@yourbrand"
+                href="https://www.youtube.com/@horizonglobalcapital"
                 className={styles.socialLink}
                 whileHover={{ y: -3, backgroundColor: "rgba(212, 175, 55, 0.15)" }}
                 aria-label="YouTube"
@@ -280,7 +280,7 @@ const Footer = () => {
                 </div>
                 <div>
                   <p className={styles.contactLabel}>24/7 Support</p>
-                  <a href="tel:+441onal234567890" className={styles.contactValue}>+44 123 456 7890</a>
+                  <a href="tel:+442079460958" className={styles.contactValue}>+44 20 7946 0958</a>
                 </div>
               </motion.div>
 
@@ -316,9 +316,9 @@ const Footer = () => {
         <div className={styles.container}>
           <div className={styles.badgesGrid}>
             {[
-              { icon: <Shield />, text: "Member FDIC", desc: "Deposits insured up to applicable limits" },
+              { icon: <Shield />, text: "FCA Regulated", desc: "Authorised by the Financial Conduct Authority" },
               { icon: <Lock />, text: "TLS 1.2+ Encryption", desc: "256-bit encryption & HSTS" },
-              { icon: <Home />, text: "Equal Housing Lender", desc: "We are an Equal Opportunity Lender" },
+              { icon: <Home />, text: "PRA Authorised", desc: "Prudential Regulation Authority" },
               { icon: <Award />, text: "SOC 2 Type II", desc: "Independently audited controls" },
               { icon: <Star />, text: "System Status", desc: "99.9%+ uptime (last 12 months)" },
             ].map((badge, idx) => (
@@ -344,8 +344,7 @@ const Footer = () => {
               <p className={styles.legalText}>
                 Horizon Global Capital Bank plc is authorized by the Prudential
                 Regulation Authority and regulated by the Financial Conduct
-                Authority and the Prudential Regulation Authority. Member FDIC
-                and Equal Housing Lender where applicable.
+                Authority and the Prudential Regulation Authority.
               </p>
             </div>
 

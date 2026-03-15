@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import { sendWelcomeEmail } from '@/lib/mail';
+import { sendWelcomeEmail, sendEmail, emailShell, greeting, leadText, signatureBlock } from '@/lib/mail';
 
 // Helper functions for generating account details
 function generateAccountNumber() {
@@ -194,6 +194,15 @@ export async function POST(request: NextRequest) {
       };
     }
 
+    // Generate 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Add verification fields to user data
+    userData.verificationCode = verificationCode;
+    userData.verificationCodeExpiry = verificationCodeExpiry;
+    userData.emailVerified = false;
+
     // Create the user
     console.log('Creating user:', userEmail);
     const newUser = await User.create(userData);
@@ -212,27 +221,47 @@ export async function POST(request: NextRequest) {
 
     console.log('User created successfully:', newUser.email);
 
-    // Send welcome email (don't fail registration if email fails)
+    // Send verification code email (don't fail registration if email fails)
     try {
-      console.log('Attempting to send welcome email to:', userEmail);
-      const emailResult = await sendWelcomeEmail(userEmail, { name: fullName });
-      
+      console.log('Sending verification code email to:', userEmail);
+      const verificationHtml = emailShell(`
+        ${greeting(fullName)}
+        ${leadText('Thank you for registering with Horizon Global Capital. Please use the verification code below to verify your email address.')}
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 28px 0;">
+          <tr>
+            <td style="padding:24px; background:#111623; border:1px solid #1A2035; border-radius:12px; text-align:center;">
+              <p style="margin:0 0 8px 0; font-family:sans-serif; font-size:12px; color:#8E92A8; text-transform:uppercase; letter-spacing:1px;">Your Verification Code</p>
+              <p style="margin:0; font-family:'SF Mono','Consolas',monospace; font-size:36px; font-weight:700; color:#C9A84C; letter-spacing:8px;">${verificationCode}</p>
+              <p style="margin:12px 0 0 0; font-family:sans-serif; font-size:12px; color:#5C6078;">This code expires in 15 minutes</p>
+            </td>
+          </tr>
+        </table>
+        ${leadText('If you did not create an account, please ignore this email.')}
+        ${signatureBlock()}
+      `, { preheader: `Your verification code is ${verificationCode}` });
+
+      const emailResult = await sendEmail({
+        to: userEmail,
+        subject: 'Verify Your Email - Horizon Global Capital',
+        html: verificationHtml,
+      });
+
       if (emailResult.failed) {
-        console.warn('Welcome email failed but registration continues:', emailResult.error);
+        console.warn('Verification email failed but registration continues:', emailResult.error);
       } else if (emailResult.skipped) {
-        console.log('Welcome email skipped (SMTP not configured)');
+        console.log('Verification email skipped (SMTP not configured)');
       } else {
-        console.log('Welcome email sent successfully');
+        console.log('Verification email sent successfully');
       }
     } catch (emailError) {
-      console.error('Welcome email error (non-fatal):', emailError);
-      // Continue with registration even if email fails
+      console.error('Verification email error (non-fatal):', emailError);
     }
 
     // Return success response
-    return NextResponse.json({ 
-      message: 'Account created successfully! You can now sign in.',
+    return NextResponse.json({
+      message: 'Account created successfully! Please check your email for a verification code.',
       success: true,
+      requiresVerification: true,
       user: {
         id: newUser._id.toString(),
         name: newUser.name,

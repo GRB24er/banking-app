@@ -83,6 +83,11 @@ export default function SignUpPage() {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifySuccess, setVerifySuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   // Logo URL from Imgur
   const LOGO_SRC = "/images/Logo.png";
@@ -104,7 +109,7 @@ export default function SignUpPage() {
   useEffect(() => {
     const checkEmail = async () => {
       if (form.email.includes('@')) {
-        const exists = form.email === 'test@aldwychcapital.com';
+        const exists = form.email === 'test@horizonglobalcapital.com';
         setEmailExists(exists);
       }
     };
@@ -245,8 +250,47 @@ export default function SignUpPage() {
       return;
     }
 
-    // Successful registration
-    router.push("/auth/signin?registered=1");
+    // Successful registration - show verification screen
+    setRegisteredEmail(form.email.toLowerCase().trim());
+    setShowVerification(true);
+    setErrorMsg("");
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      setErrorMsg("Please enter the 6-digit verification code");
+      return;
+    }
+
+    setVerifyLoading(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: registeredEmail, code: verificationCode }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.message || "Verification failed. Please try again.");
+        setVerifyLoading(false);
+        return;
+      }
+
+      setVerifySuccess(true);
+      setVerifyLoading(false);
+
+      // Redirect to signin after a short delay
+      setTimeout(() => {
+        router.push("/auth/signin?registered=1&verified=1");
+      }, 2000);
+    } catch (err) {
+      setErrorMsg("Verification failed. Please try again.");
+      setVerifyLoading(false);
+    }
   };
 
   const getPasswordStrengthColor = () => {
@@ -325,7 +369,7 @@ export default function SignUpPage() {
                   value={form.email}
                   onChange={handleChange}
                   required
-                  placeholder="john.smith@aldwychcapital.com"
+                  placeholder="john.smith@horizonglobalcapital.com"
                   autoComplete="email"
                   className={`${styles.input} ${emailExists ? styles.inputError : ''}`}
                 />
@@ -773,6 +817,142 @@ export default function SignUpPage() {
     }
   };
 
+  if (showVerification) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={styles.sidebar}>
+            <div className={styles.sidebarContent}>
+              <div className={styles.logoContainer}>
+                <Link href="/" className={styles.logoLink}>
+                  <Image
+                    src={LOGO_SRC}
+                    alt="Horizon Global Capital"
+                    width={580}
+                    height={100}
+                    className={styles.logoImage}
+                    priority
+                  />
+                </Link>
+              </div>
+              <div className={styles.benefits}>
+                <h3 className={styles.benefitsTitle}>Almost There</h3>
+                <div className={styles.benefitsGrid}>
+                  <div className={styles.benefit}>
+                    <div className={styles.benefitIcon}>✉️</div>
+                    <div className={styles.benefitContent}>
+                      <h4>Check Your Inbox</h4>
+                      <p>We sent a 6-digit verification code to your email</p>
+                    </div>
+                  </div>
+                  <div className={styles.benefit}>
+                    <div className={styles.benefitIcon}>⏱️</div>
+                    <div className={styles.benefitContent}>
+                      <h4>Code Expires in 15 Minutes</h4>
+                      <p>Enter the code promptly to complete registration</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.main}>
+            <div className={styles.mainHeader}>
+              <div className={styles.headerContent}>
+                <h1 className={styles.pageTitle}>Verify Your Email</h1>
+                <p className={styles.pageSubtitle}>
+                  We&apos;ve sent a verification code to <strong>{registeredEmail}</strong>.
+                  Please enter it below to complete your registration.
+                </p>
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className={`${styles.message} ${styles.errorMessage}`}>
+                <div className={styles.messageIcon}>⚠️</div>
+                <div className={styles.messageContent}>
+                  <strong>Verification Error</strong>
+                  <p>{errorMsg}</p>
+                </div>
+              </div>
+            )}
+
+            {verifySuccess ? (
+              <div className={styles.stepContent}>
+                <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+                  <h2 className={styles.stepTitle} style={{ color: '#059669' }}>Email Verified Successfully!</h2>
+                  <p className={styles.stepSubtitle}>Redirecting you to sign in...</p>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.stepContent}>
+                <div className={styles.stepHeader}>
+                  <div className={styles.stepNumber}>VERIFICATION</div>
+                  <h2 className={styles.stepTitle}>Enter Verification Code</h2>
+                  <p className={styles.stepSubtitle}>Enter the 6-digit code from your email</p>
+                </div>
+
+                <div className={styles.formField}>
+                  <label htmlFor="verificationCode">Verification Code</label>
+                  <div className={styles.inputWrapper}>
+                    <span className={styles.inputIcon}>🔑</span>
+                    <input
+                      id="verificationCode"
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setVerificationCode(val);
+                      }}
+                      placeholder="Enter 6-digit code"
+                      maxLength={6}
+                      className={styles.input}
+                      style={{ letterSpacing: '0.5em', fontSize: '1.25rem', textAlign: 'center' }}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    onClick={handleVerifyCode}
+                    disabled={verifyLoading || verificationCode.length !== 6}
+                    className={`${styles.submitButton} ${verifyLoading ? styles.loading : ''}`}
+                  >
+                    {verifyLoading ? (
+                      <>
+                        <span className={styles.spinner}></span>
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify Email'
+                    )}
+                  </button>
+                </div>
+
+                <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: 'rgba(26, 31, 46, 0.6)' }}>
+                  Didn&apos;t receive the code? Check your spam folder or contact support.
+                </p>
+              </div>
+            )}
+
+            <div className={styles.footer}>
+              <p className={styles.footerText}>
+                Already have an account?{' '}
+                <Link href="/auth/signin" className={styles.signInLink}>
+                  Access your account →
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
@@ -791,7 +971,7 @@ export default function SignUpPage() {
   priority
 />
 
-                
+
               </Link>
             </div>
 

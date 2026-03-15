@@ -12,15 +12,14 @@ export default function LandingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowModal(true), 2500);
-    
+    const timer: any = null; // removed auto-popup
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);

@@ -177,13 +177,13 @@ export default function ProfileClient() {
                   <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
                     Account Number
                   </p>
-                  <p style={{ fontWeight: '600' }}>{profile.accountNumber}</p>
+                  <p style={{ fontWeight: '600' }}>{profile.accountNumber ? '••••••' + profile.accountNumber.slice(-4) : '—'}</p>
                 </div>
                 <div>
                   <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
                     Routing Number
                   </p>
-                  <p style={{ fontWeight: '600' }}>{profile.routingNumber}</p>
+                  <p style={{ fontWeight: '600', color: '#6b7280', fontSize: '0.8rem' }}>Contact support for details</p>
                 </div>
                 <div>
                   <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.25rem' }}>

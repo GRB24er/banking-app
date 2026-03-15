@@ -581,12 +581,12 @@ export default function CardsPage() {
                     <div className={styles.revealField}>
                       <label>CVV</label>
                       <div className={styles.revealValue}>
-                        <span>{revealedCard.cvv}</span>
-                        <button onClick={() => navigator.clipboard.writeText(revealedCard.cvv)} title="Copy">
-                          📋
-                        </button>
+                        <span>***</span>
                       </div>
                     </div>
+                  </div>
+                  <div style={{ background: 'rgba(201,169,98,0.1)', border: '1px solid rgba(201,169,98,0.3)', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.8rem', color: '#c9a962', marginTop: '0.5rem' }}>
+                    🔒 For your security, CVV cannot be displayed. Please refer to your physical or virtual card.
                   </div>
                   <div className={styles.revealField}>
                     <label>Cardholder Name</label>

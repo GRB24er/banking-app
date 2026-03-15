@@ -22,6 +22,11 @@ export interface IUser extends Document {
   role: 'user' | 'admin';
   verified: boolean;
 
+  /** Email verification */
+  emailVerified: boolean;
+  verificationCode?: string;
+  verificationCodeExpiry?: Date;
+
   /** New: separate account balances */
   checkingBalance: number;
   savingsBalance: number;
@@ -30,6 +35,9 @@ export interface IUser extends Document {
   /** Optional account details - removed bitcoin */
   accountNumber?: string;
   routingNumber?: string;
+
+  /** User settings (security, notifications, privacy, profile extras) */
+  settings?: Record<string, any>;
 
   transactions: ITransaction[];
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -57,6 +65,11 @@ const UserSchema = new Schema<IUser>({
   role:           { type: String, enum: ['user','admin'], default: 'user' },
   verified:       { type: Boolean, default: false },
 
+  // Email verification
+  emailVerified:          { type: Boolean, default: false },
+  verificationCode:       { type: String, required: false },
+  verificationCodeExpiry: { type: Date, required: false },
+
   // ── Three separate balances ────────────────────────────────────────────
   checkingBalance:   { type: Number, default: 0, min: 0 },
   savingsBalance:    { type: Number, default: 0, min: 0 },
@@ -65,6 +78,9 @@ const UserSchema = new Schema<IUser>({
   // ── Optional account details (removed bitcoin) ─────────────────────────
   accountNumber:  { type: String, required: false },
   routingNumber:  { type: String, required: false },
+
+  // ── User settings (JSON object for security, notifications, privacy) ──
+  settings:       { type: Schema.Types.Mixed, default: {} },
 
   transactions:   [TransactionSchema]
 }, {

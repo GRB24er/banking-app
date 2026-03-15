@@ -14,6 +14,7 @@ export default function StatementsPage() {
   const [endDate, setEndDate] = useState("");
   const [accountType, setAccountType] = useState("checking");
   const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,6 +54,26 @@ export default function StatementsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const downloadStatement = () => {
+    if (!startDate || !endDate) {
+      setError("Please select both start and end dates");
+      return;
+    }
+
+    setError("");
+    setDownloadLoading(true);
+
+    const params = new URLSearchParams({
+      accountType,
+      startDate,
+      endDate,
+    });
+
+    // Open in a new tab as a printable HTML page
+    window.open(`/api/statements/download?${params.toString()}`, '_blank');
+    setDownloadLoading(false);
   };
 
   return (
@@ -137,13 +158,25 @@ export default function StatementsPage() {
                   </div>
                 )}
 
-                <button 
-                  onClick={requestStatement}
-                  disabled={loading}
-                  className={styles.requestButton}
-                >
-                  {loading ? 'Sending Request...' : 'Request Statement'}
-                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={requestStatement}
+                    disabled={loading}
+                    className={styles.requestButton}
+                  >
+                    <Mail size={18} />
+                    {loading ? 'Sending Request...' : 'Email Statement'}
+                  </button>
+                  <button
+                    onClick={downloadStatement}
+                    disabled={downloadLoading}
+                    className={styles.requestButton}
+                    style={{ background: '#1a1f2e' }}
+                  >
+                    <Download size={18} />
+                    {downloadLoading ? 'Preparing...' : 'Download / Print'}
+                  </button>
+                </div>
               </div>
             </div>
 

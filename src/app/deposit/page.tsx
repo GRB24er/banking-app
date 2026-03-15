@@ -36,15 +36,11 @@ export default function FundAccountPage() {
   const [pendingDeposits, setPendingDeposits] = useState<PendingDeposit[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
 
-  // ============================================
-  // UPDATE THESE WITH YOUR ACTUAL BANK DETAILS
-  // ============================================
+  const [showWireDetails, setShowWireDetails] = useState(false);
+
   const bankDetails = {
     bankName: "Horizon Global Capital",
     accountName: "Horizon Global Capital LLC",
-    accountNumber: "8934567821",
-    routingNumber: "021000021",
-    swiftCode: "ZBNKUS33",
     bankAddress: "100 Wall Street, New York, NY 10005"
   };
 
@@ -393,41 +389,29 @@ export default function FundAccountPage() {
                       </div>
 
                       <div className={styles.detailRow}>
-                        <span className={styles.detailLabel}>Account Number</span>
+                        <span className={styles.detailLabel}>Account Number / Routing / SWIFT</span>
                         <div className={styles.detailValue}>
-                          <span className={styles.mono}>{bankDetails.accountNumber}</span>
-                          <button
-                            className={styles.copyBtn}
-                            onClick={() => copyToClipboard(bankDetails.accountNumber, 'accountNumber')}
-                          >
-                            {copied === 'accountNumber' ? '✓' : '📋'}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className={styles.detailRow}>
-                        <span className={styles.detailLabel}>Routing Number</span>
-                        <div className={styles.detailValue}>
-                          <span className={styles.mono}>{bankDetails.routingNumber}</span>
-                          <button
-                            className={styles.copyBtn}
-                            onClick={() => copyToClipboard(bankDetails.routingNumber, 'routingNumber')}
-                          >
-                            {copied === 'routingNumber' ? '✓' : '📋'}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className={styles.detailRow}>
-                        <span className={styles.detailLabel}>SWIFT Code</span>
-                        <div className={styles.detailValue}>
-                          <span className={styles.mono}>{bankDetails.swiftCode}</span>
-                          <button
-                            className={styles.copyBtn}
-                            onClick={() => copyToClipboard(bankDetails.swiftCode, 'swiftCode')}
-                          >
-                            {copied === 'swiftCode' ? '✓' : '📋'}
-                          </button>
+                          {showWireDetails ? (
+                            <span style={{ color: '#c9a962', fontSize: '0.85rem' }}>
+                              Please contact support for account number, routing, and SWIFT information.
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => setShowWireDetails(true)}
+                              style={{
+                                background: 'linear-gradient(135deg, #c9a962 0%, #a8935f 100%)',
+                                color: '#1a1f2e',
+                                border: 'none',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                fontSize: '0.8rem'
+                              }}
+                            >
+                              Request Wire Details
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -448,6 +432,7 @@ export default function FundAccountPage() {
                     <div className={styles.importantNote}>
                       <h4>⚠️ Important</h4>
                       <ul>
+                        <li>Contact your relationship manager for wire transfer details (account number, routing number, SWIFT code)</li>
                         <li>Include your account email in the transfer reference/memo</li>
                         <li>Send exactly {formatCurrency(parseFloat(amount))}</li>
                         <li>Wire transfers take 1-3 business days to process</li>

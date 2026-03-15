@@ -1,7 +1,7 @@
 // src/app/settings/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
@@ -45,6 +45,12 @@ interface NotificationSettings {
   monthlyStatements: boolean;
 }
 
+interface PrivacySettings {
+  dataSharing: boolean;
+  activityTracking: boolean;
+  profileVisibility: boolean;
+}
+
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -80,11 +86,48 @@ export default function SettingsPage() {
     monthlyStatements: true
   });
 
+  const [privacy, setPrivacy] = useState<PrivacySettings>({
+    dataSharing: false,
+    activityTracking: true,
+    profileVisibility: false,
+  });
+
   const [passwords, setPasswords] = useState({
     current: '',
     new: '',
     confirm: ''
   });
+
+  const [autoSaveIndicator, setAutoSaveIndicator] = useState('');
+
+  // Debounce timer refs for auto-saving toggles
+  const securityDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const notificationsDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const privacyDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced save function
+  const debouncedSave = useCallback((
+    section: 'security' | 'notifications' | 'privacy',
+    data: any,
+    timerRef: React.MutableRefObject<NodeJS.Timeout | null>
+  ) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/user/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [section]: data })
+        });
+        if (response.ok) {
+          setAutoSaveIndicator('Saved');
+          setTimeout(() => setAutoSaveIndicator(''), 2000);
+        }
+      } catch (err) {
+        console.error('Auto-save error:', err);
+      }
+    }, 500);
+  }, []);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -109,6 +152,7 @@ export default function SettingsPage() {
         if (data.profile) setProfile(data.profile);
         if (data.security) setSecurity(data.security);
         if (data.notifications) setNotifications(data.notifications);
+        if (data.privacy) setPrivacy(data.privacy);
       } else {
         // Fallback to session data if settings API doesn't exist
         if (session?.user) {
@@ -405,6 +449,11 @@ export default function SettingsPage() {
               {activeTab === 'security' && (
                 <div className={styles.securitySettings}>
                   <h2>Security Settings</h2>
+                  {autoSaveIndicator && (
+                    <div style={{ color: '#10b981', fontSize: '0.85rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      {Icons.check} {autoSaveIndicator}
+                    </div>
+                  )}
                   <div className={styles.securityOptions}>
                     <div className={styles.securityItem}>
                       <div>
@@ -412,10 +461,14 @@ export default function SettingsPage() {
                         <p>Add an extra layer of security to your account</p>
                       </div>
                       <label className={styles.switch}>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={security.twoFactorEnabled}
-                          onChange={(e) => setSecurity({...security, twoFactorEnabled: e.target.checked})}
+                          onChange={(e) => {
+                            const updated = {...security, twoFactorEnabled: e.target.checked};
+                            setSecurity(updated);
+                            debouncedSave('security', updated, securityDebounceRef);
+                          }}
                         />
                         <span className={styles.slider}></span>
                       </label>
@@ -426,10 +479,14 @@ export default function SettingsPage() {
                         <p>Use fingerprint or face recognition</p>
                       </div>
                       <label className={styles.switch}>
-                        <input 
+                        <input
                           type="checkbox"
                           checked={security.biometricEnabled}
-                          onChange={(e) => setSecurity({...security, biometricEnabled: e.target.checked})}
+                          onChange={(e) => {
+                            const updated = {...security, biometricEnabled: e.target.checked};
+                            setSecurity(updated);
+                            debouncedSave('security', updated, securityDebounceRef);
+                          }}
                         />
                         <span className={styles.slider}></span>
                       </label>
@@ -440,10 +497,14 @@ export default function SettingsPage() {
                         <p>Get notified of new sign-ins to your account</p>
                       </div>
                       <label className={styles.switch}>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={security.loginAlerts}
-                          onChange={(e) => setSecurity({...security, loginAlerts: e.target.checked})}
+                          onChange={(e) => {
+                            const updated = {...security, loginAlerts: e.target.checked};
+                            setSecurity(updated);
+                            debouncedSave('security', updated, securityDebounceRef);
+                          }}
                         />
                         <span className={styles.slider}></span>
                       </label>
@@ -495,6 +556,11 @@ export default function SettingsPage() {
               {activeTab === 'notifications' && (
                 <div className={styles.notificationSettings}>
                   <h2>Notification Preferences</h2>
+                  {autoSaveIndicator && (
+                    <div style={{ color: '#10b981', fontSize: '0.85rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      {Icons.check} {autoSaveIndicator}
+                    </div>
+                  )}
                   <div className={styles.notificationOptions}>
                     <div className={styles.notificationItem}>
                       <div>
@@ -505,7 +571,11 @@ export default function SettingsPage() {
                         <input 
                           type="checkbox" 
                           checked={notifications.transactionAlerts}
-                          onChange={(e) => setNotifications({...notifications, transactionAlerts: e.target.checked})}
+                          onChange={(e) => {
+                            const updated = {...notifications, transactionAlerts: e.target.checked};
+                            setNotifications(updated);
+                            debouncedSave('notifications', updated, notificationsDebounceRef);
+                          }}
                         />
                         <span className={styles.slider}></span>
                       </label>
@@ -516,10 +586,14 @@ export default function SettingsPage() {
                         <p>Important account information and changes</p>
                       </div>
                       <label className={styles.switch}>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={notifications.accountUpdates}
-                          onChange={(e) => setNotifications({...notifications, accountUpdates: e.target.checked})}
+                          onChange={(e) => {
+                            const updated = {...notifications, accountUpdates: e.target.checked};
+                            setNotifications(updated);
+                            debouncedSave('notifications', updated, notificationsDebounceRef);
+                          }}
                         />
                         <span className={styles.slider}></span>
                       </label>
@@ -530,10 +604,14 @@ export default function SettingsPage() {
                         <p>Suspicious activity and security notifications</p>
                       </div>
                       <label className={styles.switch}>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={notifications.securityAlerts}
-                          onChange={(e) => setNotifications({...notifications, securityAlerts: e.target.checked})}
+                          onChange={(e) => {
+                            const updated = {...notifications, securityAlerts: e.target.checked};
+                            setNotifications(updated);
+                            debouncedSave('notifications', updated, notificationsDebounceRef);
+                          }}
                         />
                         <span className={styles.slider}></span>
                       </label>
@@ -544,10 +622,14 @@ export default function SettingsPage() {
                         <p>Receive monthly account statements via email</p>
                       </div>
                       <label className={styles.switch}>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={notifications.monthlyStatements}
-                          onChange={(e) => setNotifications({...notifications, monthlyStatements: e.target.checked})}
+                          onChange={(e) => {
+                            const updated = {...notifications, monthlyStatements: e.target.checked};
+                            setNotifications(updated);
+                            debouncedSave('notifications', updated, notificationsDebounceRef);
+                          }}
                         />
                         <span className={styles.slider}></span>
                       </label>
@@ -558,10 +640,14 @@ export default function SettingsPage() {
                         <p>Promotions, offers and product updates</p>
                       </div>
                       <label className={styles.switch}>
-                        <input 
+                        <input
                           type="checkbox"
                           checked={notifications.marketingEmails}
-                          onChange={(e) => setNotifications({...notifications, marketingEmails: e.target.checked})}
+                          onChange={(e) => {
+                            const updated = {...notifications, marketingEmails: e.target.checked};
+                            setNotifications(updated);
+                            debouncedSave('notifications', updated, notificationsDebounceRef);
+                          }}
                         />
                         <span className={styles.slider}></span>
                       </label>
@@ -577,6 +663,11 @@ export default function SettingsPage() {
               {activeTab === 'privacy' && (
                 <div className={styles.profileSettings}>
                   <h2>Privacy Settings</h2>
+                  {autoSaveIndicator && (
+                    <div style={{ color: '#10b981', fontSize: '0.85rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      {Icons.check} {autoSaveIndicator}
+                    </div>
+                  )}
                   <div className={styles.securityOptions}>
                     <div className={styles.securityItem}>
                       <div>
@@ -584,7 +675,15 @@ export default function SettingsPage() {
                         <p>Control how your data is shared with partners</p>
                       </div>
                       <label className={styles.switch}>
-                        <input type="checkbox" />
+                        <input
+                          type="checkbox"
+                          checked={privacy.dataSharing}
+                          onChange={(e) => {
+                            const updated = {...privacy, dataSharing: e.target.checked};
+                            setPrivacy(updated);
+                            debouncedSave('privacy', updated, privacyDebounceRef);
+                          }}
+                        />
                         <span className={styles.slider}></span>
                       </label>
                     </div>
@@ -594,7 +693,15 @@ export default function SettingsPage() {
                         <p>Allow us to track your activity for better recommendations</p>
                       </div>
                       <label className={styles.switch}>
-                        <input type="checkbox" defaultChecked />
+                        <input
+                          type="checkbox"
+                          checked={privacy.activityTracking}
+                          onChange={(e) => {
+                            const updated = {...privacy, activityTracking: e.target.checked};
+                            setPrivacy(updated);
+                            debouncedSave('privacy', updated, privacyDebounceRef);
+                          }}
+                        />
                         <span className={styles.slider}></span>
                       </label>
                     </div>
@@ -604,12 +711,19 @@ export default function SettingsPage() {
                         <p>Make your profile visible to other users</p>
                       </div>
                       <label className={styles.switch}>
-                        <input type="checkbox" />
+                        <input
+                          type="checkbox"
+                          checked={privacy.profileVisibility}
+                          onChange={(e) => {
+                            const updated = {...privacy, profileVisibility: e.target.checked};
+                            setPrivacy(updated);
+                            debouncedSave('privacy', updated, privacyDebounceRef);
+                          }}
+                        />
                         <span className={styles.slider}></span>
                       </label>
                     </div>
                   </div>
-                  <button className={styles.saveBtn}>Save Privacy Settings</button>
                 </div>
               )}
 

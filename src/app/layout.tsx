@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import Chatbox from "@/components/Chatbox";
+import CookieConsent from "@/components/CookieConsent";
+import RegulatoryBanner from "@/components/RegulatoryBanner";
 
 export const metadata: Metadata = {
   title: "Horizon Global Capital | Private Banking & Wealth Management",
@@ -32,7 +34,9 @@ export default function RootLayout({
         <Providers>
           {children}
           <Chatbox />
+          <CookieConsent />
         </Providers>
+        <RegulatoryBanner />
       </body>
     </html>
   );

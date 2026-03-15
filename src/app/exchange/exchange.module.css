@@ -55,6 +55,152 @@
   margin: 0.25rem 0 0;
 }
 
+/* Live Rates Card */
+.liveRatesCard {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(201, 169, 98, 0.15);
+  margin-bottom: 2rem;
+}
+
+.liveRatesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.liveRatesTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.liveRatesSubtitle {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0;
+}
+
+.lastUpdated {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.refreshBtn {
+  padding: 0.5rem 1.25rem;
+  border: 2px solid var(--gold, #C9A962);
+  background: transparent;
+  color: #1a1a2e;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  background: rgba(201, 169, 98, 0.1);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ratesError {
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.ratesLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  gap: 0.75rem;
+  color: #6b7280;
+}
+
+.ratesTable {
+  overflow-x: auto;
+}
+
+.ratesTableHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.ratesTableRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 0.65rem 0.75rem;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+}
+
+.ratesTableRow:hover {
+  background: rgba(201, 169, 98, 0.04);
+}
+
+.rateCurrency {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rateFlag {
+  font-size: 1.25rem;
+}
+
+.rateCode {
+  font-weight: 700;
+  color: #1a1a2e;
+  font-size: 0.9rem;
+}
+
+.rateName {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.rateMid {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: 0.9rem;
+}
+
+.rateBuy {
+  font-weight: 500;
+  color: #10b981;
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: 0.9rem;
+}
+
+.rateSell {
+  font-weight: 500;
+  color: #ef4444;
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: 0.9rem;
+}
+
 /* Exchange Card */
 .exchangeCard {
   background: white;
