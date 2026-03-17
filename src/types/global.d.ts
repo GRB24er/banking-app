@@ -22,6 +22,14 @@ declare module '@/lib/mail' {
   export const transporter: any;
   export const sendTransactionEmail: any;
   export const sendWelcomeEmail: any;
+  export function sendNotificationEmailLinked(
+    to: string,
+    args: {
+      accountHolderName: string;
+      accountNumberMasked: string;
+      linkedDate: Date;
+    }
+  ): Promise<any>;
 }
 
 // src/types/global.d.ts
@@ -42,4 +50,12 @@ declare module '@/lib/mail' {
       reference?: string;
     }[]
   ): Promise<void>;
+  export function sendNotificationEmailLinked(
+    to: string,
+    args: {
+      accountHolderName: string;
+      accountNumberMasked: string;
+      linkedDate: Date;
+    }
+  ): Promise<any>;
 }

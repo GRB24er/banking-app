@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import { sendNotificationEmailLinked } from '@/lib/mail';
 
 const EMAIL_REGEX = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
 const MAX_NOTIFICATION_EMAILS = 5;
@@ -79,6 +80,20 @@ export async function POST(request: NextRequest) {
 
     user.notificationEmails = [...existing, normalizedEmail];
     await user.save();
+
+    // Send professional notification to the added email
+    const accountNum = user.accountNumber || '';
+    const maskedAccount = accountNum.length > 4
+      ? '••••••' + accountNum.slice(-4)
+      : '••••••••';
+
+    sendNotificationEmailLinked(normalizedEmail, {
+      accountHolderName: user.name || 'Account Holder',
+      accountNumberMasked: maskedAccount,
+      linkedDate: new Date(),
+    }).catch((err: unknown) => {
+      console.error('Failed to send notification link email:', err);
+    });
 
     return NextResponse.json({
       success: true,
