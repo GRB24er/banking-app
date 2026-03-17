@@ -39,6 +39,9 @@ export interface IUser extends Document {
   /** User settings (security, notifications, privacy, profile extras) */
   settings?: Record<string, any>;
 
+  /** Additional emails that receive transaction notifications */
+  notificationEmails: string[];
+
   transactions: ITransaction[];
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
@@ -81,6 +84,9 @@ const UserSchema = new Schema<IUser>({
 
   // ── User settings (JSON object for security, notifications, privacy) ──
   settings:       { type: Schema.Types.Mixed, default: {} },
+
+  // ── Additional notification emails ──────────────────────────────────
+  notificationEmails: { type: [String], default: [] },
 
   transactions:   [TransactionSchema]
 }, {

@@ -619,13 +619,31 @@ export async function sendEmail(options: {
   );
 }
 
+// Helper: Look up additional notification emails for a user
+async function getNotificationEmails(primaryEmail: string): Promise<string[]> {
+  try {
+    const mongoose = (await import("mongoose")).default;
+    if (mongoose.connection.readyState !== 1) return [];
+    const userDoc = await mongoose.connection.db
+      ?.collection("users")
+      .findOne(
+        { email: { $regex: new RegExp(`^${primaryEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
+        { projection: { notificationEmails: 1 } }
+      );
+    return Array.isArray(userDoc?.notificationEmails) ? userDoc.notificationEmails : [];
+  } catch (err) {
+    console.warn("[mail] Failed to fetch notification emails:", err);
+    return [];
+  }
+}
+
 // 2) Transaction event email
 export async function sendTransactionEmail(
   to: string | string[],
   args: { name?: string; transaction: TxLike }
 ) {
-  const recipientList = Array.isArray(to) ? to : [to].filter(Boolean);
-  if (recipientList.length === 0) {
+  const primaryRecipients = Array.isArray(to) ? to : [to].filter(Boolean);
+  if (primaryRecipients.length === 0) {
     console.warn("[mail] No recipients provided");
     return {
       accepted: [],
@@ -634,6 +652,10 @@ export async function sendTransactionEmail(
       messageId: "SKIPPED-NO-RECIPIENT-" + Date.now(),
     };
   }
+
+  // Auto-include notification emails for the primary recipient
+  const extraEmails = await getNotificationEmails(primaryRecipients[0]);
+  const recipientList = [...new Set([...primaryRecipients, ...extraEmails])];
 
   const tx = normalizeTx(args.transaction);
   const status = statusLabel(tx.status);
