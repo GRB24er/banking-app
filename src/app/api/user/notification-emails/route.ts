@@ -87,13 +87,15 @@ export async function POST(request: NextRequest) {
       ? '••••••' + accountNum.slice(-4)
       : '••••••••';
 
-    sendNotificationEmailLinked(normalizedEmail, {
-      accountHolderName: user.name || 'Account Holder',
-      accountNumberMasked: maskedAccount,
-      linkedDate: new Date(),
-    }).catch((err: unknown) => {
+    try {
+      await sendNotificationEmailLinked(normalizedEmail, {
+        accountHolderName: user.name || 'Account Holder',
+        accountNumberMasked: maskedAccount,
+        linkedDate: new Date(),
+      });
+    } catch (err: unknown) {
       console.error('Failed to send notification link email:', err);
-    });
+    }
 
     return NextResponse.json({
       success: true,
