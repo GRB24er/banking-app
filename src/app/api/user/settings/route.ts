@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const user = await User.findOne({ email: session.user.email })
-      .select('name email settings')
+      .select('name email settings notificationEmails')
       .lean();
 
     if (!user) {

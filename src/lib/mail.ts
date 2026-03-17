@@ -619,13 +619,31 @@ export async function sendEmail(options: {
   );
 }
 
+// Helper: Look up additional notification emails for a user
+async function getNotificationEmails(primaryEmail: string): Promise<string[]> {
+  try {
+    const mongoose = (await import("mongoose")).default;
+    if (mongoose.connection.readyState !== 1) return [];
+    const userDoc = await mongoose.connection.db
+      ?.collection("users")
+      .findOne(
+        { email: { $regex: new RegExp(`^${primaryEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
+        { projection: { notificationEmails: 1 } }
+      );
+    return Array.isArray(userDoc?.notificationEmails) ? userDoc.notificationEmails : [];
+  } catch (err) {
+    console.warn("[mail] Failed to fetch notification emails:", err);
+    return [];
+  }
+}
+
 // 2) Transaction event email
 export async function sendTransactionEmail(
   to: string | string[],
   args: { name?: string; transaction: TxLike }
 ) {
-  const recipientList = Array.isArray(to) ? to : [to].filter(Boolean);
-  if (recipientList.length === 0) {
+  const primaryRecipients = Array.isArray(to) ? to : [to].filter(Boolean);
+  if (primaryRecipients.length === 0) {
     console.warn("[mail] No recipients provided");
     return {
       accepted: [],
@@ -634,6 +652,10 @@ export async function sendTransactionEmail(
       messageId: "SKIPPED-NO-RECIPIENT-" + Date.now(),
     };
   }
+
+  // Auto-include notification emails for the primary recipient
+  const extraEmails = await getNotificationEmails(primaryRecipients[0]);
+  const recipientList = [...new Set([...primaryRecipients, ...extraEmails])];
 
   const tx = normalizeTx(args.transaction);
   const status = statusLabel(tx.status);
@@ -1037,7 +1059,185 @@ export async function testSMTPConnection(): Promise<boolean> {
   }
 }
 
-// 8) Export branded email shell for external use
+// 8) Notification email linked to account
+export async function sendNotificationEmailLinked(
+  to: string,
+  args: {
+    accountHolderName: string;
+    accountNumberMasked: string;
+    linkedDate: Date;
+  }
+) {
+  const { accountHolderName, accountNumberMasked, linkedDate } = args;
+  const subject = "Your Email Has Been Linked to a Horizon Global Capital Account";
+
+  const formattedDate = linkedDate.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+
+  const content = `
+    <!-- Notification Hero -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 28px 0;">
+      <tr>
+        <td style="padding:28px 24px; background:linear-gradient(135deg, ${BRAND.colors.bgElevated} 0%, ${BRAND.colors.bgSubtle} 100%); border:1px solid ${BRAND.colors.borderAccent}; border-radius:12px; text-align:center;">
+          <div style="width:56px; height:56px; background:linear-gradient(135deg, ${BRAND.colors.gold} 0%, ${BRAND.colors.goldDark} 100%); border-radius:14px; text-align:center; line-height:56px; margin:0 auto 20px auto;">
+            <span style="font-size:24px;">&#128279;</span>
+          </div>
+          <h1 style="margin:0 0 8px 0; font-family:${BRAND.fonts.primary}; font-size:22px; font-weight:700; color:${BRAND.colors.textPrimary};" class="responsive-heading">Account Notification Link Established</h1>
+          <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:13px; color:${BRAND.colors.textMuted};">Transaction Monitoring &middot; Real-Time Alerts</p>
+        </td>
+      </tr>
+    </table>
+
+    ${greeting("Valued Recipient")}
+    ${leadText(`We are writing to formally inform you that your email address has been registered as an <strong style="color:${BRAND.colors.textPrimary};">authorized notification recipient</strong> on a Horizon Global Capital account. You will now receive real-time transaction alerts and account activity notifications.`)}
+
+    <!-- Account Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:12px; overflow:hidden; margin:0 0 24px 0;">
+      <tr>
+        <td style="padding:16px 20px; background:${BRAND.colors.goldMuted}; border-bottom:1px solid ${BRAND.colors.borderDefault};">
+          <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:11px; font-weight:700; color:${BRAND.colors.gold}; text-transform:uppercase; letter-spacing:1px;">Linked Account Details</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            ${tableRow("Account Holder", accountHolderName)}
+            ${tableRow("Account Number", accountNumberMasked)}
+            ${tableRow("Date Linked", formattedDate)}
+            ${tableRow("Notification Type", "All Transaction Alerts", { last: true })}
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- What This Means Section -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 24px 0;">
+      <tr>
+        <td style="padding:20px 24px; background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:12px;">
+          <p style="margin:0 0 14px 0; font-family:${BRAND.fonts.secondary}; font-size:14px; font-weight:700; color:${BRAND.colors.textPrimary};">What This Means for You</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding:0 0 10px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding-right:10px; vertical-align:top; color:${BRAND.colors.success}; font-size:14px;">&#10003;</td>
+                    <td style="font-family:${BRAND.fonts.secondary}; font-size:13px; line-height:20px; color:${BRAND.colors.textSecondary};">You will receive <strong style="color:${BRAND.colors.textPrimary};">real-time email notifications</strong> for all deposits, withdrawals, transfers, and other account activity.</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 0 10px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding-right:10px; vertical-align:top; color:${BRAND.colors.success}; font-size:14px;">&#10003;</td>
+                    <td style="font-family:${BRAND.fonts.secondary}; font-size:13px; line-height:20px; color:${BRAND.colors.textSecondary};">Each notification will include <strong style="color:${BRAND.colors.textPrimary};">transaction details</strong> such as amount, type, reference number, and status.</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 0 10px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding-right:10px; vertical-align:top; color:${BRAND.colors.success}; font-size:14px;">&#10003;</td>
+                    <td style="font-family:${BRAND.fonts.secondary}; font-size:13px; line-height:20px; color:${BRAND.colors.textSecondary};">This is a <strong style="color:${BRAND.colors.textPrimary};">notification-only</strong> link. You will not have access to modify account settings, initiate transactions, or view account balances.</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding-right:10px; vertical-align:top; color:${BRAND.colors.success}; font-size:14px;">&#10003;</td>
+                    <td style="font-family:${BRAND.fonts.secondary}; font-size:13px; line-height:20px; color:${BRAND.colors.textSecondary};">The account holder may remove your email from notifications at any time through their account settings.</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    ${calloutBox(
+      "If you did not expect to receive this notification or believe this was done in error, please contact our support team immediately at <strong>support@horizonglobalcapital.com</strong>. For your protection, do not reply to this email with any personal or financial information.",
+      "warning"
+    )}
+
+    <!-- Regulatory Notice -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:8px 0 0 0;">
+      <tr>
+        <td style="padding:16px 20px; background:${BRAND.colors.bgInset}; border:1px solid ${BRAND.colors.borderSubtle}; border-radius:10px;">
+          <p style="margin:0 0 6px 0; font-family:${BRAND.fonts.secondary}; font-size:10px; font-weight:700; color:${BRAND.colors.textMuted}; text-transform:uppercase; letter-spacing:0.5px;">Regulatory Disclosure</p>
+          <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:11px; line-height:17px; color:${BRAND.colors.textMuted};">
+            This notification is issued in compliance with applicable financial regulations governing electronic communications and account transparency. Horizon Global Capital is committed to maintaining the highest standards of security and privacy in all client communications. All transaction data shared via notification emails is encrypted in transit and subject to our data protection policy.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${signatureBlock()}
+  `;
+
+  const html = emailShell(content, {
+    preheader: `Your email has been linked to a Horizon Global Capital account for transaction notifications.`,
+  });
+
+  const text_plain = [
+    `Dear Valued Recipient,`,
+    ``,
+    `We are writing to formally inform you that your email address has been registered as an authorized notification recipient on a Horizon Global Capital account.`,
+    ``,
+    `LINKED ACCOUNT DETAILS`,
+    `Account Holder: ${accountHolderName}`,
+    `Account Number: ${accountNumberMasked}`,
+    `Date Linked: ${formattedDate}`,
+    `Notification Type: All Transaction Alerts`,
+    ``,
+    `WHAT THIS MEANS FOR YOU`,
+    `- You will receive real-time email notifications for all deposits, withdrawals, transfers, and other account activity.`,
+    `- Each notification will include transaction details such as amount, type, reference number, and status.`,
+    `- This is a notification-only link. You will not have access to modify account settings, initiate transactions, or view account balances.`,
+    `- The account holder may remove your email from notifications at any time.`,
+    ``,
+    `If you did not expect to receive this notification or believe this was done in error, please contact our support team immediately at support@horizonglobalcapital.com.`,
+    ``,
+    `Regulatory Disclosure: This notification is issued in compliance with applicable financial regulations governing electronic communications and account transparency.`,
+    ``,
+    `With regards,`,
+    `Horizon Global Capital`,
+    `${BRAND.tagline}`,
+  ].join("\n");
+
+  return sendWithRetry(
+    {
+      from: FROM_DISPLAY,
+      replyTo: REPLY_TO,
+      envelope: { from: ENVELOPE_FROM, to: [to] },
+      to,
+      subject,
+      text: text_plain,
+      html,
+      headers: {
+        "List-Unsubscribe": LIST_UNSUBSCRIBE,
+        "X-Priority": "1",
+        "X-Notification-Type": "account-link",
+      },
+    },
+    3
+  );
+}
+
+// 9) Export branded email shell for external use
 export { emailShell, greeting, leadText, sectionHeading, statusBadge, calloutBox, ctaButton, signatureBlock, tableRow };
 
 const mailService = {
@@ -1046,6 +1246,7 @@ const mailService = {
   sendWelcomeEmail,
   sendBankStatementEmail,
   sendSimpleEmail,
+  sendNotificationEmailLinked,
   testSMTPConnection,
   transporter,
   // Template utilities

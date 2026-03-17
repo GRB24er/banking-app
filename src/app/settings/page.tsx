@@ -100,6 +100,12 @@ export default function SettingsPage() {
 
   const [autoSaveIndicator, setAutoSaveIndicator] = useState('');
 
+  // Notification emails state
+  const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
+  const [newNotifEmail, setNewNotifEmail] = useState('');
+  const [notifEmailLoading, setNotifEmailLoading] = useState(false);
+  const [notifEmailError, setNotifEmailError] = useState('');
+
   // Debounce timer refs for auto-saving toggles
   const securityDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const notificationsDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -143,6 +149,68 @@ export default function SettingsPage() {
     }
   }, [session]);
 
+  const fetchNotificationEmails = async () => {
+    try {
+      const res = await fetch('/api/user/notification-emails');
+      if (res.ok) {
+        const data = await res.json();
+        setNotificationEmails(data.notificationEmails || []);
+      }
+    } catch (err) {
+      console.error('Error fetching notification emails:', err);
+    }
+  };
+
+  const handleAddNotifEmail = async () => {
+    if (!newNotifEmail.trim()) return;
+    setNotifEmailLoading(true);
+    setNotifEmailError('');
+    try {
+      const res = await fetch('/api/user/notification-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newNotifEmail.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotificationEmails(data.notificationEmails);
+        setNewNotifEmail('');
+        setSavedMessage('Notification email added successfully');
+        setTimeout(() => setSavedMessage(''), 3000);
+      } else {
+        setNotifEmailError(data.error || 'Failed to add email');
+      }
+    } catch (err) {
+      setNotifEmailError('Network error. Please try again.');
+    } finally {
+      setNotifEmailLoading(false);
+    }
+  };
+
+  const handleRemoveNotifEmail = async (email: string) => {
+    setNotifEmailLoading(true);
+    setNotifEmailError('');
+    try {
+      const res = await fetch('/api/user/notification-emails', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotificationEmails(data.notificationEmails);
+        setSavedMessage('Notification email removed');
+        setTimeout(() => setSavedMessage(''), 3000);
+      } else {
+        setNotifEmailError(data.error || 'Failed to remove email');
+      }
+    } catch (err) {
+      setNotifEmailError('Network error. Please try again.');
+    } finally {
+      setNotifEmailLoading(false);
+    }
+  };
+
   const fetchUserSettings = async () => {
     setLoading(true);
     try {
@@ -180,6 +248,7 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
+    fetchNotificationEmails();
   };
 
   const handleSaveProfile = async () => {
@@ -656,6 +725,82 @@ export default function SettingsPage() {
                   <button className={styles.saveBtn} onClick={handleSaveNotifications} disabled={saving}>
                     {saving ? 'Saving...' : 'Save Preferences'}
                   </button>
+
+                  {/* Notification Emails Section */}
+                  <div style={{ paddingTop: '2.5rem', marginTop: '2.5rem', borderTop: '2px solid rgba(201, 169, 98, 0.15)' }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1a1f2e', margin: '0 0 0.5rem 0' }}>
+                      Additional Notification Emails
+                    </h3>
+                    <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0 0 1.5rem 0' }}>
+                      Add email addresses that should also receive transaction notifications for this account.
+                      This is useful for shared accounts or keeping a partner informed of all activity.
+                    </p>
+
+                    {notifEmailError && (
+                      <div style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '10px', marginBottom: '1rem', border: '1px solid rgba(239,68,68,0.2)', fontSize: '0.875rem' }}>
+                        {notifEmailError}
+                      </div>
+                    )}
+
+                    {/* Current notification emails */}
+                    {notificationEmails.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                        {notificationEmails.map((email) => (
+                          <div key={email} className={styles.notificationItem} style={{ padding: '0.875rem 1.25rem' }}>
+                            <div>
+                              <p style={{ margin: 0, fontWeight: 500, color: '#1a1f2e', fontSize: '0.95rem' }}>{email}</p>
+                              <p style={{ margin: '0.125rem 0 0 0', fontSize: '0.8rem', color: '#6b7280' }}>Receives all transaction alerts</p>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveNotifEmail(email)}
+                              disabled={notifEmailLoading}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                background: 'rgba(239,68,68,0.1)',
+                                color: '#dc2626',
+                                border: '1px solid rgba(239,68,68,0.2)',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                transition: 'all 0.2s',
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add new notification email */}
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+                      <div className={styles.formGroup} style={{ flex: 1 }}>
+                        <label>Email Address</label>
+                        <input
+                          type="email"
+                          value={newNotifEmail}
+                          onChange={(e) => setNewNotifEmail(e.target.value)}
+                          placeholder="Enter email address"
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddNotifEmail(); } }}
+                        />
+                      </div>
+                      <button
+                        className={styles.saveBtn}
+                        onClick={handleAddNotifEmail}
+                        disabled={notifEmailLoading || !newNotifEmail.trim()}
+                        style={{ marginBottom: '0', height: 'fit-content' }}
+                      >
+                        {notifEmailLoading ? 'Adding...' : 'Add Email'}
+                      </button>
+                    </div>
+
+                    {notificationEmails.length === 0 && (
+                      <p style={{ fontSize: '0.85rem', color: '#9ca3af', marginTop: '1rem', fontStyle: 'italic' }}>
+                        No additional notification emails configured. Add one above to share transaction alerts.
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 
