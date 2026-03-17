@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import { sendNotificationEmailLinked } from '@/lib/mail';
+import { sendNotificationEmailLinked, sendNotificationEmailAddedConfirmation } from '@/lib/mail';
 
 const EMAIL_REGEX = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
 const MAX_NOTIFICATION_EMAILS = 5;
@@ -87,14 +87,30 @@ export async function POST(request: NextRequest) {
       ? '••••••' + accountNum.slice(-4)
       : '••••••••';
 
+    const linkedDate = new Date();
+    const accountHolderName = user.name || 'Account Holder';
+
+    // Send notification to the newly added email
     try {
       await sendNotificationEmailLinked(normalizedEmail, {
-        accountHolderName: user.name || 'Account Holder',
+        accountHolderName,
         accountNumberMasked: maskedAccount,
-        linkedDate: new Date(),
+        linkedDate,
       });
     } catch (err: unknown) {
       console.error('Failed to send notification link email:', err);
+    }
+
+    // Send confirmation to the account holder
+    try {
+      await sendNotificationEmailAddedConfirmation(session.user.email, {
+        accountHolderName,
+        addedEmail: normalizedEmail,
+        accountNumberMasked: maskedAccount,
+        linkedDate,
+      });
+    } catch (err: unknown) {
+      console.error('Failed to send account holder confirmation email:', err);
     }
 
     return NextResponse.json({

@@ -1237,6 +1237,130 @@ export async function sendNotificationEmailLinked(
   );
 }
 
+// 8b) Confirmation email to ACCOUNT HOLDER when they add a notification email
+export async function sendNotificationEmailAddedConfirmation(
+  to: string,
+  args: {
+    accountHolderName: string;
+    addedEmail: string;
+    accountNumberMasked: string;
+    linkedDate: Date;
+  }
+) {
+  const { accountHolderName, addedEmail, accountNumberMasked, linkedDate } = args;
+  const subject = "Notification Recipient Added to Your Account — Horizon Global Capital";
+
+  const formattedDate = linkedDate.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+
+  const content = `
+    <!-- Confirmation Hero -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 28px 0;">
+      <tr>
+        <td style="padding:28px 24px; background:linear-gradient(135deg, ${BRAND.colors.bgElevated} 0%, ${BRAND.colors.bgSubtle} 100%); border:1px solid ${BRAND.colors.borderAccent}; border-radius:12px; text-align:center;">
+          <div style="width:56px; height:56px; background:linear-gradient(135deg, ${BRAND.colors.success} 0%, #27AE60 100%); border-radius:14px; text-align:center; line-height:56px; margin:0 auto 20px auto;">
+            <span style="font-size:24px;">&#9989;</span>
+          </div>
+          <h1 style="margin:0 0 8px 0; font-family:${BRAND.fonts.primary}; font-size:22px; font-weight:700; color:${BRAND.colors.textPrimary};" class="responsive-heading">Notification Recipient Added</h1>
+          <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:13px; color:${BRAND.colors.textMuted};">Account Update Confirmation</p>
+        </td>
+      </tr>
+    </table>
+
+    ${greeting(accountHolderName)}
+    ${leadText(`This email confirms that you have successfully added a new <strong style="color:${BRAND.colors.textPrimary};">notification recipient</strong> to your Horizon Global Capital account. The recipient listed below will now receive real-time transaction alerts for all activity on your account.`)}
+
+    <!-- Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${BRAND.colors.bgElevated}; border:1px solid ${BRAND.colors.borderDefault}; border-radius:12px; overflow:hidden; margin:0 0 24px 0;">
+      <tr>
+        <td style="padding:16px 20px; background:${BRAND.colors.goldMuted}; border-bottom:1px solid ${BRAND.colors.borderDefault};">
+          <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:11px; font-weight:700; color:${BRAND.colors.gold}; text-transform:uppercase; letter-spacing:1px;">Notification Recipient Details</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            ${tableRow("Recipient Email", addedEmail)}
+            ${tableRow("Your Account", accountNumberMasked)}
+            ${tableRow("Date Added", formattedDate)}
+            ${tableRow("Notification Type", "All Transaction Alerts", { last: true })}
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    ${calloutBox(
+      `If you did not authorize this change, please contact our support team immediately at <strong>support@horizonglobalcapital.com</strong> or visit your account settings to remove this recipient. Your account security is our top priority.`,
+      "warning"
+    )}
+
+    <!-- Security Notice -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:8px 0 0 0;">
+      <tr>
+        <td style="padding:16px 20px; background:${BRAND.colors.bgInset}; border:1px solid ${BRAND.colors.borderSubtle}; border-radius:10px;">
+          <p style="margin:0 0 6px 0; font-family:${BRAND.fonts.secondary}; font-size:10px; font-weight:700; color:${BRAND.colors.textMuted}; text-transform:uppercase; letter-spacing:0.5px;">Security Notice</p>
+          <p style="margin:0; font-family:${BRAND.fonts.secondary}; font-size:11px; line-height:17px; color:${BRAND.colors.textMuted};">
+            This is an automated confirmation of a change made to your account settings. Notification recipients can only view transaction alerts and do not have access to your account, balances, or the ability to initiate transactions. You may manage your notification recipients at any time from your account settings.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${signatureBlock()}
+  `;
+
+  const html = emailShell(content, {
+    preheader: `Confirmation: ${addedEmail} has been added as a notification recipient on your account.`,
+  });
+
+  const text_plain = [
+    `Dear ${accountHolderName},`,
+    ``,
+    `This email confirms that you have successfully added a new notification recipient to your Horizon Global Capital account.`,
+    ``,
+    `NOTIFICATION RECIPIENT DETAILS`,
+    `Recipient Email: ${addedEmail}`,
+    `Your Account: ${accountNumberMasked}`,
+    `Date Added: ${formattedDate}`,
+    `Notification Type: All Transaction Alerts`,
+    ``,
+    `The recipient listed above will now receive real-time transaction alerts for all deposits, withdrawals, transfers, and other activity on your account.`,
+    ``,
+    `If you did not authorize this change, please contact our support team immediately at support@horizonglobalcapital.com or visit your account settings to remove this recipient.`,
+    ``,
+    `Security Notice: Notification recipients can only view transaction alerts and do not have access to your account, balances, or the ability to initiate transactions.`,
+    ``,
+    `With regards,`,
+    `Horizon Global Capital`,
+    `${BRAND.tagline}`,
+  ].join("\n");
+
+  return sendWithRetry(
+    {
+      from: FROM_DISPLAY,
+      replyTo: REPLY_TO,
+      envelope: { from: ENVELOPE_FROM, to: [to] },
+      to,
+      subject,
+      text: text_plain,
+      html,
+      headers: {
+        "List-Unsubscribe": LIST_UNSUBSCRIBE,
+        "X-Priority": "1",
+        "X-Notification-Type": "notification-recipient-added",
+      },
+    },
+    3
+  );
+}
+
 // 9) Export branded email shell for external use
 export { emailShell, greeting, leadText, sectionHeading, statusBadge, calloutBox, ctaButton, signatureBlock, tableRow };
 
@@ -1247,6 +1371,7 @@ const mailService = {
   sendBankStatementEmail,
   sendSimpleEmail,
   sendNotificationEmailLinked,
+  sendNotificationEmailAddedConfirmation,
   testSMTPConnection,
   transporter,
   // Template utilities
