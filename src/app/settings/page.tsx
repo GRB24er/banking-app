@@ -727,7 +727,7 @@ export default function SettingsPage() {
                   </button>
 
                   {/* Notification Emails Section */}
-                  <div style={{ paddingTop: '2rem', marginTop: '2rem', borderTop: '2px solid rgba(201, 169, 98, 0.15)' }}>
+                  <div style={{ paddingTop: '2.5rem', marginTop: '2.5rem', borderTop: '2px solid rgba(201, 169, 98, 0.15)' }}>
                     <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1a1f2e', margin: '0 0 0.5rem 0' }}>
                       Additional Notification Emails
                     </h3>
