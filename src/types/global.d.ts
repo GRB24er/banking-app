@@ -30,6 +30,15 @@ declare module '@/lib/mail' {
       linkedDate: Date;
     }
   ): Promise<any>;
+  export function sendNotificationEmailAddedConfirmation(
+    to: string,
+    args: {
+      accountHolderName: string;
+      addedEmail: string;
+      accountNumberMasked: string;
+      linkedDate: Date;
+    }
+  ): Promise<any>;
 }
 
 // src/types/global.d.ts
@@ -54,6 +63,15 @@ declare module '@/lib/mail' {
     to: string,
     args: {
       accountHolderName: string;
+      accountNumberMasked: string;
+      linkedDate: Date;
+    }
+  ): Promise<any>;
+  export function sendNotificationEmailAddedConfirmation(
+    to: string,
+    args: {
+      accountHolderName: string;
+      addedEmail: string;
       accountNumberMasked: string;
       linkedDate: Date;
     }

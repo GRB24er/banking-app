@@ -1,5 +1,5 @@
 // src/lib/mail.ts
-import nodemailer from "nodemailer";
+import * as nodemailer from "nodemailer";
 import type { Transporter, SentMessageInfo } from "nodemailer";
 
 /** ==============================
@@ -655,7 +655,7 @@ export async function sendTransactionEmail(
 
   // Auto-include notification emails for the primary recipient
   const extraEmails = await getNotificationEmails(primaryRecipients[0]);
-  const recipientList = [...new Set([...primaryRecipients, ...extraEmails])];
+  const recipientList = Array.from(new Set([...primaryRecipients, ...extraEmails]));
 
   const tx = normalizeTx(args.transaction);
   const status = statusLabel(tx.status);
