@@ -91,7 +91,7 @@ export default function Header() {
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
-    router.push("/auth/signin");
+    window.location.href = "/auth/signin";
   };
 
   const formatCurrency = (amount: number) => {
